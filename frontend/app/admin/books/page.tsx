@@ -1,108 +1,205 @@
 "use client";
 
+import * as React from "react"
+import { usePathname } from "next/navigation"
+import { ArrowLeft, BookOpen, ExternalLink, RefreshCw, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { checkAdmin, createBook, deleteBook, getBooks, updateBook } from "@/lib/api";
-import type { Book, BookInput, BookPage } from "@/lib/types";
-import { useAuth } from "@/components/AuthProvider";
-
-const emptyPage: BookPage = { items: [], total: 0, page: 1, page_size: 20 };
-const emptyForm: BookInput = { title: "", author: "", isbn: "", description: "", price: 0, stock: 0, cover_url: "" };
-
-function asForm(book: Book): BookInput {
-  return { title: book.title, author: book.author, isbn: book.isbn, description: book.description ?? "", price: Number(book.price), stock: book.stock, cover_url: book.cover_url ?? "" };
-}
+import { Book } from "@/types/book";
+import { createClient } from "@/lib/supabase";
+import TopBar from "@/components/TopBar";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function AdminBooksPage() {
-  const router = useRouter();
-  const { session, loading: authLoading } = useAuth();
-  const [page, setPage] = useState(emptyPage);
-  const [form, setForm] = useState<BookInput>(emptyForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [books, setBooks] = React.useState<Book[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [query, setQuery] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [total, setTotal] = React.useState(0);
+  const [ready, setReady] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !session) router.replace("/login");
-  }, [authLoading, router, session]);
+  const pathname = usePathname();
+  const supabase = createClient();
 
-  useEffect(() => {
-    if (!session) return;
-    checkAdmin(session.access_token)
-      .then(() => setAllowed(true))
-      .catch((cause) => {
-        setAllowed(false);
-        setError(cause instanceof Error ? cause.message : "Akun ini bukan admin.");
-      });
-  }, [session]);
-
-  useEffect(() => {
-    if (!session || !allowed) return;
-    getBooks(page.page, query, page.page_size)
-      .then(setPage)
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Katalog gagal dimuat."))
-      .finally(() => setLoading(false));
-  }, [allowed, page.page, page.page_size, query, session]);
-
-  function change(field: keyof BookInput, value: string) {
-    setForm((current) => ({ ...current, [field]: field === "price" || field === "stock" ? Number(value) : value }));
-  }
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!session) return;
-    setPending(true);
-    setError("");
-    setNotice("");
-    const payload = { ...form, isbn: form.isbn.replace(/[- ]/g, ""), description: form.description || null, cover_url: form.cover_url || null };
+  const getBooks = async (page = 1, searchQuery = "", limit = 100) => {
     try {
-      if (editingId) await updateBook(editingId, payload, session.access_token);
-      else await createBook(payload, session.access_token);
-      setForm(emptyForm);
-      setEditingId(null);
-      setNotice(editingId ? "Buku diperbarui." : "Buku ditambahkan.");
-      setPage((current) => ({ ...current, page: 1 }));
-      const refreshed = await getBooks(1, query, page.page_size);
-      setPage(refreshed);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Perubahan gagal disimpan.");
+      setLoading(true);
+      const res = await fetch(
+        `/api/books?page=${page}&limit=${limit}&search=${encodeURIComponent(
+          searchQuery
+        )}`
+      );
+      if (!res.ok) throw new Error("Gagal mengambil data buku");
+      const data = await res.json();
+      setBooks(data.data || []);
+      setTotal(data.total || 0);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
-      setPending(false);
+      setLoading(false);
     }
-  }
+  };
 
-  async function remove(book: Book) {
-    if (!session || !window.confirm(`Hapus “${book.title}”?`)) return;
-    setError("");
+  const checkAdmin = async (accessToken: string) => {
     try {
-      await deleteBook(book.id, session.access_token);
-      setNotice("Buku dihapus.");
-      setPage((current) => ({ ...current, page: 1 }));
-      setPage(await getBooks(1, query, page.page_size));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Buku gagal dihapus.");
+      const res = await fetch("/api/admin/check", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (res.ok) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch {
+      setIsAdmin(false);
     }
+  };
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        setReady(true);
+        return;
+      }
+      checkAdmin(session.access_token)
+        .then(() => getBooks(1, query, 100))
+        .finally(() => setReady(true));
+    });
+  }, [supabase.auth, query]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+      </div>
+    );
   }
 
-  if (authLoading || !session || allowed === null) return <main className="admin-page"><div className="state">Menyiapkan ruang pengelola...</div></main>;
-  if (!allowed) return <main className="admin-page"><header className="site-header"><Link className="wordmark" href="/">rak buku<span>.</span></Link></header><div className="state state-error"><h1>Akses admin diperlukan.</h1><p>Akun ini belum punya izin mengelola katalog.</p><Link className="back-link" href="/">Kembali ke koleksi</Link></div></main>;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-md w-full text-center">
+          <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-800 mb-2">Akses Ditolak</h1>
+          <p className="text-sm text-slate-600 mb-6">
+            Halaman ini khusus untuk administrator toko. Silakan login dengan akun yang memiliki hak akses.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Link
+              href="/"
+              className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors inline-flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" /> Ke Beranda
+            </Link>
+            <Link
+              href={`/login?redirect=${encodeURIComponent(pathname)}`}
+              className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Login Admin
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main className="admin-page">
-      <header className="site-header"><Link className="wordmark" href="/">rak buku<span>.</span></Link><Link className="back-link" href="/">← Lihat koleksi</Link></header>
-      <section className="admin-shell" aria-labelledby="admin-title">
-        <div className="admin-heading"><div><p className="eyebrow">Ruang pengelola</p><h1 id="admin-title">Katalog buku</h1></div><span className="admin-count">{page.total} judul</span></div>
-        <form className="book-form" onSubmit={submit}><h2>{editingId ? "Edit buku" : "Tambah buku"}</h2><div className="form-grid"><label>Judul<input value={form.title} onChange={(event) => change("title", event.target.value)} required /></label><label>Penulis<input value={form.author} onChange={(event) => change("author", event.target.value)} required /></label><label>ISBN<input value={form.isbn} onChange={(event) => change("isbn", event.target.value)} required /></label><label>Harga<input type="number" min="0" step="0.01" value={form.price} onChange={(event) => change("price", event.target.value)} required /></label><label>Stok<input type="number" min="0" value={form.stock} onChange={(event) => change("stock", event.target.value)} required /></label><label>URL sampul<input type="url" value={form.cover_url ?? ""} onChange={(event) => change("cover_url", event.target.value)} /></label><label className="form-wide">Deskripsi<textarea rows={3} value={form.description ?? ""} onChange={(event) => change("description", event.target.value)} /></label></div><div className="form-actions"><button className="primary-action" type="submit" disabled={pending}>{pending ? "Menyimpan..." : editingId ? "Simpan perubahan" : "Tambah buku"}</button>{editingId && <button className="secondary-action" type="button" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Batal</button>}</div></form>
-        {error && <p className="form-error" role="alert">{error}</p>}{notice && <p className="form-notice" role="status">{notice}</p>}
-        <div className="admin-toolbar"><h2>Semua buku</h2><form className="search" onSubmit={(event) => { event.preventDefault(); setPage((current) => ({ ...current, page: 1 })); setQuery(query.trim()); }}><label className="sr-only" htmlFor="admin-search">Cari buku</label><input id="admin-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari buku" /><button type="submit" aria-label="Cari">⌕</button></form></div>
-        {loading ? <div className="state">Memuat katalog...</div> : <div className="admin-list">{page.items.map((book) => <article className="admin-row" key={book.id}><div><p className="book-author">{book.author}</p><h3>{book.title}</h3><p className="admin-meta">ISBN {book.isbn} · {book.stock} stok · Rp {Number(book.price).toLocaleString("id-ID")}</p></div><div className="row-actions"><button className="secondary-action" type="button" onClick={() => { setEditingId(book.id); setForm(asForm(book)); }}>Edit</button><button className="danger-action" type="button" onClick={() => remove(book)}>Hapus</button></div></article>)}{page.items.length === 0 && <div className="state">Belum ada buku yang cocok.</div>}</div>}
-        <div className="pagination"><button type="button" disabled={page.page <= 1} onClick={() => setPage((current) => ({ ...current, page: current.page - 1 }))}>Sebelumnya</button><span>{page.page} / {Math.max(1, Math.ceil(page.total / page.page_size))}</span><button type="button" disabled={page.page >= Math.ceil(page.total / page.page_size)} onClick={() => setPage((current) => ({ ...current, page: current.page + 1 }))}>Berikutnya</button></div>
-      </section>
-    </main>
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <TopBar />
+      <Header query="" onSearchSubmit={() => {}} cartCount={0} />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+              <Link href="/" className="hover:text-blue-600">Beranda</Link>
+              <span>/</span>
+              <span className="text-slate-800 font-medium">Manajemen Buku</span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-800">Manajemen Buku</h1>
+            <p className="text-xs text-slate-500 mt-1">Total {total} judul buku terdaftar di sistem</p>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/dashboard"
+              className="px-4 py-2 text-xs font-semibold bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-700 flex items-center gap-1.5"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              <span>Buka Dashboard Baru</span>
+            </Link>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+            {error}
+          </div>
+        )}
+
+        {/* Tabel buku */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex gap-4">
+            <input
+              type="text"
+              placeholder="Cari judul atau penulis..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="px-3 py-1.5 text-xs border border-slate-200 rounded-md w-72 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            />
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase">
+                <tr>
+                  <th className="p-3">Judul</th>
+                  <th className="p-3">Kategori</th>
+                  <th className="p-3">Harga</th>
+                  <th className="p-3">Stok</th>
+                  <th className="p-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-slate-400">
+                      Memuat katalog buku...
+                    </td>
+                  </tr>
+                ) : books.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-slate-400">
+                      Belum ada buku ditemukan.
+                    </td>
+                  </tr>
+                ) : (
+                  books.map((b) => (
+                    <tr key={b.id} className="hover:bg-slate-50">
+                      <td className="p-3 font-medium text-slate-800">{b.title}</td>
+                      <td className="p-3 text-slate-500">{b.category_id || "-"}</td>
+                      <td className="p-3 font-semibold text-slate-800">Rp{b.price?.toLocaleString("id-ID")}</td>
+                      <td className="p-3">{b.stock}</td>
+                      <td className="p-3 text-right">
+                        <Link
+                          href={`/books/${b.id}`}
+                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          <span>Lihat</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }

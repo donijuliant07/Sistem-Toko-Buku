@@ -1,30 +1,29 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getBooks } from "@/lib/api";
-import AuthButton from "@/components/AuthButton";
 import type { Book, BookPage } from "@/lib/types";
+import TopBar from "@/components/TopBar";
+import Header from "@/components/Header";
+import HeroCarousel from "@/components/HeroCarousel";
+import CategoryShortcuts from "@/components/CategoryShortcuts";
+import ProductCard from "@/components/ProductCard";
+import ProductSection from "@/components/ProductSection";
+import Footer from "@/components/Footer";
+import FloatingCS from "@/components/FloatingCS";
+import {
+  BACK_TO_CAMPUS_PRODUCTS,
+  BESTSELLER_BOOKS,
+  BRAND_RECOMMENDATIONS,
+  Product,
+} from "@/data/mockData";
 
 const initialPage: BookPage = { items: [], total: 0, page: 1, page_size: 12 };
-
-function formatPrice(price: Book["price"]) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
-}
-
-function BookCover({ book }: { book: Book }) {
-  return book.cover_url ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img className="book-cover" src={book.cover_url} alt={`Sampul ${book.title}`} />
-  ) : (
-    <div className="cover-placeholder" aria-hidden="true"><span>{book.title.slice(0, 1)}</span></div>
-  );
-}
 
 export default function Home() {
   const [page, setPage] = useState<BookPage>(initialPage);
   const [query, setQuery] = useState("");
-  const [input, setInput] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,68 +31,178 @@ export default function Home() {
     let active = true;
     getBooks(page.page, query)
       .then((data) => active && setPage(data))
-      .catch(() => active && setError("Katalog belum bisa dimuat. Pastikan backend berjalan."))
+      .catch(() => active && setError("Katalog buku gagal dimuat. Menampilkan koleksi mock Gramedia."))
       .finally(() => active && setLoading(false));
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [page.page, query]);
 
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPage((current) => ({ ...current, page: 1 }));
-    setQuery(input);
-  }
+  const handleSearchSubmit = (q: string) => {
+    setPage((curr) => ({ ...curr, page: 1 }));
+    setQuery(q);
+  };
+
+  // Convert Backend API Books to Product shape for unified component rendering
+  const apiProducts: Product[] = page.items.map((b: Book) => ({
+    id: b.id,
+    title: b.title,
+    authorOrBrand: b.author,
+    price: typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000,
+    originalPrice: (typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000) * 1.2,
+    discountPercent: 15,
+    soldCount: (b.stock || 5) * 42,
+    badgeLanguage: "ID",
+    coverUrl: b.cover_url || "",
+    category: "katalog",
+    type: "book",
+  }));
 
   const pageCount = Math.max(1, Math.ceil(page.total / page.page_size));
-  const showLoading = loading && page.items.length === 0;
 
   return (
-    <main>
-      <header className="site-header">
-        <Link className="wordmark" href="/">rak buku<span>.</span></Link>
-        <nav aria-label="Navigasi utama"><a href="#koleksi">Koleksi</a><a href="#tentang">Tentang</a></nav>
-        <AuthButton />
-      </header>
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+      {/* 1. Top Bar */}
+      <TopBar />
 
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow">Toko buku pilihan</p>
-          <h1 id="hero-title">Cerita baik,<br /><em>tinggal dibaca.</em></h1>
-          <p className="hero-intro">Temukan buku yang ingin kamu bawa pulang—dari rak kami ke meja bacamu.</p>
-        </div>
-        <div className="hero-mark" aria-hidden="true"><span>R</span><i>since<br />2024</i></div>
-      </section>
+      {/* 2. Sticky Header */}
+      <Header
+        query={query}
+        onSearchSubmit={handleSearchSubmit}
+        cartCount={page.total > 0 ? page.total : 0}
+      />
 
-      <section className="catalog" id="koleksi" aria-labelledby="catalog-title">
-        <div className="catalog-heading">
-          <div><p className="eyebrow">Rak terbaru</p><h2 id="catalog-title">Jelajahi koleksi</h2></div>
-          <form className="search" onSubmit={submitSearch} role="search">
-            <label className="sr-only" htmlFor="book-search">Cari judul atau penulis</label>
-            <input id="book-search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Cari judul atau penulis" />
-            <button type="submit" aria-label="Cari">⌕</button>
-          </form>
-        </div>
+      {/* Main Content Body */}
+      <main className="flex-1">
+        {/* 3. Hero Banner Carousel */}
+        <HeroCarousel />
 
-        {showLoading ? <div className="state">Membuka rak...</div> : error ? <div className="state state-error">{error}</div> : page.items.length === 0 ? <div className="state">Belum ada buku yang cocok. Coba kata kunci lain.</div> : (
-          <>
-            <p className="result-count">{page.total} buku tersedia</p>
-            <div className="book-grid">
-              {page.items.map((book) => (
-                <Link className="book-card" href={`/books/${book.id}`} key={book.id}>
-                  <div className="card-cover"><BookCover book={book} />{book.stock === 0 && <span className="stock-badge">Habis</span>}</div>
-                  <div className="book-info"><p className="book-author">{book.author}</p><h3>{book.title}</h3><p className="book-price">{formatPrice(book.price)}</p></div>
-                </Link>
+        {/* 4. Quick Categories */}
+        <CategoryShortcuts
+          activeId={activeCategory}
+          onSelectCategory={(id) => setActiveCategory(id)}
+        />
+
+        {/* 5. Section: Back To Campus */}
+        <ProductSection
+          id="back-to-campus"
+          title="Back To Campus 2026"
+          products={BACK_TO_CAMPUS_PRODUCTS}
+          cardAspect="square"
+        />
+
+        {/* 6. Section: Buku Terlaris */}
+        <ProductSection
+          id="buku-terlaris"
+          title="Buku Terlaris Gramedia"
+          products={BESTSELLER_BOOKS}
+          sideBanner={{
+            tag: "BESTSELLER 2026",
+            title: "Koleksi Buku Pilihan Paling Dicari",
+            subtitle: "Dari fiksi mendalam hingga pengembangan diri inspiratif.",
+            bgGradient: "from-blue-900 via-indigo-900 to-sky-900",
+          }}
+          cardAspect="book"
+        />
+
+        {/* 7. Section: Rekomendasi Brand Pilihan */}
+        <ProductSection
+          id="brand-pilihan"
+          title="Rekomendasi Brand Pilihan"
+          products={BRAND_RECOMMENDATIONS}
+          sideBanner={{
+            tag: "LIFESTYLE & IT",
+            title: "Brand Favorit & Original",
+            subtitle: "Jaminan produk 100% asli dari distributor resmi Gramedia.",
+            bgGradient: "from-amber-700 via-orange-800 to-red-900",
+          }}
+          cardAspect="square"
+        />
+
+        {/* 8. Full Catalog / Backend Integration Section */}
+        <section id="katalog" className="max-w-[1200px] mx-auto px-4 py-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-gray-200 gap-4">
+            <div>
+              <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
+                Katalog Lengkap Toko Buku
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {query ? `Hasil pencarian untuk "${query}"` : "Semua koleksi buku yang tersedia di database."}
+              </p>
+            </div>
+            {page.total > 0 && (
+              <span className="text-xs text-gray-500 font-medium">
+                Total {page.total} buku ditemukan
+              </span>
+            )}
+          </div>
+
+          {error && (
+            <div className="p-4 mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-3">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl p-3 border border-gray-100 animate-pulse h-64 flex flex-col justify-between">
+                  <div className="w-full h-36 bg-gray-100 rounded-lg mb-2" />
+                  <div className="space-y-2">
+                    <div className="w-3/4 h-3 bg-gray-100 rounded" />
+                    <div className="w-1/2 h-3 bg-gray-100 rounded" />
+                  </div>
+                  <div className="w-full h-4 bg-gray-100 rounded mt-2" />
+                </div>
               ))}
             </div>
-            <div className="pagination" aria-label="Paginasi">
-              <button type="button" disabled={page.page <= 1} onClick={() => setPage((current) => ({ ...current, page: current.page - 1 }))}>Sebelumnya</button>
-              <span>{page.page} / {pageCount}</span>
-              <button type="button" disabled={page.page >= pageCount} onClick={() => setPage((current) => ({ ...current, page: current.page + 1 }))}>Berikutnya</button>
+          ) : apiProducts.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {apiProducts.map((prod) => (
+                <ProductCard key={prod.id} product={prod} aspectRatio="book" />
+              ))}
             </div>
-          </>
-        )}
-      </section>
+          ) : (
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+              <span className="text-4xl block mb-2">📚</span>
+              <p className="text-sm font-semibold text-gray-700">Buku tidak ditemukan</p>
+              <p className="text-xs text-gray-400 mt-1">Coba gunakan kata kunci pencarian yang berbeda.</p>
+            </div>
+          )}
 
-      <footer id="tentang"><p>rak buku<span>.</span></p><small>Tempat buku-buku menemukan pembacanya.</small></footer>
-    </main>
+          {/* Pagination Controls */}
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                type="button"
+                disabled={page.page <= 1}
+                onClick={() => setPage((c) => ({ ...c, page: c.page - 1 }))}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              >
+                &larr; Sebelumnya
+              </button>
+              <span className="text-xs text-gray-500 font-medium px-2">
+                Halaman {page.page} dari {pageCount}
+              </span>
+              <button
+                type="button"
+                disabled={page.page >= pageCount}
+                onClick={() => setPage((c) => ({ ...c, page: c.page + 1 }))}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              >
+                Selanjutnya &rarr;
+              </button>
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* 9. Footer */}
+      <Footer />
+
+      {/* 10. Floating Customer Service WhatsApp */}
+      <FloatingCS />
+    </div>
   );
 }

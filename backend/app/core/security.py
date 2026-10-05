@@ -1,80 +1,90 @@
-from typing import Any
-from uuid import UUID
-
-import httpx
+from typing import Annotated, Optional
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 
 from app.core.config import settings
-from app.db.session import get_db
-from app.models import Profile
 
-bearer_scheme = HTTPBearer(auto_error=False)
+security = HTTPBearer(auto_error=False)
 
 
-async def _supabase_signing_key(token: str) -> tuple[Any, str]:
-    """Return verification key and allowed algorithm for a Supabase JWT."""
-    header = jwt.get_unverified_header(token)
-    algorithm = header.get("alg")
-    if algorithm == "HS256":
-        return settings.supabase_jwt_secret, algorithm
-    if algorithm != "ES256" or not header.get("kid"):
-        raise jwt.InvalidAlgorithmError("Unsupported JWT algorithm")
-
-    jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-    async with httpx.AsyncClient(timeout=5) as client:
-        response = await client.get(jwks_url)
-        response.raise_for_status()
-    jwk = next((key for key in response.json().get("keys", []) if key.get("kid") == header["kid"]), None)
-    if jwk is None:
-        raise jwt.InvalidKeyError("Unknown JWT key ID")
-    return jwt.algorithms.ECAlgorithm.from_jwk(jwk), algorithm
+class UserPayload(BaseModel):
+    id: str
+    email: Optional[str] = None
+    role: str = "customer"
+    app_metadata: dict = {}
+    user_metadata: dict = {}
 
 
-async def verify_supabase_token(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-) -> dict[str, Any]:
-    """Verify Supabase JWT and return its claims."""
-    if credentials is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
-    if not settings.supabase_url:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-
-    try:
-        key, algorithm = await _supabase_signing_key(credentials.credentials)
-        return jwt.decode(
-            credentials.credentials,
-            key,
-            algorithms=[algorithm],
-            audience="authenticated",
-            issuer=f"{settings.supabase_url.rstrip('/')}/auth/v1",
-        )
-    except (httpx.HTTPError, jwt.PyJWTError) as exc:
+async def get_current_user(
+    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(security)]
+) -> UserPayload:
+    if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-        ) from exc
+            detail="Header otentikasi Bearer token tidak ditemukan.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-
-async def _profile_role(user_id: str, db: AsyncSession) -> str | None:
-    """Return profile role for a Supabase Auth user ID."""
+    token = credentials.credentials
     try:
-        profile_id = UUID(user_id)
-    except (ValueError, AttributeError, TypeError):
-        return None
-    result = await db.execute(select(Profile.role).where(Profile.id == profile_id))
-    return result.scalar_one_or_none()
+        # Supabase JWT signature validation with HMAC SHA256 using SUPABASE_JWT_SECRET
+        payload = jwt.decode(
+            token,
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            audience="authenticated",
+        )
+        user_id: str = payload.get("sub", "")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token tidak memiliki klaim 'sub' pengguna yang valid.",
+            )
+
+        app_metadata = payload.get("app_metadata", {})
+        user_metadata = payload.get("user_metadata", {})
+
+        # User role prioritization: app_metadata.role -> user_metadata.role -> "customer"
+        role = app_metadata.get("role") or user_metadata.get("role") or "customer"
+
+        return UserPayload(
+            id=user_id,
+            email=payload.get("email"),
+            role=role,
+            app_metadata=app_metadata,
+            user_metadata=user_metadata,
+        )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesi login telah kedaluwarsa. Silakan login kembali.",
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token otentikasi tidak valid: {str(e)}",
+        )
 
 
 async def require_admin(
-    payload: dict[str, Any] = Depends(verify_supabase_token),
-    db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
-    """Allow only users with an admin profile role."""
-    user_id = payload.get("sub")
-    if not user_id or await _profile_role(user_id, db) != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    return payload
+    current_user: Annotated[UserPayload, Depends(get_current_user)]
+) -> UserPayload:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Akses ditolak. Fitur ini hanya dapat diakses oleh Administrator.",
+        )
+    return current_user
+
+
+async def require_staff_or_admin(
+    current_user: Annotated[UserPayload, Depends(get_current_user)]
+) -> UserPayload:
+    if current_user.role not in ["admin", "staff"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Akses ditolak. Fitur ini membutuhkan hak akses Staff atau Administrator.",
+        )
+    return current_user

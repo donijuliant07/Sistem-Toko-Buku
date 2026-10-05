@@ -5,7 +5,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import require_admin, verify_supabase_token
+from app.core.security import require_admin
 from app.db.session import get_db
 from app.models import Book
 from app.schemas.book import BookCreate, BookPage, BookRead, BookUpdate
@@ -83,6 +83,7 @@ async def create_book(
     return book
 
 
+@router.put("/{book_id}", response_model=BookRead)
 @router.patch("/{book_id}", response_model=BookRead)
 async def update_book(
     book_id: UUID,
