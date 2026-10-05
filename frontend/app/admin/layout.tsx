@@ -3,6 +3,7 @@
 import * as React from "react"
 import { AppSidebar } from "@/components/admin/AppSidebar"
 import { SiteHeader } from "@/components/admin/SiteHeader"
+import FloatingCS from "@/components/FloatingCS"
 import { Toaster } from "sonner"
 
 export default function AdminLayout({
@@ -14,7 +15,7 @@ export default function AdminLayout({
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
   return (
-    <div className="flex min-h-screen bg-slate-50/60 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-[var(--surface-muted)] text-[var(--foreground)] font-sans">
       <AppSidebar
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed(!collapsed)}
@@ -23,10 +24,11 @@ export default function AdminLayout({
       />
       <div className="flex flex-1 flex-col min-w-0">
         <SiteHeader onToggleMobileMenu={() => setMobileOpen(!mobileOpen)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1400px] w-full mx-auto">
           {children}
         </main>
       </div>
+      <FloatingCS />
       <Toaster position="top-right" richColors />
     </div>
   )

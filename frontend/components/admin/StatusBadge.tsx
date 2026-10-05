@@ -1,75 +1,111 @@
 import React from "react"
-import { Badge } from "@/components/ui/badge"
 import { OrderStatus, ProductStatus, PromoStatus } from "@/types"
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   switch (status) {
     case "Menunggu Pembayaran":
       return (
-        <Badge variant="warning" className="font-medium">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--warning-soft)] text-[var(--warning)] border border-[#B45309]/20">
           Menunggu Pembayaran
-        </Badge>
+        </span>
       )
     case "Diproses":
       return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-medium">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--info-soft)] text-[var(--info)] border border-[#2A7F86]/20">
           Diproses
-        </Badge>
+        </span>
       )
     case "Dikirim":
       return (
-        <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700 font-medium">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--shipped-soft)] text-[var(--shipped)] border border-[#5B5FA8]/20">
           Dikirim
-        </Badge>
+        </span>
       )
     case "Selesai":
       return (
-        <Badge variant="success" className="font-medium">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--success-soft)] text-[var(--success)] border border-[#2E7D4F]/20">
           Selesai
-        </Badge>
+        </span>
       )
     case "Batal":
       return (
-        <Badge variant="destructive" className="font-medium">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--danger-soft)] text-[var(--danger)] border border-[#C0392B]/20">
           Batal
-        </Badge>
+        </span>
       )
     default:
-      return <Badge variant="outline">{status}</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[var(--surface-muted)] text-[var(--muted-foreground)] border border-[var(--border)]">
+          {status}
+        </span>
+      )
   }
 }
 
 export function ProductStatusBadge({ status, stock }: { status: ProductStatus; stock?: number }) {
   if (stock !== undefined && stock <= 0) {
-    return <Badge variant="destructive">Habis</Badge>
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--danger)] text-white">
+        Habis
+      </span>
+    )
   }
   if (stock !== undefined && stock <= 5) {
     return (
-      <Badge variant="warning" className="bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--warning-soft)] text-[var(--warning)] border border-[#B45309]/20">
         Kritis ({stock})
-      </Badge>
+      </span>
     )
   }
 
   switch (status) {
     case "Aktif":
-      return <Badge variant="success">Aktif</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--success-soft)] text-[var(--success)]">
+          Aktif
+        </span>
+      )
     case "Draft":
-      return <Badge variant="secondary">Draft</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--surface-muted)] text-[var(--muted-foreground)]">
+          Draft
+        </span>
+      )
     case "Habis":
-      return <Badge variant="destructive">Habis</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--danger-soft)] text-[var(--danger)]">
+          Habis
+        </span>
+      )
     default:
-      return <Badge variant="outline">{status}</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[var(--surface-muted)] text-[var(--muted-foreground)] border border-[var(--border)]">
+          {status}
+        </span>
+      )
   }
 }
 
 export function PromoStatusBadge({ status }: { status: PromoStatus }) {
   switch (status) {
     case "Aktif":
-      return <Badge variant="success">Aktif</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--success-soft)] text-[var(--success)]">
+          Aktif
+        </span>
+      )
     case "Jadwal":
-      return <Badge variant="secondary">Jadwal</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--surface-muted)] text-[var(--muted-foreground)]">
+          Jadwal
+        </span>
+      )
     case "Kadaluarsa":
-      return <Badge variant="outline" className="text-slate-400">Kadaluarsa</Badge>
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)]">
+          Kadaluarsa
+        </span>
+      )
   }
 }
+

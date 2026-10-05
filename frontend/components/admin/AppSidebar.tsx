@@ -101,20 +101,20 @@ export function AppSidebar({
     <div className="flex h-full flex-col justify-between overflow-hidden">
       {/* Header Logo */}
       <div>
-        <div className="flex h-16 items-center justify-between px-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-[var(--border)]">
           <Link
             href="/admin/dashboard"
-            className="flex items-center gap-2.5 font-bold text-slate-900 dark:text-slate-100"
+            className="flex items-center gap-2 shrink-0 font-bold text-[var(--foreground)]"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
-              <Library className="h-5 w-5" />
+            <div className="w-9 h-9 rounded-lg bg-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)] font-extrabold text-xl shadow-xs">
+              G
             </div>
             {!collapsed && (
-              <div className="flex flex-col leading-none">
-                <span className="text-base tracking-tight text-blue-600 font-extrabold dark:text-blue-400">
-                  {siteConfig.name}
+              <div className="flex flex-col leading-tight">
+                <span className="text-lg font-extrabold tracking-tight text-[var(--primary)]">
+                  {siteConfig.brandName}
                 </span>
-                <span className="text-[10px] text-slate-400 font-normal uppercase tracking-wider">
+                <span className="text-[10px] text-[var(--muted-foreground)] font-medium tracking-wider uppercase">
                   Admin Dashboard
                 </span>
               </div>
@@ -122,7 +122,7 @@ export function AppSidebar({
           </Link>
           <button
             onClick={onToggleCollapse}
-            className="hidden md:flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer"
+            className="hidden md:flex h-7 w-7 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] cursor-pointer"
             title={collapsed ? "Buka Sidebar" : "Ciutkan Sidebar"}
           >
             {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -134,7 +134,7 @@ export function AppSidebar({
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               {!collapsed && (
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                   {group.label}
                 </p>
               )}
@@ -149,18 +149,18 @@ export function AppSidebar({
                     onClick={onCloseMobile}
                     title={collapsed ? item.title : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all group relative",
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all group relative border-l-4",
                       isActive
-                        ? "bg-blue-50 text-blue-700 font-semibold dark:bg-blue-950/60 dark:text-blue-300"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        ? "bg-[var(--primary-soft)] text-[var(--primary)] font-semibold border-[var(--primary)]"
+                        : "border-transparent text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
                     )}
                   >
                     <Icon
                       className={cn(
                         "h-4 w-4 shrink-0 transition-colors",
                         isActive
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300"
+                          ? "text-[var(--primary)]"
+                          : "text-[var(--muted-foreground)] group-hover:text-[var(--foreground)]"
                       )}
                     />
                     {!collapsed && (
@@ -171,8 +171,8 @@ export function AppSidebar({
                         className={cn(
                           "ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full",
                           typeof item.badge === "string"
-                            ? "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
+                            ? "bg-[var(--danger-soft)] text-[var(--danger)]"
+                            : "bg-[var(--primary)] text-[var(--primary-foreground)]"
                         )}
                       >
                         {item.badge}
@@ -187,27 +187,27 @@ export function AppSidebar({
       </div>
 
       {/* Footer User Profile */}
-      <div className="border-t border-slate-100 p-3 dark:border-slate-800">
+      <div className="border-t border-[var(--border)] p-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+            <button className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-[var(--surface-muted)] cursor-pointer transition-colors">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={siteConfig.adminUser.avatar} alt={siteConfig.adminUser.name} />
-                <AvatarFallback className="rounded-lg bg-blue-100 text-blue-700 text-xs font-bold">
+                <AvatarFallback className="rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] text-xs font-bold">
                   RP
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
                 <>
                   <div className="flex flex-col flex-1 min-w-0">
-                    <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="truncate text-xs font-semibold text-[var(--foreground)]">
                       {siteConfig.adminUser.name}
                     </span>
-                    <span className="truncate text-[10px] text-slate-400">
+                    <span className="truncate text-[10px] text-[var(--muted-foreground)]">
                       {siteConfig.adminUser.email}
                     </span>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />
+                  <ChevronDown className="h-4 w-4 text-[var(--muted-foreground)] shrink-0" />
                 </>
               )}
             </button>
@@ -253,7 +253,7 @@ export function AppSidebar({
       {/* Desktop Inset Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-screen",
+          "hidden md:flex flex-col border-r border-[var(--border)] bg-[var(--surface)] transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-screen",
           collapsed ? "w-16" : "w-64"
         )}
       >
@@ -263,7 +263,7 @@ export function AppSidebar({
       {/* Mobile Drawer Backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
           onClick={onCloseMobile}
         />
       )}
@@ -271,7 +271,7 @@ export function AppSidebar({
       {/* Mobile Drawer */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-72 bg-[var(--surface)] border-r border-[var(--border)] shadow-xl transition-transform duration-300 ease-in-out md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

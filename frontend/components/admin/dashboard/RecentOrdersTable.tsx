@@ -112,23 +112,23 @@ export function RecentOrdersTable() {
   }
 
   return (
-    <Card className="col-span-full border-slate-200/80 dark:border-slate-800">
+    <Card className="col-span-full border-[var(--border)] bg-[var(--surface)]">
       <CardHeader className="flex flex-col space-y-4 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <CardTitle className="text-base font-bold">Pesanan Terbaru</CardTitle>
-            <CardDescription className="text-xs">
+            <CardTitle className="text-base font-bold text-[var(--foreground)]">Pesanan Terbaru</CardTitle>
+            <CardDescription className="text-xs text-[var(--muted-foreground)]">
               Daftar transaksi masuk dan status pemrosesan logistik
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[var(--muted-foreground)]" />
               <Input
                 placeholder="Cari no. pesanan, pelanggan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs bg-slate-50 dark:bg-slate-900"
+                className="h-8 pl-8 text-xs bg-[var(--surface-muted)] border-[var(--border)] text-[var(--foreground)]"
               />
             </div>
           </div>
@@ -137,7 +137,7 @@ export function RecentOrdersTable() {
         {/* Status Tabs */}
         <div className="overflow-x-auto pb-1 scrollbar-none">
           <Tabs value={statusTab} onValueChange={setStatusTab}>
-            <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 h-8">
+            <TabsList className="bg-[var(--surface-muted)] p-1 h-8">
               <TabsTrigger value="semua" className="text-xs">Semua</TabsTrigger>
               <TabsTrigger value="Menunggu Pembayaran" className="text-xs">Menunggu Bayar</TabsTrigger>
               <TabsTrigger value="Diproses" className="text-xs">Diproses</TabsTrigger>
@@ -150,7 +150,7 @@ export function RecentOrdersTable() {
       </CardHeader>
 
       <CardContent>
-        <div className="rounded-lg border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+        <div className="rounded-lg border border-[var(--border)] overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -206,24 +206,24 @@ export function RecentOrdersTable() {
                           onCheckedChange={() => toggleSelectRow(order.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-semibold text-blue-600 dark:text-blue-400 text-xs">
+                      <TableCell className="font-semibold text-[var(--primary)] text-xs">
                         <Link href={`/admin/pesanan?id=${order.id}`} className="hover:underline">
                           {order.orderNumber}
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                        <div className="text-xs font-medium text-[var(--foreground)]">
                           {order.customerName}
                         </div>
-                        <div className="text-[11px] text-slate-400">{order.customerPhone}</div>
+                        <div className="text-[11px] text-[var(--muted-foreground)]">{order.customerPhone}</div>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500 whitespace-nowrap">
+                      <TableCell className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
                         {formatTanggalJam(order.createdAt)}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600 dark:text-slate-400">
+                      <TableCell className="text-xs text-[var(--muted-foreground)]">
                         {order.paymentMethod}
                       </TableCell>
-                      <TableCell className="text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                      <TableCell className="text-xs font-bold text-[var(--primary)] tabular-nums">
                         {formatRupiah(order.totalAmount)}
                       </TableCell>
                       <TableCell>

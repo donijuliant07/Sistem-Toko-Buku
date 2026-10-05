@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { analyticsService, CategorySalesItem } from "@/lib/services"
 
-const colors = ["#0052cc", "#0284c7", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899"]
+const colors = ["#1F6F54", "#C8A24A", "#2A7F86", "#2E7D4F", "#5B5FA8", "#B45309"]
 
 export function CategoryChart() {
   const [data, setData] = React.useState<CategorySalesItem[]>([])
@@ -32,12 +32,12 @@ export function CategoryChart() {
         <div className="h-[260px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 40, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" opacity={0.5} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.6} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
               <YAxis
                 dataKey="category"
                 type="category"
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}
                 width={100}
@@ -46,8 +46,8 @@ export function CategoryChart() {
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-md dark:border-slate-800 dark:bg-slate-900 text-xs font-semibold">
-                        <p>{payload[0].payload.category}: <span className="text-blue-600 font-bold">{payload[0].value} terjual</span></p>
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 shadow-md text-xs font-semibold">
+                        <p className="text-[var(--foreground)]">{payload[0].payload.category}: <span className="text-[var(--primary)] font-bold">{payload[0].value} terjual</span></p>
                       </div>
                     )
                   }

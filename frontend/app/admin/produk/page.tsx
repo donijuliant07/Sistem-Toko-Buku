@@ -103,8 +103,8 @@ export default function AdminProductsPage() {
         return true
       })
       .sort((a, b) => {
-        let valA = a[sortField]
-        let valB = b[sortField]
+        let valA: any = (a as any)[sortField]
+        let valB: any = (b as any)[sortField]
         if (sortField === "price") {
           valA = a.finalPrice
           valB = b.finalPrice

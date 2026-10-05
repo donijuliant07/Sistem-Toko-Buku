@@ -22,14 +22,14 @@ export function SectionCards({ data, loading }: SectionCardsProps) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
+          <Card key={i} className="animate-pulse border-[var(--border)] bg-[var(--surface)]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
-              <div className="h-8 w-8 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+              <div className="h-4 w-24 bg-[var(--surface-muted)] rounded" />
+              <div className="h-8 w-8 bg-[var(--surface-muted)] rounded-lg" />
             </CardHeader>
             <CardContent>
-              <div className="h-7 w-32 bg-slate-200 dark:bg-slate-800 rounded mb-2" />
-              <div className="h-3 w-40 bg-slate-200 dark:bg-slate-800 rounded" />
+              <div className="h-7 w-32 bg-[var(--surface-muted)] rounded mb-2" />
+              <div className="h-3 w-40 bg-[var(--surface-muted)] rounded" />
             </CardContent>
           </Card>
         ))}
@@ -41,26 +41,27 @@ export function SectionCards({ data, loading }: SectionCardsProps) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {data.map((kpi, idx) => {
         const Icon = getIcon(kpi.title)
+        const isAccent = idx % 2 === 1
         return (
-          <Card key={idx} className="relative overflow-hidden transition-all hover:shadow-md border-slate-200/80 dark:border-slate-800">
+          <Card key={idx} className="relative overflow-hidden transition-all hover:shadow-md border-[var(--border)] bg-[var(--surface)] rounded-xl shadow-[var(--shadow-card)]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">
                 {kpi.title}
               </CardTitle>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isAccent ? "bg-[var(--accent-soft)] text-[var(--accent-hover)]" : "bg-[var(--primary-soft)] text-[var(--primary)]"}`}>
                 <Icon className="h-4 w-4" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums">
+              <div className="text-2xl font-extrabold tracking-tight text-[var(--foreground)] tabular-nums">
                 {kpi.value}
               </div>
               <div className="mt-2 flex items-center gap-1.5 text-xs">
                 <span
                   className={`inline-flex items-center font-bold px-1.5 py-0.5 rounded text-[11px] ${
                     kpi.isPositive
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-400"
+                      ? "bg-[var(--success-soft)] text-[var(--success)]"
+                      : "bg-[var(--danger-soft)] text-[var(--danger)]"
                   }`}
                 >
                   {kpi.isPositive ? (
@@ -71,7 +72,7 @@ export function SectionCards({ data, loading }: SectionCardsProps) {
                   {kpi.isPositive ? "+" : ""}
                   {kpi.trendPercent}%
                 </span>
-                <span className="text-slate-400 truncate">{kpi.description}</span>
+                <span className="text-[var(--muted-foreground)] truncate">{kpi.description}</span>
               </div>
             </CardContent>
           </Card>

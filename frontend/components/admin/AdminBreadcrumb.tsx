@@ -23,10 +23,10 @@ export function AdminBreadcrumb() {
 
   if (segments.length <= 1) {
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-slate-500">
-        <Home className="h-3.5 w-3.5 text-slate-400" />
-        <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-700" />
-        <span className="font-semibold text-slate-900 dark:text-slate-100">Dashboard</span>
+      <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-[var(--muted-foreground)]">
+        <Home className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+        <ChevronRight className="h-3 w-3 text-[var(--border-strong)]" />
+        <span className="font-semibold text-[var(--foreground)]">Dashboard</span>
       </nav>
     )
   }
@@ -40,17 +40,17 @@ export function AdminBreadcrumb() {
   })
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-slate-500">
-      <Link href="/admin/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">
-        <Home className="h-3.5 w-3.5 text-slate-400 hover:text-blue-600" />
+    <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-[var(--muted-foreground)]">
+      <Link href="/admin/dashboard" className="hover:text-[var(--primary)]">
+        <Home className="h-3.5 w-3.5 text-[var(--muted-foreground)] hover:text-[var(--primary)]" />
       </Link>
       {breadcrumbs.map((item) => (
         <React.Fragment key={item.href}>
-          <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-700 shrink-0" />
+          <ChevronRight className="h-3 w-3 text-[var(--border-strong)] shrink-0" />
           {item.isLast ? (
-            <span className="font-semibold text-slate-900 dark:text-slate-100">{item.label}</span>
+            <span className="font-semibold text-[var(--foreground)]">{item.label}</span>
           ) : (
-            <Link href={item.href} className="hover:text-blue-600 dark:hover:text-blue-400">
+            <Link href={item.href} className="hover:text-[var(--primary)]">
               {item.label}
             </Link>
           )}

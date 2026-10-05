@@ -13,7 +13,7 @@ export default function TopBar() {
             <Link
               key={item.label}
               href={item.href}
-              className="hover:text-[#0052cc] transition-colors"
+              className="hover:text-[#0052cc] transition-colors py-0.5 px-1.5 rounded hover:bg-gray-100"
             >
               {item.label}
             </Link>

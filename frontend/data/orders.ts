@@ -214,8 +214,8 @@ export const initialOrders: Order[] = [
       status,
       createdAt: dateStr,
       timeline: [
-        { status: "Menunggu Pembayaran", timestamp: dateStr, description: "Pesanan dibuat" },
-        { status, timestamp: dateStr, description: `Status diperbarui menjadi ${status}` },
+        { status: "Menunggu Pembayaran" as OrderStatus, timestamp: dateStr, description: "Pesanan dibuat" },
+        { status: status as OrderStatus, timestamp: dateStr, description: `Status diperbarui menjadi ${status}` },
       ],
     }
   }),

@@ -2,106 +2,127 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Surface */
+    --background: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-muted: #F6F8F6;
+    --surface-tint: #EEF4F0;
+    --border: #E3EAE5;
+    --border-strong: #CBD7CF;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Text */
+    --foreground: #14201B;
+    --muted-foreground: #5C6B63;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    /* Brand: emerald/forest & WhatsApp Green */
+    --primary: #25D366;
+    --primary-hover: #20BD5A;
+    --primary-soft: #E8F9EE;
+    --primary-foreground: #FFFFFF;
+    --primary-deep: #128C7E;
 
-    /* Biru khas Gramedia #0052cc -> HSL 216 100% 40% */
-    --primary: 216 100% 40%;
-    --primary-foreground: 210 40% 98%;
+    /* Accent: brass/emas hangat */
+    --accent: #C8A24A;
+    --accent-hover: #B38D36;
+    --accent-soft: #FAF3E0;
+    --accent-foreground: #3A2C08;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
+    /* Status */
+    --success: #2E7D4F;
+    --success-soft: #E6F4EC;
+    --warning: #B45309;
+    --warning-soft: #FFF3DC;
+    --danger: #C0392B;
+    --danger-soft: #FBECEA;
+    --info: #2A7F86;
+    --info-soft: #E3F2F3;
+    --shipped: #5B5FA8;
+    --shipped-soft: #ECECF8;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --card: #FFFFFF;
+    --card-foreground: #14201B;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11.2%;
+    --popover: #FFFFFF;
+    --popover-foreground: #14201B;
 
-    /* Merah Gramedia diskon #e61c24 -> HSL 357 80% 51% */
-    --destructive: 357 80% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --secondary: #F6F8F6;
+    --secondary-foreground: #14201B;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 216 100% 40%;
+    --muted: #F6F8F6;
+
+    --destructive: #C0392B;
+    --destructive-foreground: #FFFFFF;
+
+    --input: #E3EAE5;
+    --ring: #25D366;
 
     --radius: 0.625rem;
 
-    /* Gramedia custom palette */
-    --gramedia-blue: #0052cc;
-    --gramedia-blue-hover: #0041a8;
-    --gramedia-red: #e61c24;
-    --gramedia-orange: #f59e0b;
-    --gramedia-green: #10b981;
-
     /* Chart colors */
-    --chart-1: 216 100% 40%;   /* Gramedia blue */
-    --chart-2: 199 89% 48%;    /* Light blue */
-    --chart-3: 38 92% 50%;     /* Orange */
-    --chart-4: 158 64% 52%;    /* Green */
-    --chart-5: 220 9% 46%;     /* Slate gray */
+    --chart-1: #25D366;
+    --chart-2: #C8A24A;
+    --chart-3: #2A7F86;
+    --chart-4: #2E7D4F;
+    --chart-5: #5B5FA8;
 
     /* Sidebar tokens */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 216 100% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 95% 96%;
-    --sidebar-accent-foreground: 216 100% 36%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 216 100% 40%;
+    --sidebar-background: #FFFFFF;
+    --sidebar-foreground: #14201B;
+    --sidebar-primary: #25D366;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #E8F9EE;
+    --sidebar-accent-foreground: #128C7E;
+    --sidebar-border: #E3EAE5;
+    --sidebar-ring: #25D366;
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+    --background: #0E1613;
+    --surface: #141F1A;
+    --surface-muted: #1A2822;
+    --surface-tint: #1F3029;
+    --border: #233029;
+    --border-strong: #2E4037;
 
-    --card: 224 71% 6%;
-    --card-foreground: 213 31% 91%;
+    --foreground: #E6EEE9;
+    --muted-foreground: #94A89D;
 
-    --popover: 224 71% 6%;
-    --popover-foreground: 213 31% 91%;
+    --primary: #4FB58A;
+    --primary-hover: #3FA078;
+    --primary-soft: #1A352A;
+    --primary-foreground: #0E1613;
+    --primary-deep: #0B1E17;
 
-    --primary: 216 100% 55%;
-    --primary-foreground: 222 47% 11%;
+    --accent: #D9B45B;
+    --accent-hover: #C8A24A;
+    --accent-soft: #302816;
+    --accent-foreground: #FAF3E0;
 
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
+    --card: #141F1A;
+    --card-foreground: #E6EEE9;
 
-    --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 60%;
+    --popover: #141F1A;
+    --popover-foreground: #E6EEE9;
 
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
+    --secondary: #1A2822;
+    --secondary-foreground: #E6EEE9;
 
-    --destructive: 357 80% 55%;
-    --destructive-foreground: 210 40% 98%;
+    --muted: #1A2822;
 
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 216 100% 55%;
+    --destructive: #E74C3C;
+    --destructive-foreground: #FFFFFF;
 
-    --chart-1: 216 100% 55%;
-    --chart-2: 199 89% 58%;
-    --chart-3: 38 92% 55%;
-    --chart-4: 158 64% 52%;
-    --chart-5: 220 9% 65%;
+    --input: #233029;
+    --ring: #4FB58A;
 
-    --sidebar-background: 224 71% 5%;
-    --sidebar-foreground: 213 31% 91%;
-    --sidebar-primary: 216 100% 55%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 216 34% 15%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 216 34% 17%;
-    --sidebar-ring: 216 100% 55%;
+    --sidebar-background: #0E1613;
+    --sidebar-foreground: #E6EEE9;
+    --sidebar-primary: #4FB58A;
+    --sidebar-primary-foreground: #0E1613;
+    --sidebar-accent: #1A352A;
+    --sidebar-accent-foreground: #4FB58A;
+    --sidebar-border: #233029;
+    --sidebar-ring: #4FB58A;
   }
 }
 
@@ -115,8 +136,8 @@ html {
 
 body {
   margin: 0;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

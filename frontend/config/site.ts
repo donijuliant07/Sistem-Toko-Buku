@@ -4,6 +4,7 @@ export const siteConfig = {
   description: "Platform Toko Buku Online Modern Terlengkap",
   url: "https://pustakagram.local",
   author: "PustakaGram Team",
+  whatsappNumber: "6281234567890",
   adminEmail: "admin@pustakagram.com",
   adminUser: {
     name: "Rendy Pratama",
@@ -30,7 +31,6 @@ export const siteConfig = {
     { label: "Tentang Kami", href: "#" },
     { label: "Bantuan & FAQ", href: "#" },
     { label: "Lacak Pesanan", href: "/admin/pesanan" },
-    { label: "Portal Admin", href: "/admin/dashboard" },
   ],
   links: {
     dashboard: "/admin/dashboard",

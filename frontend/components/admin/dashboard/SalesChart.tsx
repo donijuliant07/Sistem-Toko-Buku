@@ -47,7 +47,7 @@ export function SalesChart() {
         </div>
 
         {/* Toggle Range Desktop / Mobile */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-[var(--surface-muted)] p-1 rounded-lg">
           {(
             [
               { label: "7 Hari", value: "7d" },
@@ -63,8 +63,8 @@ export function SalesChart() {
               }}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
                 period === btn.value
-                  ? "bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400"
-                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-[var(--surface)] text-[var(--primary)] shadow-xs"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               {btn.label}
@@ -77,20 +77,20 @@ export function SalesChart() {
         {/* Ringkasan Angka */}
         <div className="mb-4 flex flex-wrap gap-6 text-xs">
           <div>
-            <span className="text-slate-400">Total Buku: </span>
-            <span className="font-bold text-blue-600 dark:text-blue-400">
+            <span className="text-[var(--muted-foreground)]">Total Buku: </span>
+            <span className="font-bold text-[var(--primary)]">
               {formatRupiah(totalBuku)}
             </span>
           </div>
           <div>
-            <span className="text-slate-400">Total Non-Buku: </span>
-            <span className="font-bold text-amber-500">{formatRupiah(totalNonBuku)}</span>
+            <span className="text-[var(--muted-foreground)]">Total Non-Buku: </span>
+            <span className="font-bold text-[var(--accent-hover)]">{formatRupiah(totalNonBuku)}</span>
           </div>
         </div>
 
         <div className="h-[280px] w-full">
           {loading ? (
-            <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+            <div className="h-full w-full flex items-center justify-center text-xs text-[var(--muted-foreground)]">
               Memuat data grafik...
             </div>
           ) : (
@@ -98,35 +98,35 @@ export function SalesChart() {
               <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorBuku" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0052cc" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#0052cc" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#1F6F54" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#1F6F54" stopOpacity={0.0} />
                   </linearGradient>
                   <linearGradient id="colorNonBuku" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#C8A24A" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#C8A24A" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.6} />
                 <XAxis
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   tickFormatter={(val) => `Rp${val / 1000000}jt`}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-800 dark:bg-slate-900 text-xs">
-                          <p className="font-bold text-slate-700 dark:text-slate-200 mb-1">{label}</p>
+                        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-lg text-xs">
+                          <p className="font-bold text-[var(--foreground)] mb-1">{label}</p>
                           {payload.map((item, idx) => (
                             <p key={idx} style={{ color: item.color }} className="font-semibold">
                               {item.name}: {formatRupiah(Number(item.value))}
@@ -141,13 +141,13 @@ export function SalesChart() {
                 <Legend
                   verticalAlign="top"
                   height={36}
-                  formatter={(val) => <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{val}</span>}
+                  formatter={(val) => <span className="text-xs font-medium text-[var(--foreground)]">{val}</span>}
                 />
                 <Area
                   type="monotone"
                   dataKey="buku"
                   name="Buku & Literatur"
-                  stroke="#0052cc"
+                  stroke="#1F6F54"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorBuku)"
@@ -156,7 +156,7 @@ export function SalesChart() {
                   type="monotone"
                   dataKey="nonBuku"
                   name="Alat Tulis & Aksesori"
-                  stroke="#f59e0b"
+                  stroke="#C8A24A"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorNonBuku)"

@@ -68,7 +68,7 @@ export function ProductFormSheet({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchema) as any,
     defaultValues: {
       title: "",
       author: "",

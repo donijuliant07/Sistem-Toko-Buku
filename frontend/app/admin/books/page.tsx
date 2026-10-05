@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import { ArrowLeft, BookOpen, ExternalLink, RefreshCw, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { Book } from "@/types/book";
+import { Book } from "@/lib/types";
 import { createClient } from "@/lib/supabase";
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
@@ -179,7 +179,7 @@ export default function AdminBooksPage() {
                   books.map((b) => (
                     <tr key={b.id} className="hover:bg-slate-50">
                       <td className="p-3 font-medium text-slate-800">{b.title}</td>
-                      <td className="p-3 text-slate-500">{b.category_id || "-"}</td>
+                      <td className="p-3 text-slate-500">{(b as any).category_id || "-"}</td>
                       <td className="p-3 font-semibold text-slate-800">Rp{b.price?.toLocaleString("id-ID")}</td>
                       <td className="p-3">{b.stock}</td>
                       <td className="p-3 text-right">
