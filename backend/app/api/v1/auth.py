@@ -1,37 +1,113 @@
-from typing import Any
-from uuid import UUID
-
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.security import get_current_user, UserPayload
+from app.core.supabase import supabase_anon, supabase_admin
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserProfileResponse
+from app.schemas.common import ApiResponse
 
-from app.core.security import require_admin, verify_supabase_token
-from app.db.session import get_db
-from app.models import Profile
-
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Autentikasi"])
 
 
-@router.get("/me")
-async def get_current_user(
-    payload: dict[str, Any] = Depends(verify_supabase_token),
-    db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
-    """Return authenticated user claims and application profile role."""
+@router.post("/login", response_model=ApiResponse[TokenResponse])
+async def login(payload: LoginRequest):
     try:
-        user_id = UUID(payload["sub"])
-    except (KeyError, ValueError, TypeError) as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user ID") from exc
+        res = supabase_anon.auth.sign_in_with_password({
+            "email": payload.email,
+            "password": payload.password,
+        })
+        if not res.session:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email atau kata sandi tidak cocok.",
+            )
 
-    result = await db.execute(select(Profile).where(Profile.id == user_id))
-    profile = result.scalar_one_or_none()
-    if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        user_id = res.user.id
+        # Query profile table
+        profile_res = supabase_admin.table("profiles").select("*").eq("id", user_id).single().execute()
+        profile_data = profile_res.data or {}
 
-    return {"id": str(profile.id), "email": payload.get("email"), "role": profile.role}
+        user_profile = UserProfileResponse(
+            id=user_id,
+            email=res.user.email or "",
+            full_name=profile_data.get("full_name", res.user.user_metadata.get("full_name", "Pengguna")),
+            role=profile_data.get("role", res.user.app_metadata.get("role", "customer")),
+            avatar_url=profile_data.get("avatar_url"),
+            created_at=res.user.created_at,
+        )
+
+        return ApiResponse(
+            sukses=True,
+            pesan="Login berhasil",
+            data=TokenResponse(
+                access_token=res.session.access_token,
+                token_type="bearer",
+                user=user_profile,
+            ),
+        )
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Gagal melakukan login: {str(e)}",
+        )
 
 
-@router.get("/admin/check")
-async def check_admin(payload: dict[str, Any] = Depends(require_admin)) -> dict[str, str]:
-    """Verify that current user has an admin profile role."""
-    return {"status": "ok"}
+@router.post("/register", response_model=ApiResponse[UserProfileResponse])
+async def register(payload: RegisterRequest):
+    try:
+        res = supabase_anon.auth.sign_up({
+            "email": payload.email,
+            "password": payload.password,
+            "options": {
+                "data": {
+                    "full_name": payload.full_name,
+                    "phone": payload.phone,
+                    "role": "customer",
+                }
+            }
+        })
+        if not res.user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pendaftaran akun gagal diproses.",
+            )
+
+        return ApiResponse(
+            sukses=True,
+            pesan="Registrasi akun berhasil.",
+            data=UserProfileResponse(
+                id=res.user.id,
+                email=res.user.email or payload.email,
+                full_name=payload.full_name,
+                role="customer",
+                avatar_url=None,
+                created_at=res.user.created_at,
+            ),
+        )
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Gagal registrasi: {str(e)}",
+        )
+
+
+@router.get("/me", response_model=ApiResponse[UserProfileResponse])
+async def get_my_profile(current_user: Annotated[UserPayload, Depends(get_current_user)]):
+    profile_res = supabase_admin.table("profiles").select("*").eq("id", current_user.id).single().execute()
+    data = profile_res.data or {}
+
+    return ApiResponse(
+        sukses=True,
+        pesan="Data profil berhasil dimuat.",
+        data=UserProfileResponse(
+            id=current_user.id,
+            email=current_user.email or "",
+            full_name=data.get("full_name", current_user.user_metadata.get("full_name", "Pengguna")),
+            role=data.get("role", current_user.role),
+            avatar_url=data.get("avatar_url"),
+            created_at=data.get("created_at", ""),
+        ),
+    )
