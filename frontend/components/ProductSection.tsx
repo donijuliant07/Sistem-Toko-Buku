@@ -17,6 +17,7 @@ interface ProductSectionProps {
   products: Product[];
   sideBanner?: SideBannerInfo;
   cardAspect?: "square" | "book";
+  onSelectProduct?: (product: Product) => void;
 }
 
 export default function ProductSection({
@@ -26,6 +27,7 @@ export default function ProductSection({
   products,
   sideBanner,
   cardAspect = "book",
+  onSelectProduct,
 }: ProductSectionProps) {
   return (
     <section id={id} className="max-w-[1200px] mx-auto px-4 py-6">
@@ -74,7 +76,12 @@ export default function ProductSection({
           {/* Product Grid / Row */}
           <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {products.slice(0, 4).map((item) => (
-              <ProductCard key={item.id} product={item} aspectRatio={cardAspect} />
+              <ProductCard
+                key={item.id}
+                product={item}
+                aspectRatio={cardAspect}
+                onSelect={onSelectProduct}
+              />
             ))}
           </div>
         </div>
@@ -82,7 +89,12 @@ export default function ProductSection({
         /* Regular Scrollable / Grid Section */
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {products.map((item) => (
-            <ProductCard key={item.id} product={item} aspectRatio={cardAspect} />
+            <ProductCard
+              key={item.id}
+              product={item}
+              aspectRatio={cardAspect}
+              onSelect={onSelectProduct}
+            />
           ))}
         </div>
       )}

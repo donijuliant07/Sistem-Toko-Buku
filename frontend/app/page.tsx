@@ -11,6 +11,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
+import BookDetailModal from "@/components/BookDetailModal";
 import { Product } from "@/data/mockData";
 
 const initialPage: BookPage = { items: [], total: 0, page: 1, page_size: 12 };
@@ -22,6 +23,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Fetch initial featured books for showcase sections
   useEffect(() => {
@@ -111,6 +113,7 @@ export default function Home() {
             id="buku-terlaris"
             title="Buku Terlaris & Populer"
             products={bestsellerProducts}
+            onSelectProduct={(p) => setSelectedProduct(p)}
             sideBanner={{
               tag: "BESTSELLER 2026",
               title: "Koleksi Buku Pilihan Paling Dicari",
@@ -127,6 +130,7 @@ export default function Home() {
             id="edukasi"
             title="Rekomendasi Buku Pilihan"
             products={campusBooks}
+            onSelectProduct={(p) => setSelectedProduct(p)}
             sideBanner={{
               tag: "EDUKASI & SASTRA",
               title: "Bacaan Inspiratif Masa Kini",
@@ -143,6 +147,7 @@ export default function Home() {
             id="buku-unggulan"
             title="Buku Baru & Unggulan"
             products={newReleaseBooks}
+            onSelectProduct={(p) => setSelectedProduct(p)}
             cardAspect="book"
           />
         )}
@@ -188,7 +193,12 @@ export default function Home() {
           ) : apiProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {apiProducts.map((prod) => (
-                <ProductCard key={prod.id} product={prod} aspectRatio="book" />
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  aspectRatio="book"
+                  onSelect={(p) => setSelectedProduct(p)}
+                />
               ))}
             </div>
           ) : (
@@ -231,6 +241,13 @@ export default function Home() {
 
       {/* 10. Floating Customer Service WhatsApp */}
       <FloatingCS />
+
+      {/* 11. Modal Detail Buku & Tambah ke Keranjang */}
+      <BookDetailModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
     </div>
   );
 }

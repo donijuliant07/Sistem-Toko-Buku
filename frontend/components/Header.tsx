@@ -4,15 +4,17 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { siteConfig } from "@/config/site";
 import AuthButton from "@/components/AuthButton";
+import { useCart } from "@/context/CartContext";
 
 interface HeaderProps {
   query: string;
   onSearchSubmit: (q: string) => void;
-  cartCount: number;
+  cartCount?: number;
 }
 
-export default function Header({ query, onSearchSubmit, cartCount }: HeaderProps) {
+export default function Header({ query, onSearchSubmit }: HeaderProps) {
   const [input, setInput] = useState(query);
+  const { totalItems, setIsCartOpen } = useCart();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,7 +47,7 @@ export default function Header({ query, onSearchSubmit, cartCount }: HeaderProps
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Cari buku, alat tulis, mainan, dll..."
+                placeholder="Cari buku, penulis, judul, dll..."
                 className="w-full h-10 pl-4 pr-11 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0052cc] focus:bg-white transition-all"
               />
               <button
@@ -87,9 +89,11 @@ export default function Header({ query, onSearchSubmit, cartCount }: HeaderProps
               </svg>
             </button>
 
-            <Link
-              href="#katalog"
-              className="p-2 text-gray-600 hover:text-[#0052cc] relative"
+            {/* Cart Button with Drawer Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(true)}
+              className="p-2 text-gray-600 hover:text-[#0052cc] relative cursor-pointer"
               title="Keranjang Belanja"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,12 +104,12 @@ export default function Header({ query, onSearchSubmit, cartCount }: HeaderProps
                   d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                 />
               </svg>
-              {cartCount > 0 && (
-                <span className="absolute top-0 right-0 w-4 h-4 bg-[#e61c24] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {cartCount > 99 ? "99+" : cartCount}
+              {totalItems > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 bg-[#e61c24] text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in-50">
+                  {totalItems > 99 ? "99+" : totalItems}
                 </span>
               )}
-            </Link>
+            </button>
 
             <div className="pl-2 border-l border-gray-200">
               <AuthButton />

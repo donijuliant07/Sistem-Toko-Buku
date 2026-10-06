@@ -15,11 +15,13 @@ export function formatRupiah(num: number | string) {
 interface ProductCardProps {
   product: Product;
   aspectRatio?: "square" | "book";
+  onSelect?: (product: Product) => void;
 }
 
 export default function ProductCard({
   product,
   aspectRatio = "book",
+  onSelect,
 }: ProductCardProps) {
   const isBook = aspectRatio === "book" || product.type === "book";
 
@@ -35,7 +37,10 @@ export default function ProductCard({
   const bgGradient = hues[hash % hues.length];
 
   return (
-    <div className="group bg-white rounded-xl border border-gray-100 p-3 flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer h-full">
+    <div
+      onClick={() => onSelect?.(product)}
+      className="group bg-white rounded-xl border border-gray-100 p-3 flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer h-full"
+    >
       <div>
         {/* Cover / Image Box */}
         <div
