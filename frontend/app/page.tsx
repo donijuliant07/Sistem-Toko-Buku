@@ -11,27 +11,44 @@ import ProductCard from "@/components/ProductCard";
 import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
-import {
-  BACK_TO_CAMPUS_PRODUCTS,
-  BESTSELLER_BOOKS,
-  BRAND_RECOMMENDATIONS,
-  Product,
-} from "@/data/mockData";
+import { Product } from "@/data/mockData";
 
 const initialPage: BookPage = { items: [], total: 0, page: 1, page_size: 12 };
 
 export default function Home() {
   const [page, setPage] = useState<BookPage>(initialPage);
+  const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetch initial featured books for showcase sections
   useEffect(() => {
     let active = true;
+    getBooks(1, "", 20)
+      .then((data) => {
+        if (active && data?.items) {
+          setFeaturedBooks(data.items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
     getBooks(page.page, query)
-      .then((data) => active && setPage(data))
-      .catch(() => active && setError("Katalog buku gagal dimuat. Menampilkan koleksi mock Gramedia."))
+      .then((data) => {
+        if (active) {
+          setPage(data);
+          setError("");
+        }
+      })
+      .catch(() => active && setError("Katalog buku gagal dimuat dari server."))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
@@ -43,20 +60,25 @@ export default function Home() {
     setQuery(q);
   };
 
-  // Convert Backend API Books to Product shape for unified component rendering
-  const apiProducts: Product[] = page.items.map((b: Book) => ({
+  const toProduct = (b: Book, category = "buku"): Product => ({
     id: b.id,
     title: b.title,
     authorOrBrand: b.author,
     price: typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000,
-    originalPrice: (typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000) * 1.2,
+    originalPrice: (typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000) * 1.15,
     discountPercent: 15,
-    soldCount: (b.stock || 5) * 42,
+    soldCount: (b.stock || 5) * 12,
     badgeLanguage: "ID",
     coverUrl: b.cover_url || "",
-    category: "katalog",
+    category,
     type: "book",
-  }));
+  });
+
+  // Real Supabase data mapped to storefront sections
+  const apiProducts: Product[] = page.items.map((b) => toProduct(b, "katalog"));
+  const bestsellerProducts: Product[] = (featuredBooks.length > 0 ? featuredBooks.slice(0, 8) : page.items.slice(0, 8)).map((b) => toProduct(b, "terlaris"));
+  const campusBooks: Product[] = (featuredBooks.length > 8 ? featuredBooks.slice(8, 16) : page.items.slice(0, 6)).map((b) => toProduct(b, "edukasi"));
+  const newReleaseBooks: Product[] = (featuredBooks.length > 16 ? featuredBooks.slice(16, 24) : page.items.slice(0, 6)).map((b) => toProduct(b, "rekomendasi"));
 
   const pageCount = Math.max(1, Math.ceil(page.total / page.page_size));
 
@@ -83,41 +105,47 @@ export default function Home() {
           onSelectCategory={(id) => setActiveCategory(id)}
         />
 
-        {/* 5. Section: Back To Campus */}
-        <ProductSection
-          id="back-to-campus"
-          title="Back To Campus 2026"
-          products={BACK_TO_CAMPUS_PRODUCTS}
-          cardAspect="square"
-        />
+        {/* 5. Section: Buku Terlaris (From Supabase) */}
+        {bestsellerProducts.length > 0 && (
+          <ProductSection
+            id="buku-terlaris"
+            title="Buku Terlaris & Populer"
+            products={bestsellerProducts}
+            sideBanner={{
+              tag: "BESTSELLER 2026",
+              title: "Koleksi Buku Pilihan Paling Dicari",
+              subtitle: "Dari fiksi mendalam hingga pengembangan diri inspiratif.",
+              bgGradient: "from-blue-900 via-indigo-900 to-sky-900",
+            }}
+            cardAspect="book"
+          />
+        )}
 
-        {/* 6. Section: Buku Terlaris */}
-        <ProductSection
-          id="buku-terlaris"
-          title="Buku Terlaris Gramedia"
-          products={BESTSELLER_BOOKS}
-          sideBanner={{
-            tag: "BESTSELLER 2026",
-            title: "Koleksi Buku Pilihan Paling Dicari",
-            subtitle: "Dari fiksi mendalam hingga pengembangan diri inspiratif.",
-            bgGradient: "from-blue-900 via-indigo-900 to-sky-900",
-          }}
-          cardAspect="book"
-        />
+        {/* 6. Section: Rekomendasi Pilihan (From Supabase) */}
+        {campusBooks.length > 0 && (
+          <ProductSection
+            id="edukasi"
+            title="Rekomendasi Buku Pilihan"
+            products={campusBooks}
+            sideBanner={{
+              tag: "EDUKASI & SASTRA",
+              title: "Bacaan Inspiratif Masa Kini",
+              subtitle: "Koleksi sastra Indonesia dan pengembangan diri terlengkap.",
+              bgGradient: "from-emerald-900 via-teal-900 to-slate-900",
+            }}
+            cardAspect="book"
+          />
+        )}
 
-        {/* 7. Section: Rekomendasi Brand Pilihan */}
-        <ProductSection
-          id="brand-pilihan"
-          title="Rekomendasi Brand Pilihan"
-          products={BRAND_RECOMMENDATIONS}
-          sideBanner={{
-            tag: "LIFESTYLE & IT",
-            title: "Brand Favorit & Original",
-            subtitle: "Jaminan produk 100% asli dari distributor resmi Gramedia.",
-            bgGradient: "from-amber-700 via-orange-800 to-red-900",
-          }}
-          cardAspect="square"
-        />
+        {/* 7. Section: Buku Baru & Unggulan (From Supabase) */}
+        {newReleaseBooks.length > 0 && (
+          <ProductSection
+            id="buku-unggulan"
+            title="Buku Baru & Unggulan"
+            products={newReleaseBooks}
+            cardAspect="book"
+          />
+        )}
 
         {/* 8. Full Catalog / Backend Integration Section */}
         <section id="katalog" className="max-w-[1200px] mx-auto px-4 py-8">

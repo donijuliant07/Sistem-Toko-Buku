@@ -19,12 +19,21 @@ def is_isbn_unique_violation(error: IntegrityError) -> bool:
     return constraint_name == "uq_books_isbn" or "uq_books_isbn" in str(error.orig)
 
 
-async def get_book(book_id: UUID, db: AsyncSession) -> Book:
+async def get_book(book_id: UUID, db: AsyncSession) -> Book | dict:
     """Load one book or raise 404."""
-    book = await db.get(Book, book_id)
-    if book is None:
+    try:
+        book = await db.get(Book, book_id)
+        if book is not None:
+            return book
+    except Exception:
+        pass
+
+    # Fallback to Supabase REST client
+    from app.core.supabase import supabase_admin
+    res = supabase_admin.table("books").select("*").eq("id", str(book_id)).single().execute()
+    if not res.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
-    return book
+    return res.data
 
 
 @router.get("", response_model=BookPage)
@@ -40,15 +49,28 @@ async def list_books(
         pattern = f"%{q.strip()}%"
         filters.append(or_(Book.title.ilike(pattern), Book.author.ilike(pattern), Book.isbn.ilike(pattern)))
 
-    query = select(Book).where(*filters)
-    count_query = select(func.count()).select_from(Book).where(*filters)
-    total = (await db.execute(count_query)).scalar_one()
-    books = (
-        await db.execute(
-            query.order_by(Book.created_at.desc(), Book.id).offset((page - 1) * page_size).limit(page_size)
-        )
-    ).scalars().all()
-    return BookPage(items=books, total=total, page=page, page_size=page_size)
+    try:
+        query = select(Book).where(*filters)
+        count_query = select(func.count()).select_from(Book).where(*filters)
+        total = (await db.execute(count_query)).scalar_one()
+        books = (
+            await db.execute(
+                query.order_by(Book.created_at.desc(), Book.id).offset((page - 1) * page_size).limit(page_size)
+            )
+        ).scalars().all()
+        return BookPage(items=books, total=total, page=page, page_size=page_size)
+    except Exception:
+        # Fallback to Supabase REST client if Direct DB Connection (SQLAlchemy) fails
+        from app.core.supabase import supabase_admin
+        offset = (page - 1) * page_size
+        sb_query = supabase_admin.table("books").select("*", count="exact")
+        if q and q.strip():
+            st = q.strip()
+            sb_query = sb_query.or_(f"title.ilike.%{st}%,author.ilike.%{st}%,isbn.ilike.%{st}%")
+        res = sb_query.order("created_at", desc=True).range(offset, offset + page_size - 1).execute()
+        items = res.data or []
+        total = res.count if res.count is not None else len(items)
+        return BookPage(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/{book_id}", response_model=BookRead)
