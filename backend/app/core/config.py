@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     FRONTEND_ORIGINS: str = "http://localhost:3000"
     STORAGE_BUCKET_PRODUCTS: str = "product-images"
 
+    OPENROUTER_API_KEY: str = Field(default="", description="OpenRouter API Key")
+    OPENROUTER_MODEL: str = Field(
+        default="qwen/qwen-2.5-72b-instruct:free",
+        description="Free OpenRouter Qwen Model",
+    )
+
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
         description="Database URL PostgreSQL",

@@ -1,4 +1,4 @@
-import type { Book, BookInput, BookPage, BookUpdate, CurrentUser } from "./types";
+import type { Book, BookInput, BookPage, BookUpdate, CurrentUser, SpoilerLevel, AIReviewResponse } from "./types";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
@@ -60,4 +60,16 @@ export function updateBook(id: string, data: BookUpdate, accessToken: string): P
 
 export function deleteBook(id: string, accessToken: string): Promise<void> {
   return request<void>(`/books/${encodeURIComponent(id)}`, { method: "DELETE", accessToken });
+}
+
+export function getAIReview(
+  bookId: string,
+  spoilerLevel: SpoilerLevel,
+  accessToken?: string
+): Promise<AIReviewResponse> {
+  return request<AIReviewResponse>(`/books/${encodeURIComponent(bookId)}/ai-review`, {
+    method: "POST",
+    body: JSON.stringify({ spoiler_level: spoilerLevel }),
+    accessToken,
+  });
 }

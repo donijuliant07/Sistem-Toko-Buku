@@ -4,14 +4,17 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { getBook } from "@/lib/api";
-import type { Book } from "@/lib/types";
+import { Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { getBook, getAIReview } from "@/lib/api";
+import type { Book, AIReviewResponse, SpoilerLevel } from "@/lib/types";
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
 import { formatRupiah } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
+import SpoilerSelectorModal from "@/components/books/SpoilerSelectorModal";
+import AIReviewResult from "@/components/books/AIReviewResult";
 
 export default function BookDetailPage() {
   const params = useParams();
@@ -23,6 +26,12 @@ export default function BookDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { addToCart, setIsCartOpen } = useCart();
 
+  // AI Review States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [aiState, setAiState] = useState<"idle" | "generating" | "success" | "error">("idle");
+  const [aiReview, setAiReview] = useState<AIReviewResponse | null>(null);
+  const [aiError, setAiError] = useState("");
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -31,6 +40,22 @@ export default function BookDetailPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleGenerateAIReview = async (spoilerLevel: SpoilerLevel) => {
+    if (!book) return;
+    setAiState("generating");
+    setAiError("");
+    setIsModalOpen(false);
+
+    try {
+      const result = await getAIReview(book.id, spoilerLevel);
+      setAiReview(result);
+      setAiState("success");
+    } catch (err: unknown) {
+      setAiError(err instanceof Error ? err.message : "Gagal membuat AI Review. Silakan coba lagi.");
+      setAiState("error");
+    }
+  };
 
   if (loading) {
     return (
@@ -123,12 +148,34 @@ export default function BookDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* AI Review Button below Cover (Desktop/Mobile accessible) */}
+            <div className="w-full max-w-[260px] mt-4">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                disabled={aiState === "generating"}
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {aiState === "generating" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                    <span>⏳ Generating Review...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                    <span>✨ AI Review</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Details Right */}
           <div className="md:col-span-8 flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="bg-blue-50 text-[#0052cc] text-xs font-bold px-2.5 py-0.5 rounded-full">
                   Buku Resmi
                 </span>
@@ -139,6 +186,16 @@ export default function BookDetailPage() {
                 >
                   {isOutOfStock ? "Stok Habis" : `Tersedia ${book.stock} Eksemplar`}
                 </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={aiState === "generating"}
+                  className="sm:hidden inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-3 py-0.5 rounded-full"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>AI Review</span>
+                </button>
               </div>
 
               <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">
@@ -219,11 +276,67 @@ export default function BookDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Loading Banner when generating review */}
+        {aiState === "generating" && (
+          <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl text-center space-y-3 animate-pulse">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+              <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+            </div>
+            <h3 className="text-base font-extrabold text-emerald-950">
+              ✨ AI sedang menganalisis buku &ldquo;{book.title}&rdquo;...
+            </h3>
+            <p className="text-xs text-emerald-700 max-w-md mx-auto">
+              Mengekstrak informasi gaya penulisan, analisis karakter, kelebihan, dan gambaran umum sesuai tingkat spoiler yang dipilih.
+            </p>
+          </div>
+        )}
+
+        {/* Error Banner */}
+        {aiState === "error" && (
+          <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-3xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-red-900">
+                ⚠️ Gagal membuat AI Review
+              </h3>
+              <p className="text-xs text-red-700 mt-1 max-w-md mx-auto">
+                {aiError || "Terjadi kesalahan saat memproses ulasan. Silakan coba lagi."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="px-5 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        )}
+
+        {/* Result Container */}
+        {aiState === "success" && aiReview && (
+          <AIReviewResult
+            review={aiReview}
+            onReset={() => setIsModalOpen(true)}
+          />
+        )}
       </main>
+
+      {/* Modal Spoiler Selector */}
+      <SpoilerSelectorModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleGenerateAIReview}
+        bookTitle={book.title}
+        bookAuthor={book.author}
+        isGenerating={aiState === "generating"}
+      />
 
       <Footer />
       <FloatingCS />
     </div>
   );
 }
-

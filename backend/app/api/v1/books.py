@@ -9,6 +9,8 @@ from app.core.security import require_admin
 from app.db.session import get_db
 from app.models import Book
 from app.schemas.book import BookCreate, BookPage, BookRead, BookUpdate
+from app.schemas.ai_review import AIReviewRequest, AIReviewResponse
+from app.services.ai_review_service import generate_ai_book_review
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -142,3 +144,29 @@ async def delete_book(
     await db.delete(book)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{book_id}/ai-review", response_model=AIReviewResponse)
+async def get_ai_book_review(
+    book_id: UUID,
+    payload: AIReviewRequest,
+    db: AsyncSession = Depends(get_db),
+) -> AIReviewResponse:
+    """Generate or retrieve AI Book Review with strict spoiler level control."""
+    book = await get_book(book_id, db)
+
+    # Extract fields cleanly whether book is SQLAlchemy model or dict
+    b_id = str(getattr(book, "id", book.get("id") if isinstance(book, dict) else book_id))
+    title = getattr(book, "title", book.get("title") if isinstance(book, dict) else "Buku")
+    author = getattr(book, "author", book.get("author") if isinstance(book, dict) else "Penulis")
+    description = getattr(book, "description", book.get("description") if isinstance(book, dict) else "")
+    isbn = getattr(book, "isbn", book.get("isbn") if isinstance(book, dict) else "")
+
+    return await generate_ai_book_review(
+        book_id=b_id,
+        title=title,
+        author=author,
+        description=description or "",
+        isbn=isbn or "",
+        spoiler_level=payload.spoiler_level,
+    )
