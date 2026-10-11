@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
 from app.main import app
-from app.core.security import get_current_user, require_staff_or_admin, UserPayload
+from app.core.security import get_current_user, require_admin, UserPayload
 from app.core.shipping import SHIPPING_OPTIONS
 from app.schemas.order import OrderCreate
 from app.services.order_service import _serialize_order
@@ -17,6 +17,7 @@ client = TestClient(app)
 
 USER_ID = "11111111-1111-1111-1111-111111111111"
 OTHER_USER_ID = "22222222-2222-2222-2222-222222222222"
+ADMIN_ID = "33333333-3333-3333-3333-333333333333"
 BOOK_ID = "e9f3509c-7def-4bd2-a1de-e4388daf92eb"
 ORDER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
@@ -31,11 +32,18 @@ BOOK_ROW = {
 
 
 def as_user(user_id: str = USER_ID):
-    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=user_id, role="customer")
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=user_id, role="user")
 
 
-def as_staff():
-    app.dependency_overrides[require_staff_or_admin] = lambda: UserPayload(id=USER_ID, role="staff")
+def as_admin():
+    app.dependency_overrides[require_admin] = lambda: UserPayload(id=USER_ID, role="admin")
+
+
+def as_admin_with_user_dependency():
+    """Admin yang lolos `get_current_user` juga — untuk endpoint pengelolaan pesanan."""
+    admin = UserPayload(id=ADMIN_ID, role="admin")
+    app.dependency_overrides[get_current_user] = lambda: admin
+    app.dependency_overrides[require_admin] = lambda: admin
 
 
 @pytest.fixture(autouse=True)
@@ -215,7 +223,7 @@ def test_checked_out_shipping_option_ids_are_all_offered_by_the_endpoint():
 
 
 def test_expire_overdue_orders_cancels_pending_and_returns_stock():
-    as_staff()
+    as_admin()
     orders_table = MagicMock()
     books_table = MagicMock()
     items_table = MagicMock()
@@ -241,13 +249,13 @@ def test_expire_overdue_orders_cancels_pending_and_returns_stock():
     assert books_table.update.call_args.args[0] == {"stock": 12}
 
 
-def test_expire_overdue_orders_requires_staff():
+def test_expire_overdue_orders_requires_admin():
     response = client.post("/api/v1/orders/expire-overdue")
     assert response.status_code in (401, 403)
 
 
 def test_expire_overdue_orders_is_a_noop_when_nothing_is_overdue():
-    as_staff()
+    as_admin()
     orders_table = MagicMock()
     orders_table.select.return_value.eq.return_value.lt.return_value.execute.return_value.data = []
 
@@ -496,7 +504,7 @@ def test_payment_status_cannot_be_set_by_a_customer():
 
 
 def test_payment_status_is_set_independently_of_order_status():
-    as_staff()
+    as_admin()
     payments_table = MagicMock()
     payments_table.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
         {"id": "pppppppp-1111-1111-1111-111111111111", "status": "pending"}
@@ -517,7 +525,7 @@ def test_payment_status_is_set_independently_of_order_status():
 
 
 def test_update_status_returns_stock_once_when_cancelled():
-    as_staff()
+    as_admin()
     orders_table = MagicMock()
     books_table = MagicMock()
     items_table = MagicMock()
@@ -556,3 +564,98 @@ def test_update_status_returns_stock_once_when_cancelled():
         )
 
     books_table.update.assert_not_called()
+
+
+# --- Pemisahan hak akses admin/user (RBAC) ---
+
+
+def test_create_order_rejects_admin():
+    """Admin tidak boleh checkout dengan akunnya; harus pakai akun pelanggan."""
+    admin = UserPayload(id=ADMIN_ID, role="admin")
+    app.dependency_overrides[get_current_user] = lambda: admin
+
+    response = client.post("/api/v1/orders", json=legacy_order_payload())
+
+    assert response.status_code == 403
+
+
+def test_create_order_rejects_guest():
+    response = client.post("/api/v1/orders", json=legacy_order_payload())
+    assert response.status_code == 401
+
+
+def test_update_order_status_rejects_user():
+    as_user()
+    response = client.patch(
+        f"/api/v1/orders/{ORDER_ID}/status",
+        json={"status": "cancelled"},
+    )
+    assert response.status_code == 403
+
+
+def test_update_payment_status_rejects_user():
+    as_user()
+    response = client.patch(
+        f"/api/v1/orders/{ORDER_ID}/payment",
+        json={"status": "success"},
+    )
+    assert response.status_code == 403
+
+
+def test_expire_overdue_rejects_user():
+    as_user()
+    response = client.post("/api/v1/orders/expire-overdue")
+    assert response.status_code == 403
+
+
+def test_list_orders_is_scoped_to_the_authenticated_user():
+    """Pelanggan hanya melihat pesanannya sendiri; admin melihat semua."""
+    captured: dict = {}
+
+    def fake_get_list(**kwargs):
+        captured.update(kwargs)
+        return [], 0
+
+    as_user()
+    with patch("app.api.v1.orders.order_service.get_list", side_effect=fake_get_list):
+        response = client.get("/api/v1/orders")
+
+    assert response.status_code == 200
+    assert captured["user_id"] == USER_ID
+
+    captured.clear()
+    as_admin_with_user_dependency()
+    with patch("app.api.v1.orders.order_service.get_list", side_effect=fake_get_list):
+        response = client.get("/api/v1/orders")
+
+    assert response.status_code == 200
+    assert captured["user_id"] is None
+
+
+def test_get_order_detail_rejects_another_users_order():
+    """Pesanan milik user lain tidak dapat dibuka — 403, bukan data bocor."""
+    other_order = order_rows_response()
+    other_order["user_id"] = OTHER_USER_ID
+
+    as_user()
+    with patch(
+        "app.api.v1.orders.order_service.get_by_id",
+        return_value=_serialize_order(other_order),
+    ):
+        response = client.get(f"/api/v1/orders/{ORDER_ID}")
+
+    assert response.status_code == 403
+
+
+def test_get_order_detail_allows_admin_to_read_any_order():
+    other_order = order_rows_response()
+    other_order["user_id"] = OTHER_USER_ID
+
+    as_admin_with_user_dependency()
+    with patch(
+        "app.api.v1.orders.order_service.get_by_id",
+        return_value=_serialize_order(other_order),
+    ):
+        response = client.get(f"/api/v1/orders/{ORDER_ID}")
+
+    assert response.status_code == 200

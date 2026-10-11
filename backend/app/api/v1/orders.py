@@ -2,7 +2,7 @@ import math
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core import shipping
-from app.core.security import get_current_user, require_staff_or_admin, UserPayload
+from app.core.security import get_current_user, require_admin, require_user, UserPayload
 from app.schemas.common import ApiResponse, PaginatedResponse, PaginationMeta
 from app.schemas.order import OrderCreate, OrderStatusUpdate, PaymentStatusUpdate, OrderResponse
 from app.services.order_service import order_service
@@ -38,7 +38,8 @@ async def list_orders(
     status_filter: Optional[str] = Query(None, alias="status", description="Filter status pesanan"),
     current_user: Annotated[UserPayload, Depends(get_current_user)] = None,
 ):
-    user_id = None if current_user.role in ["admin", "staff"] else current_user.id
+    # Admin melihat seluruh pesanan toko; pelanggan hanya pesanannya sendiri.
+    user_id = None if current_user.role == "admin" else current_user.id
 
     items, total = order_service.get_list(
         page=page,
@@ -74,7 +75,7 @@ async def get_order_detail(
             detail=f"Pesanan dengan ID {order_id} tidak ditemukan.",
         )
 
-    if current_user.role not in ["admin", "staff"] and order.get("user_id") != current_user.id:
+    if current_user.role != "admin" and order.get("user_id") != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Anda tidak memiliki akses untuk melihat pesanan ini.",
@@ -89,12 +90,12 @@ async def get_order_detail(
 
 @router.post("/expire-overdue", response_model=ApiResponse[dict])
 async def expire_overdue_orders(
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     """Job: batalkan pesanan `pending` yang melewati `expires_at` dan kembalikan stok.
 
     Belum ada cron/scheduler di proyek ini, jadi pemanggilan dilakukan dari luar
-    (mis. cron harian) atau manual oleh staff.
+    (mis. cron harian) atau manual oleh admin.
     """
     try:
         expired = order_service.expire_overdue_orders()
@@ -113,10 +114,10 @@ async def expire_overdue_orders(
 @router.post("", response_model=ApiResponse[OrderResponse], status_code=status.HTTP_201_CREATED)
 async def create_order(
     payload: OrderCreate,
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     # Pesanan selalu terikat ke pemilik sesi; tidak ada cara membuat pesanan
-    # atas nama pengguna lain.
+    # atas nama pengguna lain. Admin tidak boleh checkout dengan akun adminnya.
     try:
         order = order_service.create(payload, user_id=current_user.id)
         return ApiResponse(
@@ -137,7 +138,7 @@ async def create_order(
 async def update_order_status(
     order_id: str,
     payload: OrderStatusUpdate,
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     try:
         res = order_service.update_status(order_id, payload, user_id=current_user.id)
@@ -159,9 +160,9 @@ async def update_order_status(
 async def update_payment_status(
     order_id: str,
     payload: PaymentStatusUpdate,
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
-    """Konfirmasi manual pembayaran. Tidak ada payment gateway, jadi hanya staff
+    """Konfirmasi manual pembayaran. Tidak ada payment gateway, jadi hanya admin
     yang boleh menandai pembayaran; tidak ada aksi UI yang melakukannya otomatis."""
     try:
         res = order_service.update_payment_status(order_id, payload.status)

@@ -13,6 +13,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { createOrder, getShippingOptions, type ShippingOption } from "@/lib/api";
 import { formatRupiah } from "@/components/ProductCard";
 import type { OrderInput } from "@/lib/types";
+import RequireRole from "@/components/RequireRole";
 
 // Rate selection is optional; the server rejects an empty choice rather than
 // falling back to a default, so the placeholder keeps the user from submitting
@@ -26,7 +27,7 @@ const PAYMENT_METHODS = ["Transfer Bank", "COD (Bayar di Tempat)"];
 // product_id is a UUID FK on order_items; ids from mock/local cart data are not.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const { items, totalPrice, clearCart, hasUnavailableItems } = useCart();
   const { session, loading: authLoading } = useAuth();
@@ -417,5 +418,14 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-gray-500">{label}</span>
       <span className="font-bold text-gray-900">{value}</span>
     </div>
+  );
+}
+
+// Admin mengelola pesanan lewat dashboard admin, bukan alur pelanggan.
+export default function CheckoutPage() {
+  return (
+    <RequireRole role="user">
+      <CheckoutContent />
+    </RequireRole>
   );
 }

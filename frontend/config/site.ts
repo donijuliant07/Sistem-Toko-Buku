@@ -19,7 +19,8 @@ export const siteConfig = {
     { label: "Buku Terlaris", href: "#buku-terlaris" },
     { label: "Back to Campus", href: "#back-to-campus" },
     { label: "Brand Pilihan", href: "#brand-pilihan" },
-    { label: "Voucher Diskon", href: "/admin/promo", isHighlight: true },
+    // Tidak ada tautan ke area admin dari storefront publik.
+    { label: "Voucher Diskon", href: "#promo", isHighlight: true },
   ],
   socials: {
     facebook: "https://facebook.com/inforbook",
@@ -30,7 +31,7 @@ export const siteConfig = {
   topBarLinks: [
     { label: "Tentang Kami", href: "#" },
     { label: "Bantuan & FAQ", href: "#" },
-    { label: "Lacak Pesanan", href: "/admin/pesanan" },
+    { label: "Lacak Pesanan", href: "/orders" },
   ],
   links: {
     dashboard: "/admin/dashboard",

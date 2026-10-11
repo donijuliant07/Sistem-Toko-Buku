@@ -80,10 +80,6 @@ export function getCurrentUser(accessToken: string): Promise<CurrentUser> {
   return request<CurrentUser>("/me", { accessToken });
 }
 
-export function checkAdmin(accessToken: string): Promise<{ status: string }> {
-  return request<{ status: string }>("/admin/check", { accessToken });
-}
-
 export function createBook(data: BookInput, accessToken: string): Promise<Book> {
   return request<Book>("/books", { method: "POST", body: JSON.stringify(data), accessToken });
 }

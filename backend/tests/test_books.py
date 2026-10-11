@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.db.session import get_db
-from app.core.security import require_admin
+from app.core.security import get_current_user, require_admin, UserPayload
 from app.main import app
 from app.schemas.book import BookCreate, BookUpdate
 
@@ -125,3 +125,37 @@ async def test_book_create_requires_valid_input_before_database(client):
     response = await client.post("/api/v1/books", json={**valid_book_data(), "price": -1})
 
     assert response.status_code == 422
+
+
+
+# --- Pemisahan hak akses admin/user (RBAC) ---
+# Endpoint tulis buku memakai `require_admin`; pembacaan tetap publik.
+
+
+def _as_role(role: str) -> None:
+    """Override dependency admin dengan hasil `get_current_user` berrole tertentu.
+
+    `require_admin` diturunkan dari `get_current_user`, jadi mengganti
+    `get_current_user` membuktikan pemeriksaan role asli (bukan mock) berjalan.
+    """
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=str(UUID(int=9)), role=role)
+    app.dependency_overrides.pop(require_admin, None)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method", ["post", "put", "patch", "delete"])
+async def test_book_write_endpoints_reject_user(client, method):
+    _as_role("user")
+    path = "/api/v1/books" if method == "post" else "/api/v1/books/11111111-1111-1111-1111-111111111111"
+
+    # `httpx` tidak menerima body pada DELETE; kirim body hanya untuk method lain.
+    kwargs = {} if method == "delete" else {"json": valid_book_data()}
+    response = await getattr(client, method)(path, **kwargs)
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_book_write_endpoints_reject_guest(client):
+    response = await client.post("/api/v1/books", json=valid_book_data())
+    assert response.status_code == 401

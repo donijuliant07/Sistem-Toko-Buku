@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { siteConfig } from "@/config/site";
 import AuthButton from "@/components/AuthButton";
+import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/context/CartContext";
 
 interface HeaderProps {
@@ -15,6 +16,11 @@ interface HeaderProps {
 export default function Header({ query, onSearchSubmit }: HeaderProps) {
   const [input, setInput] = useState(query);
   const { totalItems, setIsCartOpen } = useCart();
+  const { role } = useAuth();
+
+  // Admin tidak berbelanja dengan akun adminnya, jadi tombol keranjang
+  // disembunyikan. Ini hanya UX; backend tetap menolak cart/checkout admin.
+  const showCart = role !== "admin";
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -90,6 +96,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
             </button>
 
             {/* Cart Button with Drawer Trigger */}
+            {showCart && (
             <button
               type="button"
               onClick={() => setIsCartOpen(true)}
@@ -110,6 +117,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
                 </span>
               )}
             </button>
+            )}
 
             <div className="pl-2 border-l border-gray-200">
               <AuthButton />

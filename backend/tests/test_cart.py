@@ -35,7 +35,7 @@ CLIENT_SUPPLIED_PRICE = 1000
 
 
 def as_user(user_id: str = USER_ID):
-    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=user_id, role="customer")
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=user_id, role="user")
 
 
 @pytest.fixture(autouse=True)
@@ -305,3 +305,21 @@ def test_cart_requires_authentication():
     """Tanpa token, keranjang tidak dapat diakses."""
     response = client.get("/api/v1/cart")
     assert response.status_code == 401
+
+
+def test_cart_rejects_admin_on_every_endpoint():
+    """Admin mengelola toko, bukan berbelanja; seluruh endpoint cart ditolak."""
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=USER_ID, role="admin")
+    build_admin()
+
+    requests = [
+        client.get("/api/v1/cart"),
+        client.post("/api/v1/cart/items", json={"book_id": BOOK_ID, "quantity": 1}),
+        client.patch(f"/api/v1/cart/items/{ITEM_ID}", json={"quantity": 2}),
+        client.delete(f"/api/v1/cart/items/{ITEM_ID}"),
+        client.delete("/api/v1/cart"),
+        client.post("/api/v1/cart/merge", json={"items": [{"book_id": BOOK_ID, "quantity": 1}]}),
+    ]
+
+    for response in requests:
+        assert response.status_code == 403, response.text

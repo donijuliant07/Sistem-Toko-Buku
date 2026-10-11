@@ -12,10 +12,10 @@ function LoginForm() {
   const searchParams = useSearchParams();
   // Only accept internal paths so a crafted ?redirect= cannot send users off-site.
   const redirectParam = searchParams.get("redirect");
-  const redirectTo = redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+  const requestedRedirect = redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
     ? redirectParam
-    : "/admin/books";
-  const { session, loading: authLoading, signIn, signInWithOAuth } = useAuth();
+    : null;
+  const { session, role, roleLoading, loading: authLoading, signIn, signInWithOAuth } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,12 +25,16 @@ function LoginForm() {
   const [serverError, setServerError] = useState("");
   const [pending, setPending] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in — tujuan mengikuti role dari backend.
   useEffect(() => {
-    if (!authLoading && session) {
-      router.replace(redirectTo);
-    }
-  }, [authLoading, router, session, redirectTo]);
+    if (authLoading || !session || roleLoading) return;
+    // `?redirect=` tetap dihormati, tapi tidak boleh mengirim pelanggan ke area admin.
+    const fallback = role === "admin" ? "/admin/dashboard" : "/";
+    const target = requestedRedirect && !(role !== "admin" && requestedRedirect.startsWith("/admin"))
+      ? requestedRedirect
+      : fallback;
+    router.replace(target);
+  }, [authLoading, roleLoading, role, router, session, requestedRedirect]);
 
   function validate(): boolean {
     let valid = true;
@@ -79,7 +83,8 @@ function LoginForm() {
 
     try {
       await signIn(email.trim(), password);
-      router.replace(redirectTo);
+      // Efek di atas menunggu role dari backend lalu mengarahkan ke tujuan yang
+      // sesuai; di sini cukup biarkan sesi tersinkron tanpa menebak role.
     } catch (cause) {
       const err = cause instanceof Error ? cause.message : "Login failed. Please try again.";
       setServerError(err);

@@ -9,9 +9,16 @@ import {
   type ReactNode,
 } from "react";
 import { supabase, supabaseConfigError } from "@/lib/supabase";
+import { getCurrentUser } from "@/lib/api";
+
+/** Peran yang dikenal backend (`profiles.role`); di luar ini diperlakukan `user`. */
+export type AppRole = "admin" | "user";
 
 type AuthContextValue = {
   session: Session | null;
+  role: AppRole | null;
+  /** `true` selama role masih ditanyakan ke backend — jangan ambil keputusan akses dulu. */
+  roleLoading: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithOAuth: (provider: "github" | "google" | "apple") => Promise<void>;
@@ -23,6 +30,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
+  const [roleLoading, setRoleLoading] = useState(false);
   const [loading, setLoading] = useState(!supabaseConfigError);
 
   useEffect(() => {
@@ -50,6 +59,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.subscription.unsubscribe();
     };
   }, []);
+
+  // Role selalu berasal dari backend (`GET /me` -> `profiles.role`), bukan dari
+  // metadata sesi Supabase yang bisa diubah sendiri oleh pemilik akun. Ini
+  // hanya untuk UX; otorisasi sebenarnya tetap di backend dan RLS.
+  useEffect(() => {
+    let active = true;
+
+    if (!session?.access_token) {
+      setRole(null);
+      setRoleLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setRoleLoading(true);
+    getCurrentUser(session.access_token)
+      .then((profile) => {
+        if (active) setRole(profile.role === "admin" ? "admin" : "user");
+      })
+      .catch(() => {
+        // Gagal menghubungi backend: jangan berasumsi admin.
+        if (active) setRole("user");
+      })
+      .finally(() => {
+        if (active) setRoleLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({
@@ -86,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signInWithOAuth, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, role, roleLoading, loading, signIn, signInWithOAuth, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

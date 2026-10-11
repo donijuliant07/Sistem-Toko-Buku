@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 
 export default function AuthButton() {
   const router = useRouter();
-  const { session, loading, signOut } = useAuth();
+  const { session, role, loading, signOut } = useAuth();
 
   if (loading) {
     return <span className="text-xs text-gray-400 font-medium px-2">Memuat...</span>;
@@ -28,20 +28,27 @@ export default function AuthButton() {
     router.push("/");
   }
 
+  // Menu mengikuti role dari backend: admin tidak melihat tautan pelanggan,
+  // dan pelanggan tidak melihat tautan dashboard admin.
+  const isAdmin = role === "admin";
+
   return (
     <div className="flex items-center gap-2">
-      <Link
-        href="/orders"
-        className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-[#0052cc] hover:bg-blue-50 rounded-lg transition-colors"
-      >
-        Pesanan Saya
-      </Link>
-      <Link
-        href="/admin/dashboard"
-        className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-[var(--primary)] bg-[var(--primary-soft)] hover:opacity-90 rounded-lg transition-colors border border-[var(--primary)]/20"
-      >
-        Dashboard Admin
-      </Link>
+      {isAdmin ? (
+        <Link
+          href="/admin/dashboard"
+          className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-[var(--primary)] bg-[var(--primary-soft)] hover:opacity-90 rounded-lg transition-colors border border-[var(--primary)]/20"
+        >
+          Dashboard Admin
+        </Link>
+      ) : (
+        <Link
+          href="/orders"
+          className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-[#0052cc] hover:bg-blue-50 rounded-lg transition-colors"
+        >
+          Pesanan Saya
+        </Link>
+      )}
       <button
         type="button"
         onClick={handleSignOut}

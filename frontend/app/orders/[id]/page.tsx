@@ -11,6 +11,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getOrder } from "@/lib/api";
 import { formatRupiah } from "@/components/ProductCard";
 import type { Order, OrderStatus, PaymentStatus } from "@/lib/types";
+import RequireRole from "@/components/RequireRole";
 
 const ORDER_STATUS_STYLES: Record<OrderStatus, string> = {
   pending: "bg-amber-100 text-amber-800 border-amber-200",
@@ -56,7 +57,7 @@ function Pill({ text, className }: { text: string; className: string }) {
   );
 }
 
-export default function OrderDetailPage() {
+function OrderDetailContent() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -249,5 +250,14 @@ export default function OrderDetailPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Admin mengelola pesanan lewat dashboard admin, bukan alur pelanggan.
+export default function OrderDetailPage() {
+  return (
+    <RequireRole role="user">
+      <OrderDetailContent />
+    </RequireRole>
   );
 }

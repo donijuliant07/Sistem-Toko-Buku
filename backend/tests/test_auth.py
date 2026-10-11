@@ -2,14 +2,14 @@ import jwt
 import pytest
 from datetime import datetime, timedelta, timezone
 from app.core import security
-from app.core.security import get_current_user, require_admin, UserPayload
+from app.core.security import require_admin, UserPayload
 from fastapi import HTTPException
 
 TEST_SECRET = "test-secret-with-at-least-32-bytes-long"
 USER_ID = "00000000-0000-0000-0000-000000000001"
 
 
-def make_token(role: str = "customer") -> str:
+def make_token(role: str = "user") -> str:
     return jwt.encode(
         {
             "sub": USER_ID,
@@ -36,8 +36,8 @@ async def test_require_admin_allows_admin():
 
 
 @pytest.mark.asyncio
-async def test_require_admin_rejects_customer():
-    cust_user = UserPayload(id=USER_ID, email="cust@example.com", role="customer")
+async def test_require_admin_rejects_user():
+    user_account = UserPayload(id=USER_ID, email="cust@example.com", role="user")
     with pytest.raises(HTTPException) as err:
-        await require_admin(cust_user)
+        await require_admin(user_account)
     assert err.value.status_code == 403

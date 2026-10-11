@@ -117,8 +117,11 @@ function guestToCartItems(items: GuestCartItem[]): CartItem[] {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { session } = useAuth();
+  const { session, role } = useAuth();
   const token = session?.access_token;
+  // Admin mengelola toko dan tidak berbelanja dengan akunnya; backend juga
+  // menolak cart/checkout admin, ini hanya mencegah UI menawarkannya.
+  const isAdmin = role === "admin";
 
   const [serverCart, setServerCart] = useState<CartPayload | null>(null);
   const [guestItems, setGuestItems] = useState<GuestCartItem[]>([]);
@@ -138,7 +141,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   const refresh = useCallback(async () => {
-    if (!token) return;
+    if (!token || isAdmin) return;
     try {
       const res = await getCart(token);
       setServerCart(res.data);
@@ -146,13 +149,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Gagal memuat keranjang.");
     }
-  }, [token]);
+  }, [token, isAdmin]);
 
   // Login pertama: gabungkan keranjang tamu, lalu selalu baca dari server.
   useEffect(() => {
     if (!token) {
       syncedUserRef.current = null;
       setServerCart(null);
+      return;
+    }
+    // Admin tidak punya keranjang; jangan memanggil endpoint yang pasti 403.
+    if (isAdmin) {
+      setServerCart(null);
+      setLoading(false);
       return;
     }
     if (syncedUserRef.current === token) return;
@@ -180,12 +189,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, isAdmin]);
 
   // Harga/stok bisa berubah kapan saja di server; segarkan saat tab kembali aktif
   // atau drawer dibuka, bukan lewat polling berkala.
   useEffect(() => {
-    if (!token) return;
+    if (!token || isAdmin) return;
     const onFocus = () => void refresh();
     window.addEventListener("focus", onFocus);
     window.addEventListener("pageshow", onFocus);
@@ -193,10 +202,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("pageshow", onFocus);
     };
-  }, [token, refresh]);
+  }, [token, isAdmin, refresh]);
 
   const addToCart = useCallback(
     async (product: CartAddInput, quantity = 1) => {
+      if (isAdmin) {
+        throw new Error("Administrator tidak dapat menambahkan buku ke keranjang.");
+      }
       if (!token) {
         setGuestItems((prev) => {
           const index = prev.findIndex((item) => item.id === product.id);
@@ -225,7 +237,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [token]
+    [token, isAdmin]
   );
 
   const removeFromCart = useCallback(
@@ -298,7 +310,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token]);
 
-  const items = token ? toCartItems(serverCart) : guestLoaded ? guestToCartItems(guestItems) : [];
+  const items = isAdmin ? [] : token ? toCartItems(serverCart) : guestLoaded ? guestToCartItems(guestItems) : [];
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalPrice = items.reduce((acc, item) => acc + item.subtotal, 0);
   const hasUnavailableItems = items.some((item) => !item.available);

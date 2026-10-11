@@ -2,17 +2,20 @@ import { ProductCategory } from "@/types"
 import { initialProducts } from "@/data/products"
 import { Product, Order, Customer, KPICardData, OrderStatus } from "@/types"
 import {
+  createBook,
   createPromo,
+  deleteBook,
   deletePromo,
   getAccessToken,
   getBooks,
   getOrderDetail,
   getOrders,
   getPromos,
+  updateBook,
   updateOrderStatus,
   updatePromo,
 } from "@/lib/api"
-import type { Book, Order as ApiOrder, Promo, PromoInput, PromoUpdate } from "@/lib/types"
+import type { Book, BookUpdate, Order as ApiOrder, Promo, PromoInput, PromoUpdate } from "@/lib/types"
 import { createClient } from "@/lib/supabase"
 
 const supabase = createClient()
@@ -165,76 +168,52 @@ export const productService = {
   create: async (data: Omit<Product, "id" | "createdAt" | "updatedAt" | "sold" | "finalPrice">): Promise<Product> => {
     const finalPrice = Math.round(data.normalPrice * (1 - (data.discountPercent || 0) / 100))
 
-    // Attempt Supabase insert
-    try {
-      const { data: created, error } = await supabase
-        .from("books")
-        .insert({
-          title: data.title,
-          author: data.author,
-          isbn: data.isbn,
-          description: data.description,
-          price: data.normalPrice,
-          stock: data.stock,
-          cover_url: data.coverUrl,
-        })
-        .select()
-        .single()
+    // Tulis lewat backend: `books` tidak lagi bisa di-INSERT dari browser
+    // (policy `books_allow_insert` sudah dihapus), dan backend memverifikasi
+    // bahwa pemanggil benar-benar admin.
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
 
-      if (error) {
-        console.error("Supabase insert error:", error)
-        throw new Error(error.message || "Gagal menyimpan ke database Supabase.")
-      }
+    const created = await createBook(
+      {
+        title: data.title,
+        author: data.author,
+        isbn: data.isbn,
+        description: data.description,
+        price: data.normalPrice,
+        stock: data.stock,
+        cover_url: data.coverUrl,
+      },
+      token
+    )
 
-      if (created) {
-        return {
-          ...data,
-          id: created.id,
-          sold: 0,
-          finalPrice,
-          createdAt: created.created_at || new Date().toISOString().split("T")[0],
-          updatedAt: created.updated_at || new Date().toISOString().split("T")[0],
-        }
-      }
-    } catch (err: any) {
-      if (err?.message) throw err
-    }
-
-    const newProduct: Product = {
+    return {
       ...data,
-      id: `prod-${Date.now()}`,
+      id: created.id,
       sold: 0,
       finalPrice,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
+      createdAt: created.created_at || new Date().toISOString().split("T")[0],
+      updatedAt: created.updated_at || new Date().toISOString().split("T")[0],
     }
-    productsStore = [newProduct, ...productsStore]
-    return newProduct
   },
   update: async (id: string, data: Partial<Product>): Promise<Product> => {
     const normalPrice = data.normalPrice
     const discountPercent = data.discountPercent
 
-    // Attempt Supabase update
-    try {
-      const updatePayload: Record<string, any> = {}
-      if (data.title !== undefined) updatePayload.title = data.title
-      if (data.author !== undefined) updatePayload.author = data.author
-      if (data.isbn !== undefined) updatePayload.isbn = data.isbn
-      if (data.description !== undefined) updatePayload.description = data.description
-      if (data.normalPrice !== undefined) updatePayload.price = data.normalPrice
-      if (data.stock !== undefined) updatePayload.stock = data.stock
-      if (data.coverUrl !== undefined) updatePayload.cover_url = data.coverUrl
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
 
-      if (Object.keys(updatePayload).length > 0) {
-        const { error } = await supabase.from("books").update(updatePayload).eq("id", id)
-        if (error) {
-          console.error("Supabase update error:", error)
-          throw new Error(error.message || "Gagal meng-update buku di Supabase.")
-        }
-      }
-    } catch (err: any) {
-      if (err?.message) throw err
+    const updatePayload: BookUpdate = {}
+    if (data.title !== undefined) updatePayload.title = data.title
+    if (data.author !== undefined) updatePayload.author = data.author
+    if (data.isbn !== undefined) updatePayload.isbn = data.isbn
+    if (data.description !== undefined) updatePayload.description = data.description
+    if (data.normalPrice !== undefined) updatePayload.price = data.normalPrice
+    if (data.stock !== undefined) updatePayload.stock = data.stock
+    if (data.coverUrl !== undefined) updatePayload.cover_url = data.coverUrl
+
+    if (Object.keys(updatePayload).length > 0) {
+      await updateBook(id, updatePayload, token)
     }
 
     const index = productsStore.findIndex((p) => p.id === id)
@@ -260,16 +239,11 @@ export const productService = {
     return { ...fetched, ...data }
   },
   delete: async (id: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.from("books").delete().eq("id", id)
-      if (error) {
-        console.error("Supabase delete error:", error)
-        throw new Error(error.message || "Gagal menghapus buku di Supabase.")
-      }
-      return true
-    } catch (err: any) {
-      if (err?.message) throw err
-    }
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
+
+    await deleteBook(id, token)
+
     const prevLen = productsStore.length
     productsStore = productsStore.filter((p) => p.id !== id)
     return productsStore.length < prevLen

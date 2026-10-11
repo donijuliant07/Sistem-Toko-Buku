@@ -10,6 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getMyOrders } from "@/lib/api";
 import { formatRupiah } from "@/components/ProductCard";
 import type { OrderPage, OrderStatus, PaymentStatus } from "@/lib/types";
+import RequireRole from "@/components/RequireRole";
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Menunggu Pembayaran",
@@ -29,7 +30,7 @@ const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   refunded: "Refund",
 };
 
-export default function OrdersPage() {
+function OrdersContent() {
   const router = useRouter();
   const { session, loading: authLoading } = useAuth();
 
@@ -125,5 +126,14 @@ export default function OrdersPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Admin mengelola pesanan lewat dashboard admin, bukan alur pelanggan.
+export default function OrdersPage() {
+  return (
+    <RequireRole role="user">
+      <OrdersContent />
+    </RequireRole>
   );
 }
