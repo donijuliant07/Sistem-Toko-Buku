@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.security import UserPayload, get_current_user
+from app.core.security import UserPayload, require_user
 from app.schemas.cart import (
     CartItemAdd,
     CartItemUpdate,
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/cart", tags=["Keranjang"])
 
 @router.get("", response_model=ApiResponse[CartResponse])
 async def get_cart(
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     """Isi keranjang milik user yang sedang login, dengan harga/stok terkini.
 
@@ -37,7 +37,7 @@ async def get_cart(
 @router.post("/items", response_model=ApiResponse[CartResponse], status_code=status.HTTP_201_CREATED)
 async def add_cart_item(
     payload: CartItemAdd,
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     try:
         data = cart_service.add_item(current_user.id, payload.book_id, payload.quantity)
@@ -55,7 +55,7 @@ async def add_cart_item(
 async def update_cart_item(
     item_id: str,
     payload: CartItemUpdate,
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     try:
         data = cart_service.update_item(current_user.id, item_id, payload.quantity)
@@ -74,7 +74,7 @@ async def update_cart_item(
 @router.delete("/items/{item_id}", response_model=ApiResponse[CartResponse])
 async def remove_cart_item(
     item_id: str,
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     try:
         data = cart_service.remove_item(current_user.id, item_id)
@@ -90,7 +90,7 @@ async def remove_cart_item(
 
 @router.delete("", response_model=ApiResponse[CartResponse])
 async def clear_cart(
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     """Kosongkan keranjang. Dipanggil setelah pesanan berhasil dibuat."""
     try:
@@ -106,7 +106,7 @@ async def clear_cart(
 @router.post("/merge", response_model=ApiResponse[CartResponse])
 async def merge_cart(
     payload: CartMergeInput,
-    current_user: Annotated[UserPayload, Depends(get_current_user)],
+    current_user: Annotated[UserPayload, Depends(require_user)],
 ):
     """Gabungkan keranjang tamu (localStorage) ke keranjang server setelah login.
 

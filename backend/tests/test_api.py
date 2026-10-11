@@ -1,8 +1,7 @@
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from app.main import app
-from app.core.security import get_current_user, require_staff_or_admin, UserPayload
+from app.core.security import get_current_user, require_admin, UserPayload
 
 client = TestClient(app)
 
@@ -42,7 +41,7 @@ def test_protected_create_category_with_admin_auth():
     admin_user = UserPayload(id="u1", email="admin@gramedia.id", role="admin")
 
     app.dependency_overrides[get_current_user] = lambda: admin_user
-    app.dependency_overrides[require_staff_or_admin] = lambda: admin_user
+    app.dependency_overrides[require_admin] = lambda: admin_user
 
     mock_created = {
         "id": "c3",

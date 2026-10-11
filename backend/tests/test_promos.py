@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.security import get_current_user, require_staff_or_admin, UserPayload
+from app.core.security import get_current_user, require_admin, UserPayload
 from app.main import app
 from app.schemas.promo import PromoCreate, PromoUpdate
 from app.services.promo_service import _serialize
@@ -22,11 +22,11 @@ TODAY = date.today()
 
 
 def as_staff() -> None:
-    app.dependency_overrides[require_staff_or_admin] = lambda: UserPayload(id=STAFF_ID, role="staff")
+    app.dependency_overrides[require_admin] = lambda: UserPayload(id=STAFF_ID, role="admin")
 
 
 def as_customer() -> None:
-    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=STAFF_ID, role="customer")
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(id=STAFF_ID, role="user")
 
 
 @pytest.fixture(autouse=True)

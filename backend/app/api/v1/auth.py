@@ -30,7 +30,7 @@ async def login(payload: LoginRequest):
             id=user_id,
             email=res.user.email or "",
             full_name=profile_data.get("full_name", res.user.user_metadata.get("full_name", "Pengguna")),
-            role=profile_data.get("role", res.user.app_metadata.get("role", "customer")),
+            role=profile_data.get("role", "user"),
             avatar_url=profile_data.get("avatar_url"),
             created_at=res.user.created_at,
         )
@@ -60,10 +60,12 @@ async def register(payload: RegisterRequest):
             "email": payload.email,
             "password": payload.password,
             "options": {
+                # Tidak ada `role` di sini: role tidak pernah datang dari klien.
+                # Registrasi publik selalu berrole `user` (default kolom
+                # `profiles.role` lewat trigger `handle_new_user`).
                 "data": {
                     "full_name": payload.full_name,
                     "phone": payload.phone,
-                    "role": "customer",
                 }
             }
         })
@@ -80,7 +82,7 @@ async def register(payload: RegisterRequest):
                 id=res.user.id,
                 email=res.user.email or payload.email,
                 full_name=payload.full_name,
-                role="customer",
+                role="user",
                 avatar_url=None,
                 created_at=res.user.created_at,
             ),

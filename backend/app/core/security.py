@@ -58,9 +58,49 @@ def _decode_token(token: str) -> dict[str, Any]:
 class UserPayload(BaseModel):
     id: str
     email: Optional[str] = None
-    role: str = "customer"
+    role: str = "user"
     app_metadata: dict = {}
     user_metadata: dict = {}
+
+
+# Satu-satunya nilai role yang sah — sama dengan CHECK constraint
+# `ck_profiles_role` di tabel `profiles`.
+VALID_ROLES = {"user", "admin"}
+
+
+async def resolve_user_role(user_id: str) -> str:
+    """Baca role dari `profiles` — satu-satunya sumber otorisasi yang tepercaya.
+
+    Metadata di dalam JWT (`user_metadata`) dapat diubah sendiri oleh pemilik
+    akun, jadi tidak pernah dipakai untuk menentukan hak akses. Bila profil
+    tidak ada atau rolenya di luar `VALID_ROLES`, akses ditolak (fail closed)
+    alih-alih memberi role default yang permisif.
+    """
+    # Import lokal: `supabase` mengimpor konfigurasi yang juga dipakai modul ini,
+    # dan pemisahan ini menjaga urutan impor tetap sederhana.
+    from app.core.supabase import supabase_admin
+
+    try:
+        row = (
+            supabase_admin.table("profiles")
+            .select("role")
+            .eq("id", user_id)
+            .maybe_single()
+            .execute()
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Gagal memverifikasi peran pengguna. Coba lagi beberapa saat lagi.",
+        )
+
+    role = (row.data or {}).get("role") if row else None
+    if role not in VALID_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Akun tidak memiliki peran yang sah. Hubungi administrator toko.",
+        )
+    return role
 
 
 async def get_current_user(
@@ -86,8 +126,9 @@ async def get_current_user(
         app_metadata = payload.get("app_metadata", {})
         user_metadata = payload.get("user_metadata", {})
 
-        # User role prioritization: app_metadata.role -> user_metadata.role -> "customer"
-        role = app_metadata.get("role") or user_metadata.get("role") or "customer"
+        # Role tidak pernah diambil dari klaim token (dapat dimodifikasi user);
+        # selalu dari tabel `profiles` lewat kredensial tepercaya di server.
+        role = await resolve_user_role(user_id)
 
         return UserPayload(
             id=user_id,
@@ -119,12 +160,17 @@ async def require_admin(
     return current_user
 
 
-async def require_staff_or_admin(
+async def require_user(
     current_user: Annotated[UserPayload, Depends(get_current_user)]
 ) -> UserPayload:
-    if current_user.role not in ["admin", "staff"]:
+    """Hanya pelanggan (`role = 'user'`) yang boleh bertransaksi.
+
+    Administrator mengelola toko lewat dashboard dan tidak berbelanja dengan
+    akunnya; kalau ingin membeli, ia memakai akun pelanggan terpisah.
+    """
+    if current_user.role != "user":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Akses ditolak. Fitur ini membutuhkan hak akses Staff atau Administrator.",
+            detail="Akses ditolak. Fitur ini hanya untuk akun pelanggan.",
         )
     return current_user

@@ -11,7 +11,7 @@ class DashboardService:
         orders = supabase_admin.table("orders").select("id, status, total").execute().data or []
         items = supabase_admin.table("order_items").select("order_id, quantity, price").execute().data or []
         low_stock = supabase_admin.table("books").select("id").lte("stock", 5).execute().data or []
-        customers = supabase_admin.table("profiles").select("id").eq("role", "customer").execute().data or []
+        customers = supabase_admin.table("profiles").select("id").eq("role", "user").execute().data or []
 
         # `cancelled` adalah nilai yang diterima CHECK constraint database live
         # (`orders_status_check`); "dibatalkan" tidak pernah tersimpan.

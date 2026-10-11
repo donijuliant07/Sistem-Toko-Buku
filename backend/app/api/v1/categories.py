@@ -1,6 +1,6 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.security import require_staff_or_admin, UserPayload
+from app.core.security import require_admin, UserPayload
 from app.schemas.common import ApiResponse
 from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from app.services.category_service import category_service
@@ -36,7 +36,7 @@ async def get_category(category_id: str):
 @router.post("", response_model=ApiResponse[CategoryResponse], status_code=status.HTTP_201_CREATED)
 async def create_category(
     payload: CategoryCreate,
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     try:
         new_cat = category_service.create(payload)
@@ -56,7 +56,7 @@ async def create_category(
 async def update_category(
     category_id: str,
     payload: CategoryUpdate,
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     existing = category_service.get_by_id(category_id)
     if not existing:
@@ -82,7 +82,7 @@ async def update_category(
 @router.delete("/{category_id}", response_model=ApiResponse[dict])
 async def delete_category(
     category_id: str,
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     existing = category_service.get_by_id(category_id)
     if not existing:

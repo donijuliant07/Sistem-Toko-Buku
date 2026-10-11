@@ -1,9 +1,13 @@
 "use client"
 
 import * as React from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 import { AppSidebar } from "@/components/admin/AppSidebar"
 import { SiteHeader } from "@/components/admin/SiteHeader"
+import AccessDenied from "@/components/AccessDenied"
 import FloatingCS from "@/components/FloatingCS"
+import { useAuth } from "@/components/AuthProvider"
 import { Toaster } from "sonner"
 
 export default function AdminLayout({
@@ -13,6 +17,45 @@ export default function AdminLayout({
 }) {
   const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  const router = useRouter()
+  const pathname = usePathname()
+  const { session, role, roleLoading, loading } = useAuth()
+
+  // Satu guard untuk seluruh 9 route /admin/*. Hanya UX: penolakan yang
+  // mengikat tetap di backend (`require_admin`) dan RLS.
+  const waiting = loading || (!!session && roleLoading)
+
+  React.useEffect(() => {
+    if (waiting) return
+    if (!session) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
+    }
+  }, [waiting, session, router, pathname])
+
+  if (waiting) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    )
+  }
+
+  if (role !== "admin") {
+    return (
+      <AccessDenied
+        message="Halaman ini khusus untuk administrator toko. Akun Anda tidak memiliki hak akses admin."
+      />
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">

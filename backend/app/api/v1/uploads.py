@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from app.core.config import settings
-from app.core.security import require_staff_or_admin, UserPayload
+from app.core.security import require_admin, UserPayload
 from app.core.supabase import supabase_admin
 from app.schemas.common import ApiResponse
 
@@ -15,7 +15,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 @router.post("/product-image", response_model=ApiResponse[dict])
 async def upload_product_cover(
     file: UploadFile = File(...),
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)] = None,
+    current_user: Annotated[UserPayload, Depends(require_admin)] = None,
 ):
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(

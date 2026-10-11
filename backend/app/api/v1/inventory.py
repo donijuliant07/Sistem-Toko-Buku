@@ -1,7 +1,7 @@
 import math
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from app.core.security import require_staff_or_admin, UserPayload
+from app.core.security import require_admin, UserPayload
 from app.schemas.common import ApiResponse, PaginatedResponse, PaginationMeta
 from app.schemas.inventory import LowStockBookResponse, StockAdjustmentRequest, StockMovementResponse
 from app.services.inventory_service import inventory_service
@@ -14,7 +14,7 @@ async def list_stock_movements(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     product_id: Optional[str] = Query(None, description="Filter riwayat per ID produk"),
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)] = None,
+    current_user: Annotated[UserPayload, Depends(require_admin)] = None,
 ):
     items, total = inventory_service.get_movements(
         page=page,
@@ -38,7 +38,7 @@ async def list_stock_movements(
 
 @router.get("/low-stock", response_model=ApiResponse[list[LowStockBookResponse]])
 async def get_low_stock_products(
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     low_stock_items = inventory_service.get_low_stock_products()
     return ApiResponse(
@@ -51,7 +51,7 @@ async def get_low_stock_products(
 @router.post("/adjust", response_model=ApiResponse[dict], status_code=status.HTTP_200_OK)
 async def adjust_stock(
     payload: StockAdjustmentRequest,
-    current_user: Annotated[UserPayload, Depends(require_staff_or_admin)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     try:
         res = inventory_service.adjust_stock(payload, user_id=current_user.id)
