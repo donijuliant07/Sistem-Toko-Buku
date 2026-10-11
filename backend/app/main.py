@@ -39,6 +39,14 @@ app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(promos.router, prefix=settings.API_V1_PREFIX)
 app.include_router(uploads.router, prefix=settings.API_V1_PREFIX)
 
+# Alias /me untuk kompatibilitas sinkronisasi klien frontend
+app.add_api_route(
+    f"{settings.API_V1_PREFIX}/me",
+    auth.get_my_profile,
+    methods=["GET"],
+    tags=["Autentikasi"],
+)
+
 
 @app.get("/health", tags=["Kesehatan"])
 async def health_check():
