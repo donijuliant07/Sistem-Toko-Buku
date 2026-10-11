@@ -53,7 +53,10 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
           </Link>
 
           {/* Search Bar */}
-          <form onSubmit={handleSubmit} className="flex-1 max-w-2xl mx-1 sm:mx-6">
+          <form
+            onSubmit={handleSubmit}
+            className="flex-1 max-w-2xl mx-1 sm:mx-6"
+          >
             <div className="relative flex items-center">
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
               <input

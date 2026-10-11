@@ -1,6 +1,6 @@
 "use client";
 
-import type { Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import {
   createContext,
   useContext,
@@ -22,7 +22,7 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithOAuth: (provider: "github" | "google" | "apple") => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<{ user: any; session: Session | null }>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ user: User | null; session: Session | null }>;
   signOut: () => Promise<void>;
 };
 

@@ -1,3 +1,10 @@
+-- ============================================================================
+-- ⚠️ ARSIP BASI — BUKAN JALUR MIGRASI. JANGAN dijalankan ke DB produksi.
+-- Memakai kolom `customer_id`, enum `user_role`, dan `is_staff_or_admin()`
+-- yang tidak cocok dengan DB live. `is_admin()` kini dibuat oleh migrasi
+-- alembic `20261011_05`. Jalur resmi: Alembic (`backend/migrations/versions/`).
+-- Lihat `backend/supabase/README.md`.
+-- ============================================================================
 -- Migration 0002_rls.sql: Row Level Security Policies
 
 -- Enable RLS

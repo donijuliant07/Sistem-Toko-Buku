@@ -40,9 +40,5 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.FRONTEND_ORIGINS.split(",") if origin.strip()]
 
-    @property
-    def supabase_jwt_secret(self) -> str:
-        return self.SUPABASE_JWT_SECRET
-
 
 settings = Settings()

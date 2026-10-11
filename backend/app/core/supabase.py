@@ -7,12 +7,9 @@ supabase_admin: Client = create_client(
     settings.SUPABASE_SERVICE_ROLE_KEY
 )
 
-# Anon client - respects RLS
+# Anon client - respects RLS. Dipakai alur login/registrasi (`auth.py`) supaya
+# Supabase Auth memakai anon key, bukan service role.
 supabase_anon: Client = create_client(
     settings.SUPABASE_URL,
     settings.SUPABASE_ANON_KEY
 )
-
-
-def get_supabase() -> Client:
-    return supabase_admin
