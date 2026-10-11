@@ -76,8 +76,14 @@ export async function getShippingOptions(): Promise<ShippingOption[]> {
   return res.data ?? [];
 }
 
-export function getCurrentUser(accessToken: string): Promise<CurrentUser> {
-  return request<CurrentUser>("/me", { accessToken });
+export async function getCurrentUser(accessToken: string): Promise<CurrentUser> {
+  try {
+    const res = await request<ApiEnvelope<CurrentUser>>("/auth/me", { accessToken });
+    return res.data;
+  } catch {
+    const res = await request<ApiEnvelope<CurrentUser>>("/me", { accessToken });
+    return res.data;
+  }
 }
 
 export function createBook(data: BookInput, accessToken: string): Promise<Book> {

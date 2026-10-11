@@ -7,6 +7,7 @@ interface SideBannerInfo {
   subtitle: string;
   tag: string;
   bgGradient: string;
+  imageUrl?: string;
   href?: string;
 }
 
@@ -52,25 +53,40 @@ export default function ProductSection({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Side Thematic Banner */}
           <div
-            className={`lg:col-span-3 rounded-2xl p-6 text-white bg-gradient-to-br ${sideBanner.bgGradient} flex flex-col justify-between shadow-sm min-h-[220px] lg:min-h-auto`}
+            className={`lg:col-span-3 rounded-2xl p-6 text-white bg-gradient-to-br ${sideBanner.bgGradient} flex flex-col justify-between shadow-sm min-h-[220px] lg:min-h-auto relative overflow-hidden`}
           >
-            <div>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-black/25 text-amber-300 tracking-wider">
+            {/* Background Image if available */}
+            {sideBanner.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={sideBanner.imageUrl}
+                alt={sideBanner.title}
+                className="absolute inset-0 w-full h-full object-cover object-center"
+              />
+            )}
+
+            {/* Gradient Scrim Overlay */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${sideBanner.bgGradient} z-1`} />
+
+            <div className="relative z-10">
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-black/40 backdrop-blur-xs text-amber-300 tracking-wider">
                 {sideBanner.tag}
               </span>
-              <h4 className="text-xl sm:text-2xl font-black mt-3 leading-snug">
+              <h4 className="text-xl sm:text-2xl font-black mt-3 leading-snug drop-shadow-sm">
                 {sideBanner.title}
               </h4>
-              <p className="text-xs text-white/80 mt-2 leading-relaxed">
+              <p className="text-xs text-white/90 mt-2 leading-relaxed drop-shadow-sm">
                 {sideBanner.subtitle}
               </p>
             </div>
-            <Link
-              href={sideBanner.href || seeAllHref}
-              className="mt-6 inline-flex items-center gap-2 self-start px-4 py-2 bg-white text-gray-900 rounded-lg text-xs font-bold shadow hover:bg-gray-100 transition-colors"
-            >
-              Jelajahi &rarr;
-            </Link>
+            <div className="relative z-10 mt-6">
+              <Link
+                href={sideBanner.href || seeAllHref}
+                className="inline-flex items-center gap-2 self-start px-4 py-2 bg-white text-gray-900 rounded-lg text-xs font-bold shadow-md hover:bg-gray-100 transition-colors"
+              >
+                Jelajahi &rarr;
+              </Link>
+            </div>
           </div>
 
           {/* Product Grid / Row */}

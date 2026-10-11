@@ -25,44 +25,48 @@ export interface Banner {
   id: string;
   title: string;
   subtitle: string;
+  imageUrl?: string;
   imageBg: string;
   ctaText: string;
   href: string;
 }
 
 export const CATEGORIES: CategoryItem[] = [
-  { id: "bags", name: "Bags", icon: "🎒", color: "bg-blue-50 text-blue-600" },
-  { id: "new-arrival", name: "New Arrival", icon: "✨", color: "bg-amber-50 text-amber-600" },
-  { id: "sport", name: "Sport", icon: "⚽", color: "bg-emerald-50 text-emerald-600" },
-  { id: "english-books", name: "English Books", icon: "📚", color: "bg-indigo-50 text-indigo-600" },
-  { id: "stationery", name: "Stationery", icon: "✏️", color: "bg-rose-50 text-rose-600" },
-  { id: "toys", name: "Toys", icon: "🧸", color: "bg-purple-50 text-purple-600" },
-  { id: "it", name: "IT Gadget", icon: "💻", color: "bg-cyan-50 text-cyan-600" },
+  { id: "all", name: "Semua", icon: "📚", color: "bg-blue-50 text-blue-600" },
+  { id: "fiksi", name: "Fiksi & Sastra", icon: "📖", color: "bg-purple-50 text-purple-600" },
+  { id: "self-dev", name: "Self-Dev", icon: "🌱", color: "bg-emerald-50 text-emerald-600" },
+  { id: "bisnis", name: "Bisnis", icon: "💼", color: "bg-amber-50 text-amber-600" },
+  { id: "edukasi", name: "Edukasi", icon: "🎓", color: "bg-sky-50 text-sky-600" },
+  { id: "komik", name: "Komik", icon: "🎨", color: "bg-rose-50 text-rose-600" },
+  { id: "english", name: "Buku Asing", icon: "🌐", color: "bg-indigo-50 text-indigo-600" },
 ];
 
 export const HERO_BANNERS: Banner[] = [
   {
     id: "b1",
-    title: "Pesta Buku & Alat Tulis 2026",
-    subtitle: "Diskon hingga 70% untuk semua kategori terpopuler!",
-    imageBg: "from-blue-700 via-indigo-800 to-sky-900",
+    title: "Temukan Buku Favorit Bersama Sahabat",
+    subtitle: "Eksplorasi ribuan judul buku fiksi, sastra, dan pengembangan diri terpopuler di toko buku kami.",
+    imageUrl: "/images/girls-buying-books.jpg",
+    imageBg: "from-slate-950/95 via-slate-900/80 to-slate-900/20",
     ctaText: "Belanja Sekarang",
     href: "#katalog",
   },
   {
     id: "b2",
-    title: "Back to Campus Super Sale",
-    subtitle: "Kebutuhan kuliah & sekolah lengkap dengan cashback QRIS 50%",
-    imageBg: "from-red-600 via-rose-700 to-amber-700",
-    ctaText: "Lihat Promo",
-    href: "#back-to-campus",
+    title: "Back to Campus & Referensi Akademik",
+    subtitle: "Koleksi sains, teknologi, dan literatur kuliah lengkap dengan promo diskon spesial mahasiswa.",
+    imageUrl: "/images/student-bookstore.jpg",
+    imageBg: "from-slate-950/95 via-slate-900/80 to-slate-900/20",
+    ctaText: "Lihat Buku Edukasi",
+    href: "#edukasi",
   },
   {
     id: "b3",
-    title: "Rilisan Novel Best Seller Terbaru",
-    subtitle: "Dapatkan edisi bertanda tangan penulis ternama!",
-    imageBg: "from-emerald-800 via-teal-900 to-slate-900",
-    ctaText: "Cek Katalog",
+    title: "Rilisan Novel & Sastra Best Seller Terbaru",
+    subtitle: "Dapatkan bacaan inspiratif pilihan terpopuler 2026 langsung dari penerbit resmi terpercaya.",
+    imageUrl: "/images/reading-bookstore.jpg",
+    imageBg: "from-slate-950/95 via-slate-900/80 to-slate-900/20",
+    ctaText: "Cek Buku Terlaris",
     href: "#buku-terlaris",
   },
 ];
@@ -70,17 +74,19 @@ export const HERO_BANNERS: Banner[] = [
 export const HERO_SIDE_BANNERS = [
   {
     id: "sb1",
-    title: "E-Book Bundling Promo",
-    desc: "Hemat hingga 60% paket e-book digital pilihan",
-    bgColor: "bg-gradient-to-br from-blue-900 to-blue-700",
-    tag: "SPECIAL E-BOOK",
+    title: "Koleksi Sastra & Literasi Pilihan",
+    desc: "Temukan bacaan berkualitas rekomendasi kurator",
+    imageUrl: "/images/browsing-books.jpg",
+    bgColor: "from-slate-950/95 via-slate-900/80 to-slate-900/40",
+    tag: "REKOMENDASI BUKU",
   },
   {
     id: "sb2",
-    title: "Undian Ulang Tahun InforBook",
-    desc: "Menangkan hadiah total ratusan juta rupiah",
-    bgColor: "bg-gradient-to-br from-amber-600 to-orange-700",
-    tag: "GEBYAR PRIZE",
+    title: "Pengalaman Belanja Toko Buku Nyaman",
+    desc: "Suasana nyaman untuk menemukan inspirasi dan karya terbaik",
+    imageUrl: "/images/bookstore-customer.jpg",
+    bgColor: "from-slate-950/95 via-slate-900/80 to-slate-900/40",
+    tag: "OFFICIAL STORE",
   },
 ];
 
