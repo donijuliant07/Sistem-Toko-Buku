@@ -148,10 +148,10 @@ export default function HeroCarousel() {
 
               <div className="relative z-10 mt-2">
                 <a
-                  href="#katalog"
+                  href={side.href || "#katalog"}
                   className="text-xs font-semibold text-white inline-flex items-center gap-1 group-hover:underline"
                 >
-                  Cek Sekarang &rarr;
+                  {side.ctaText || "Cek Sekarang"} &rarr;
                 </a>
               </div>
             </div>

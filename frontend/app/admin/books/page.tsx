@@ -141,7 +141,7 @@ export default function AdminBooksPage() {
                   books.map((b) => (
                     <tr key={b.id} className="hover:bg-slate-50">
                       <td className="p-3 font-medium text-slate-800">{b.title}</td>
-                      <td className="p-3 text-slate-500">{(b as any).category_id || "-"}</td>
+                      <td className="p-3 text-slate-500">{(b as Book & { category_id?: string | null }).category_id || "-"}</td>
                       <td className="p-3 font-semibold text-slate-800">Rp{b.price?.toLocaleString("id-ID")}</td>
                       <td className="p-3">{b.stock}</td>
                       <td className="p-3 text-right">

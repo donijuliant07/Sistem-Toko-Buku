@@ -1,3 +1,8 @@
+-- ============================================================================
+-- ⚠️ ARSIP BASI — BUKAN JALUR MIGRASI. JANGAN dijalankan ke DB produksi.
+-- Fungsi di sini merujuk tabel `products` lama. Jalur resmi: Alembic
+-- (`backend/migrations/versions/`). Lihat `backend/supabase/README.md`.
+-- ============================================================================
 -- Migration 0003_functions.sql: Stored Procedures & Business Views
 
 -- 1. Atomic Stock Adjustment Function

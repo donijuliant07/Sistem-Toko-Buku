@@ -1,3 +1,9 @@
+-- ============================================================================
+-- ⚠️ ARSIP BASI — BUKAN JALUR MIGRASI. JANGAN dijalankan ke DB produksi.
+-- Skema di sini memakai tabel/enum lama yang tidak cocok dengan DB live.
+-- Jalur migrasi resmi: Alembic (`backend/migrations/versions/`).
+-- Lihat `backend/supabase/README.md`.
+-- ============================================================================
 -- Migration 0001_init.sql: Master Tables Setup for PustakaGram Bookstore
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

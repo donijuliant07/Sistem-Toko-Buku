@@ -71,22 +71,37 @@ export const HERO_BANNERS: Banner[] = [
   },
 ];
 
-export const HERO_SIDE_BANNERS = [
+export interface SideBanner {
+  id: string;
+  title: string;
+  desc: string;
+  imageUrl?: string;
+  bgColor: string;
+  tag: string;
+  href?: string;
+  ctaText?: string;
+}
+
+export const HERO_SIDE_BANNERS: SideBanner[] = [
   {
     id: "sb1",
-    title: "Koleksi Sastra & Literasi Pilihan",
-    desc: "Temukan bacaan berkualitas rekomendasi kurator",
-    imageUrl: "/images/browsing-books.jpg",
-    bgColor: "from-slate-950/95 via-slate-900/80 to-slate-900/40",
+    title: "Koleksi Sastra & Pojok Baca",
+    desc: "Temukan bacaan berkualitas rekomendasi kurator di suasana membaca yang nyaman",
+    imageUrl: "/images/bookstore-reading-corner.jpg",
+    bgColor: "from-slate-950/95 via-slate-900/80 to-slate-900/35",
     tag: "REKOMENDASI BUKU",
+    href: "#katalog",
+    ctaText: "Eksplor Buku",
   },
   {
     id: "sb2",
-    title: "Pengalaman Belanja Toko Buku Nyaman",
-    desc: "Suasana nyaman untuk menemukan inspirasi dan karya terbaik",
-    imageUrl: "/images/bookstore-customer.jpg",
-    bgColor: "from-slate-950/95 via-slate-900/80 to-slate-900/40",
-    tag: "OFFICIAL STORE",
+    title: "Diskusi Buku & Komunitas",
+    desc: "Ruang temu interaktif untuk bedah karya, tukar pikiran, dan belajar bersama sahabat literasi",
+    imageUrl: "/images/bookstore-discussion.jpg",
+    bgColor: "from-slate-950/95 via-slate-900/80 to-slate-900/35",
+    tag: "DISKUSI & KOMUNITAS",
+    href: "#katalog",
+    ctaText: "Gabung Diskusi",
   },
 ];
 

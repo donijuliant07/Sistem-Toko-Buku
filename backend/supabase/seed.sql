@@ -1,3 +1,8 @@
+-- ============================================================================
+-- ⚠️ ARSIP BASI — BUKAN JALUR MIGRASI. JANGAN dijalankan ke DB produksi.
+-- Seed ini merujuk tabel `products`/`customers` lama, bukan `books`/`profiles`.
+-- Lihat `backend/supabase/README.md`.
+-- ============================================================================
 -- Supabase Seed Data: Categories, Products, Promos, Customers
 
 -- 1. Insert Categories

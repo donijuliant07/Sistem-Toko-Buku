@@ -23,6 +23,12 @@ class Profile(Base):
         primary_key=True,
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'user'"))
+    # Identifier mudah dicari (CLAUDE.md §2). Nullable di skema: baris lama bisa
+    # belum memilikinya, dan keunikannya ditegakkan lewat unique index parsial
+    # `uq_profiles_username` (case-insensitive, hanya untuk nilai non-NULL).
+    username: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         nullable=False,
         server_default=text("now()"),

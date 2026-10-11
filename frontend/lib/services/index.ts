@@ -20,6 +20,21 @@ import { createClient } from "@/lib/supabase"
 
 const supabase = createClient()
 
+/** Bentuk baris `books` dari fallback REST Supabase (tanpa generics). */
+type SupabaseBookRow = {
+  id: string
+  title: string
+  author: string
+  isbn: string
+  price: string | number
+  stock: number
+  weight_gram?: number | null
+  description?: string | null
+  cover_url?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 // In-memory store untuk fallback & data non-buku
 let productsStore: Product[] = [...initialProducts]
 
@@ -128,7 +143,7 @@ export const productService = {
       try {
         const { data } = await supabase.from("books").select("*").order("created_at", { ascending: false })
         if (data && data.length > 0) {
-          return data.map((b: any) => {
+          return (data as SupabaseBookRow[]).map((b) => {
             const normalPrice = typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000
             return {
               id: b.id,
