@@ -43,12 +43,9 @@ def _serialize(row: Dict[str, Any]) -> Dict[str, Any]:
 
 class PromoService:
     @staticmethod
-    def get_all(only_usable: bool = False) -> List[Dict[str, Any]]:
-        """Daftar promo. `only_usable` menyaring yang benar-benar bisa dipakai sekarang."""
+    def get_all() -> List[Dict[str, Any]]:
+        """Daftar promo. Semua promo (termasuk nonaktif & terjadwal) untuk admin."""
         query = supabase_admin.table("promos").select(_COLUMNS)
-        if only_usable:
-            query = query.eq("is_active", True).lte("start_date", date.today().isoformat())
-            query = query.gte("end_date", date.today().isoformat())
         res = query.order("created_at", desc=True).execute()
         return [_serialize(row) for row in (res.data or [])]
 
@@ -87,11 +84,6 @@ class PromoService:
         if not res.data:
             raise PromoNotFound(f"Promo dengan ID {promo_id} tidak ditemukan.")
         return _serialize(res.data[0])
-
-    @staticmethod
-    def set_active(promo_id: str, is_active: bool) -> Dict[str, Any]:
-        """Toggle cepat dari daftar admin tanpa mengirim payload penuh."""
-        return PromoService.update(promo_id, PromoUpdate(is_active=is_active))
 
     @staticmethod
     def delete(promo_id: str) -> None:

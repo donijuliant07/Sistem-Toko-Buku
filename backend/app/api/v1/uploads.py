@@ -34,7 +34,7 @@ async def upload_product_cover(
     unique_name = f"covers/{uuid.uuid4().hex}.{ext}"
 
     try:
-        res = supabase_admin.storage.from_(settings.STORAGE_BUCKET_PRODUCTS).upload(
+        supabase_admin.storage.from_(settings.STORAGE_BUCKET_PRODUCTS).upload(
             path=unique_name,
             file=file_bytes,
             file_options={"content-type": file.content_type},

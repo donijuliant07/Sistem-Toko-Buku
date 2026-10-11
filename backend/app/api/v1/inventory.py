@@ -54,7 +54,7 @@ async def adjust_stock(
     current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     try:
-        res = inventory_service.adjust_stock(payload, user_id=current_user.id)
+        res = inventory_service.adjust_stock(payload)
         return ApiResponse(
             sukses=True,
             pesan="Stok produk berhasil diperbarui.",

@@ -1,7 +1,7 @@
 import os
 import httpx
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 from app.core.config import settings
 from app.schemas.ai_review import SpoilerLevel, AIReviewResponse
 
@@ -63,7 +63,7 @@ def _generate_rule_based_review(
             "Buku ini mulai membuka sedikit konflik awal dan memperkenalkan tantangan yang dihadapi tokoh utama."
         )
         writing_style = (
-            f"Penulis meramu bab-bab pembuka dengan introduksi setting yang kaya. "
+            "Penulis meramu bab-bab pembuka dengan introduksi setting yang kaya. "
             "Pemberian petunjuk-petunjuk kecil (foreshadowing) membuat alur awal terasa berbobot."
         )
         characters = (
