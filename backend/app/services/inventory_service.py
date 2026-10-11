@@ -47,7 +47,7 @@ class InventoryService:
         return movements, total
 
     @staticmethod
-    def adjust_stock(payload: StockAdjustmentRequest, user_id: str) -> Dict[str, Any]:
+    def adjust_stock(payload: StockAdjustmentRequest) -> Dict[str, Any]:
         """Sesuaikan stok langsung di tabel `books` (RPC `adjust_stock` tidak ada
         di database live). Penyesuaian manual lewat jalur ini; pemotongan karena
         penjualan dilakukan `OrderService.create`, dan pengembaliannya dilakukan

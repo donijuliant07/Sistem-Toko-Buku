@@ -367,7 +367,7 @@ class OrderService:
         return (res.data or [None])[0]
 
     @staticmethod
-    def update_status(order_id: str, payload: OrderStatusUpdate, user_id: str) -> Dict[str, Any]:
+    def update_status(order_id: str, payload: OrderStatusUpdate) -> Dict[str, Any]:
         # RPC `update_order_status` tidak ada di database live, jadi transisi
         # dilakukan langsung.
         current = OrderService.get_by_id(order_id)

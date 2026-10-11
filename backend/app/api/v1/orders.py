@@ -141,7 +141,7 @@ async def update_order_status(
     current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
     try:
-        res = order_service.update_status(order_id, payload, user_id=current_user.id)
+        res = order_service.update_status(order_id, payload)
         return ApiResponse(
             sukses=True,
             pesan=f"Status pesanan berhasil diubah menjadi '{payload.status}'.",

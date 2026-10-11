@@ -316,7 +316,7 @@ def test_create_order_retries_when_the_order_number_collides():
 
     assert response.status_code == 201
     assert orders_table.insert.call_count == 2
-    first, second = (call.args[0]["order_number"] for call in orders_table.insert.call_args_list)
+    first, _second = (call.args[0]["order_number"] for call in orders_table.insert.call_args_list)
     assert first.startswith("INV/")
 
 
