@@ -1,3 +1,15 @@
+"""Pesanan dan layanan pengiriman.
+
+Aturan akses:
+
+- **Pelanggan** (`require_user`) hanya dapat membuat pesanan dan melihat
+  pesanannya sendiri. Membuat pesanan selalu terikat ke `current_user.id`.
+- **Admin** (`require_admin`) mengelola status, pembayaran, dan job kedaluwarsa,
+  serta melihat seluruh pesanan.
+- Detail pesanan milik pengguna lain dilaporkan **404**, bukan 403, supaya
+  keberadaannya tidak terungkap.
+"""
+
 import math
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -75,10 +87,13 @@ async def get_order_detail(
             detail=f"Pesanan dengan ID {order_id} tidak ditemukan.",
         )
 
+    # Pesanan milik pengguna lain selalu dilaporkan sebagai 404, bukan 403 —
+    # konsisten dengan kebijakan proyek: keberadaan sumber daya yang bukan hak
+    # pemanggil tidak boleh terungkap lewat kode status.
     if current_user.role != "admin" and order.get("user_id") != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Anda tidak memiliki akses untuk melihat pesanan ini.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Pesanan dengan ID {order_id} tidak ditemukan.",
         )
 
     return ApiResponse(

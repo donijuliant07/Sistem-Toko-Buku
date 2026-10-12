@@ -1,3 +1,9 @@
+"""Voucher dan diskon. Seluruh endpoint khusus admin.
+
+Endpoint ini mengelola kelola promo; penerapan diskon pada checkout belum
+tersedia (`OrderService.create` menolak `promo_code`).
+"""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status

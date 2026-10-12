@@ -1,3 +1,14 @@
+"""Login, registrasi, dan profil pengguna.
+
+Login/registrasi **tidak** memakai `require_admin`/`require_user` dependency:
+keduanya endpoint publik. Supabase Auth dipanggil lewat klien anon
+(`supabase_anon`); pembacaan profil memakai `supabase_admin` karena kolom role
+harus tetap terbaca meski RLS membatasi baris.
+
+Nomor telepon dari registrasi ikut dikirim sebagai metadata akun tetapi tidak
+disimpan di `profiles` (kolomnya tidak ada di skema live).
+"""
+
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.security import get_current_user, UserPayload

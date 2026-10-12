@@ -1,10 +1,19 @@
+"""Voucher dan diskon (`promos`).
+
+Status promo (`Aktif`/`Jadwal`/`Kadaluarsa`/`Nonaktif`) tidak pernah disimpan di
+database: nilainya diturunkan dari `is_active` + rentang tanggal setiap kali
+dibaca, supaya tidak bisa basi. `PromoNotFound` dibedakan dari `ValueError`
+biasa agar layer API dapat memetakan 404 terpisah dari 400.
+"""
+
 from typing import Any, Dict, List, Optional
 from datetime import date
 
 from app.core.supabase import supabase_admin
 from app.schemas.promo import PromoCreate, PromoUpdate
 
-# Kolom yang dibaca/ditulis; `discount_value` dll. returned as numeric-as-string.
+# Kolom yang dibaca/ditulis. PostgREST mengembalikan kolom numeric sebagai
+# string, sehingga `_serialize` mengubahnya kembali menjadi float.
 _COLUMNS = (
     "id, code, name, discount_type, discount_value, min_purchase, max_discount, "
     "quota, used_count, is_active, start_date, end_date, created_at, updated_at"

@@ -1,3 +1,5 @@
+"""Kategori produk. Baca bersifat publik, tulis khusus admin."""
+
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.security import require_admin, UserPayload

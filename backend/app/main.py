@@ -1,3 +1,9 @@
+"""Titik masuk aplikasi FastAPI.
+
+Merangkai seluruh router `/api/v1`, mengatur CORS dari konfigurasi, dan
+menyediakan endpoint kesehatan. Jalankan lewat `uvicorn app.main:app`.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -50,6 +56,7 @@ app.add_api_route(
 
 @app.get("/health", tags=["Kesehatan"])
 async def health_check():
+    """Laporan kesiapan sederhana; dipakai pemeriksaan uptime."""
     return {
         "status": "online",
         "pesan": "Backend Toko Buku Gramedia API siap digunakan.",

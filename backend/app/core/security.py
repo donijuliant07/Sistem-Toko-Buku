@@ -1,3 +1,18 @@
+"""Otentikasi dan otorisasi berbasis token Supabase.
+
+Alur verifikasi satu permintaan:
+
+1. `get_current_user` memvalidasi Bearer token (JWKS untuk alg asimetris,
+   HS256 untuk token legacy) dan membentuk `UserPayload`.
+2. `resolve_user_role` membaca kolom `role` dari tabel `profiles`. Ini
+   **satu-satunya** sumber otorisasi yang tepercaya — metadata di dalam JWT
+   dapat diubah sendiri oleh pemilik akun, jadi tidak pernah dipakai.
+3. `require_admin` / `require_user` memagari endpoint sesuai peran.
+
+Semua keputusan akses "gagal tertutup" (fail closed): profil hilang atau role
+di luar `VALID_ROLES` ditolak, bukan diberi default yang permisif.
+"""
+
 from typing import Annotated, Any, Optional
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -56,6 +71,8 @@ def _decode_token(token: str) -> dict[str, Any]:
 
 
 class UserPayload(BaseModel):
+    """Identitas pemanggil hasil verifikasi token, sudah dilengkapi role tepercaya."""
+
     id: str
     email: Optional[str] = None
     role: str = "user"
@@ -106,6 +123,10 @@ async def resolve_user_role(user_id: str) -> str:
 async def get_current_user(
     credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(security)]
 ) -> UserPayload:
+    """Validasi Bearer token dan kembalikan identitas pemanggil.
+
+    Melempar 401 bila header tidak ada atau token tidak lolos verifikasi.
+    """
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -152,6 +173,7 @@ async def get_current_user(
 async def require_admin(
     current_user: Annotated[UserPayload, Depends(get_current_user)]
 ) -> UserPayload:
+    """Batasi endpoint ke `role = 'admin'`; selain itu 403."""
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

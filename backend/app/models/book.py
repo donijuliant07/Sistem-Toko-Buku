@@ -10,7 +10,11 @@ from app.db.base import Base
 
 
 class Book(Base):
-    """Book catalog record."""
+    """Catatan katalog buku.
+
+    Tabel ini disajikan publik untuk dibaca; penulisan hanya lewat endpoint
+    admin sehingga `anon` tidak bisa mengubah katalog.
+    """
 
     __tablename__ = "books"
     __table_args__ = (

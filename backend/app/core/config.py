@@ -1,8 +1,18 @@
+"""Konfigurasi aplikasi dari variabel lingkungan atau berkas `.env`.
+
+`Settings` adalah satu-satunya tempat nilai konfigurasi dideklarasikan;
+modul lain mengimpornya lewat objek `settings` yang sudah di-instansiasi di
+bawah. Nilai default sengaja permisif untuk pengembangan lokal, tetapi wajib
+ditimpa di lingkungan nyata (lihat `.env.example`).
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
 
 class Settings(BaseSettings):
+    """Nilai konfigurasi backend, dibaca dari `.env` dengan fallback default."""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -34,10 +44,16 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        """URL database untuk engine SQLAlchemy (`app.db.session`)."""
         return self.DATABASE_URL
 
     @property
     def cors_origins(self) -> list[str]:
+        """Daftar origin frontend hasil pemisahan `FRONTEND_ORIGINS` per koma.
+
+        Nilai kosong dibuang supaya koma berlebih di `.env` tidak menghasilkan
+        origin string kosong yang membuat CORS menolak secara tidak terduga.
+        """
         return [origin.strip() for origin in self.FRONTEND_ORIGINS.split(",") if origin.strip()]
 
 

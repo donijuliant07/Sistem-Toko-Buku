@@ -10,7 +10,11 @@ from app.db.base import Base
 
 
 class Promo(Base):
-    """Voucher/discount campaign. Usable only while active and inside its date window."""
+    """Voucher/diskon. Hanya berlaku saat aktif dan di dalam rentang tanggalnya.
+
+    Status (`Aktif`/`Jadwal`/`Kadaluarsa`/`Nonaktif`) tidak disimpan sebagai
+    kolom; nilainya diturunkan dari `is_active` + tanggal oleh `PromoService`.
+    """
 
     __tablename__ = "promos"
     __table_args__ = (

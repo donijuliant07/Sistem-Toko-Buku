@@ -1,9 +1,24 @@
+"""Inventori dan pergerakan stok.
+
+Tabel `stock_movements` dan view `low_stock_products` tidak ada di database
+live, jadi:
+
+- Riwayat pergerakan **diturunkan** dari `order_items` (setiap item memotong
+  stok saat pesanan dibuat).
+- Produk stok kritis dibaca langsung dari `books` dengan ambang `stock <= 5`.
+
+Penyesuaian manual menulis ke `books.stock`; pemotongan karena penjualan dan
+pengembaliannya dikelola `OrderService`.
+"""
+
 from typing import Optional, Dict, Any, Tuple, List
+
 from app.core.supabase import supabase_admin
 from app.schemas.inventory import StockAdjustmentRequest
 
 
 class InventoryService:
+    """Penyesuaian stok dan pembacaan riwayat pergerakan (stateless)."""
     @staticmethod
     def get_movements(
         page: int = 1,
