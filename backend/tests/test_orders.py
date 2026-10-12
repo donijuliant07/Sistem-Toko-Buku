@@ -474,10 +474,11 @@ def test_create_order_rejects_insufficient_stock():
 
 
 def test_order_detail_hides_another_users_order():
+    """Pesanan milik user lain dilaporkan 404 agar keberadaannya tidak bocor."""
     as_user(OTHER_USER_ID)
     with patch("app.services.order_service.OrderService.get_by_id", return_value=serialized_order()):
         response = client.get("/api/v1/orders/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 def test_order_detail_allows_the_owner():
@@ -633,7 +634,7 @@ def test_list_orders_is_scoped_to_the_authenticated_user():
 
 
 def test_get_order_detail_rejects_another_users_order():
-    """Pesanan milik user lain tidak dapat dibuka — 403, bukan data bocor."""
+    """Pesanan milik user lain tidak dapat dibuka — 404, bukan data bocor."""
     other_order = order_rows_response()
     other_order["user_id"] = OTHER_USER_ID
 
@@ -644,7 +645,7 @@ def test_get_order_detail_rejects_another_users_order():
     ):
         response = client.get(f"/api/v1/orders/{ORDER_ID}")
 
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 def test_get_order_detail_allows_admin_to_read_any_order():

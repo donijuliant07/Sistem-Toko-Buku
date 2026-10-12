@@ -1,3 +1,19 @@
+"""Pesanan: pembuatan, pembacaan, perubahan status, dan pemulihan stok.
+
+Modul ini memegang aturan bisnis paling penting di toko:
+
+- **Harga, judul, dan berat item berasal dari tabel `books`**, bukan dari
+  payload klien (`create` menimpanya).
+- **Ongkir ditentukan server** lewat `app.core.shipping`; klien hanya memilih
+  `shipping_option_id`.
+- **Stok dipotong di sini** — satu-satunya jalur yang memotong — dan
+  dikembalikan saat pesanan dibatalkan atau kedaluwarsa.
+
+Catatan transaksi: operasi lintas tabel dijalankan sebagai beberapa panggilan
+PostgREST berurutan dengan kompensasi manual, bukan satu transaksi database.
+Lihat komentar pada `_adjust_stock` untuk batasannya.
+"""
+
 import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Tuple, List

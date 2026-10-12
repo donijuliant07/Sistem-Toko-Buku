@@ -1,3 +1,15 @@
+"""Ulasan buku bertenaga AI dengan kontrol tingkat spoiler.
+
+Alur `generate_ai_book_review`:
+
+1. Kembalikan hasil dari cache in-memory bila ada (kunci `book_id:spoiler_level`).
+2. Bila `OPENROUTER_API_KEY` tersedia, panggil OpenRouter (model Qwen).
+3. Bila tidak ada kunci atau panggilan gagal, susun ulasan dari template aturan
+   (`_generate_rule_based_review`) supaya endpoint tetap memberi hasil.
+
+Cache bersifat per-proses dan tidak dibatasi ukuran; cukup untuk demo lokal.
+"""
+
 import os
 import httpx
 import json

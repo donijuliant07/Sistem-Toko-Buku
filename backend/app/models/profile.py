@@ -9,7 +9,11 @@ from app.db.base import Base
 
 
 class Profile(Base):
-    """Application profile linked to a Supabase Auth user."""
+    """Profil aplikasi yang terhubung ke pengguna Supabase Auth.
+
+    `role` adalah satu-satunya sumber otorisasi (`app.core.security`); nilainya
+    dibatasi CHECK constraint ke `user`/`admin`.
+    """
 
     __tablename__ = "profiles"
     __table_args__ = (

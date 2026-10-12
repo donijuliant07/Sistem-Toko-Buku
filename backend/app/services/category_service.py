@@ -1,9 +1,20 @@
+"""Kategori produk (`categories`).
+
+CRUD sederhana tanpa aturan bisnis tambahan: validasi bentuk payload dilakukan
+schema Pydantic (`app.schemas.category`), dan pembatasan peran admin dilakukan
+di layer API (`require_admin`). Service ini hanya menerjemahkan DTO ke operasi
+tabel.
+"""
+
 from typing import Optional, List, Dict, Any
+
 from app.core.supabase import supabase_admin
 from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
 class CategoryService:
+    """Akses tabel `categories` (stateless)."""
+
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
         res = supabase_admin.table("categories").select("*").order("name").execute()

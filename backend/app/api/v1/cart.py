@@ -1,3 +1,10 @@
+"""Keranjang pelanggan. Semua endpoint memerlukan role `user`.
+
+Admin tidak boleh berbelanja dengan akunnya (`require_user` menolak role
+`admin`). Item yang bukan milik pemanggil dilaporkan 404, bukan 403, agar
+keberadaan item milik pengguna lain tidak terungkap.
+"""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status

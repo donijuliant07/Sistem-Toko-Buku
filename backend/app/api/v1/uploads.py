@@ -1,3 +1,5 @@
+"""Unggah berkas ke Supabase Storage. Khusus admin."""
+
 import uuid
 from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status

@@ -1,3 +1,12 @@
+"""Keranjang belanja pelanggan (`carts`/`cart_items`).
+
+Keranjang hanya menyimpan `book_id` dan `quantity`. Harga dan stok **selalu**
+dibaca ulang dari tabel `books` setiap kali keranjang diminta, sehingga angka
+yang tersimpan tidak pernah basi, dan pesanan tetap divalidasi ulang oleh
+`OrderService.create` saat checkout.
+"""
+
+import uuid
 from typing import Any, Dict, List, Optional
 
 from app.core.supabase import supabase_admin
@@ -11,13 +20,18 @@ _MAX_QUANTITY = 99
 
 
 def _is_uuid(value: Any) -> bool:
-    """`cart_items.book_id` adalah UUID FK; id non-UUID tidak mungkin dipesan."""
-    if not isinstance(value, str) or len(value) != 36:
+    """Apakah `value` UUID yang valid (bentuk apa pun yang diterima PostgreSQL).
+
+    `cart_items.book_id` adalah kolom UUID, jadi id non-UUID tidak mungkin
+    dipesan; menyaring di sini menghindari satu round-trip ke database.
+    """
+    if not isinstance(value, str):
         return False
-    parts = value.split("-")
-    if [len(p) for p in parts] != [8, 4, 4, 4, 12]:
+    try:
+        uuid.UUID(value)
+    except ValueError:
         return False
-    return all(all(c in "0123456789abcdefABCDEF" for c in p) for p in parts)
+    return True
 
 
 class CartItemNotFound(ValueError):

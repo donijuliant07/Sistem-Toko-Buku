@@ -1,3 +1,8 @@
+"""KPI, grafik, dan laporan untuk dashboard admin. Khusus admin.
+
+Seluruh nilai berasal dari agregasi data nyata lewat `DashboardService`.
+"""
+
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, Query
 from app.core.security import require_admin, UserPayload
@@ -47,15 +52,10 @@ async def get_category_chart(
 
 @router.get("/reports/monthly", response_model=ApiResponse[List[MonthlyReportItem]])
 async def get_monthly_reports(
-    current_user: Annotated[UserPayload, Depends(require_admin)],
+    months: int = Query(4, ge=1, le=24, description="Jumlah bulan terakhir yang direkap"),
+    current_user: Annotated[UserPayload, Depends(require_admin)] = None,
 ):
-    # Historical monthly reports
-    reports = [
-        {"month": "Oktober 2026", "orders": 124, "revenue": 117200000.0, "best_category": "Fiksi", "growth": "+14.2%"},
-        {"month": "September 2026", "orders": 110, "revenue": 104000000.0, "best_category": "Pengembangan Diri", "growth": "+9.8%"},
-        {"month": "Agustus 2026", "orders": 98, "revenue": 89900000.0, "best_category": "Pendidikan & Referensi", "growth": "+6.5%"},
-        {"month": "Juli 2026", "orders": 92, "revenue": 84300000.0, "best_category": "Komik & Graphic Novel", "growth": "+4.1%"},
-    ]
+    reports = dashboard_service.get_monthly_reports(months=months)
     return ApiResponse(
         sukses=True,
         pesan="Data rekapitulasi laporan bulanan berhasil dimuat.",

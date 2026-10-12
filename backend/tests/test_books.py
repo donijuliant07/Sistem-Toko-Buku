@@ -1,13 +1,24 @@
+import socket
+from datetime import UTC, datetime
 from decimal import Decimal
+from unittest.mock import patch
 from uuid import UUID
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError, OperationalError
 
+from app.api.v1.books import (
+    _is_isbn_conflict,
+    list_books,
+    load_book_for_read,
+    load_book_for_write,
+)
+from app.core.security import UserPayload, get_current_user, require_admin
 from app.db.session import get_db
-from app.core.security import get_current_user, require_admin, UserPayload
 from app.main import app
-from app.schemas.book import BookCreate, BookUpdate
+from app.models import Book
+from app.schemas.book import BookCreate, BookPage, BookUpdate
 
 
 class EmptyResult:
@@ -159,3 +170,128 @@ async def test_book_write_endpoints_reject_user(client, method):
 async def test_book_write_endpoints_reject_guest(client):
     response = await client.post("/api/v1/books", json=valid_book_data())
     assert response.status_code == 401
+
+
+# --- Jalur baca SQLAlchemy → PostgREST dan deteksi konflik ISBN ---
+# `books.py` adalah satu-satunya modul yang memakai SQLAlchemy; jalur baca
+# jatuh ke PostgREST hanya ketika lapisan database gagal.
+
+
+class FakeSession:
+    """Sesi ORM minimal: `get` mengembalikan objek tetap atau melempar error."""
+
+    def __init__(self, result=None, error=None):
+        self._result = result
+        self._error = error
+
+    async def get(self, _model, _pk):
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+    async def execute(self, _statement):
+        if self._error is not None:
+            raise self._error
+        return EmptyResult()
+
+
+def make_book() -> Book:
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    return Book(
+        id=UUID(int=7),
+        title="Clean Code",
+        author="Robert C. Martin",
+        isbn="9780132350884",
+        description=None,
+        price=Decimal("39.99"),
+        stock=5,
+        cover_url=None,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@pytest.mark.asyncio
+async def test_load_book_for_read_prefers_the_orm():
+    book = make_book()
+    result = await load_book_for_read(UUID(int=7), FakeSession(result=book))
+
+    assert result["title"] == "Clean Code"
+    assert result["id"] == str(UUID(int=7))
+
+
+@pytest.mark.asyncio
+async def test_load_book_for_read_falls_back_to_postgrest_on_db_failure():
+    """Kegagalan lapisan database memicu fallback, bukan 500."""
+    rest_row = {"id": str(UUID(int=7)), "title": "Clean Code", "author": "Robert C. Martin"}
+    session = FakeSession(error=OperationalError("select 1", {}, Exception("db down")))
+
+    with patch("app.api.v1.books._fetch_book_from_rest", return_value=rest_row):
+        result = await load_book_for_read(UUID(int=7), session)
+
+    assert result["title"] == "Clean Code"
+
+
+@pytest.mark.asyncio
+async def test_load_book_for_read_raises_404_when_missing_everywhere():
+    session = FakeSession(result=None)
+    rest = patch("app.api.v1.books._fetch_book_from_rest", return_value=None)
+
+    with rest, pytest.raises(HTTPException) as exc:
+        await load_book_for_read(UUID(int=7), session)
+
+    assert exc.value.status_code == 404
+
+@pytest.mark.asyncio
+async def test_load_book_for_write_raises_404_without_rest_fallback():
+    """Operasi tulis tidak punya jalur alternatif: baris hilang = 404."""
+    with pytest.raises(HTTPException) as exc:
+        await load_book_for_write(UUID(int=7), FakeSession(result=None))
+
+    assert exc.value.status_code == 404
+
+
+def test_isbn_conflict_detected_from_sqlstate():
+    orig = Exception("duplicate key value violates unique constraint")
+    orig.sqlstate = "23505"
+
+    assert _is_isbn_conflict(IntegrityError("insert", {}, orig))
+
+
+def test_isbn_conflict_detected_from_constraint_name():
+    orig = Exception('duplicate key value violates unique constraint "uq_books_isbn"')
+
+    assert _is_isbn_conflict(IntegrityError("insert", {}, orig))
+
+
+def test_unrelated_integrity_error_is_not_an_isbn_conflict():
+    orig = Exception("null value in column violates not-null constraint")
+
+    assert not _is_isbn_conflict(IntegrityError("insert", {}, orig))
+
+
+@pytest.mark.asyncio
+async def test_list_books_falls_back_to_postgrest_when_host_cannot_be_resolved():
+    """Nama host DB yang gagal di-resolve harus jatuh ke PostgREST, bukan 500.
+
+    asyncpg melempar `socket.gaierror` mentah untuk kasus ini; itu turunan
+    `OSError`, bukan `SQLAlchemyError`, jadi regresi di sini membuat katalog
+    landing page mati total.
+    """
+    session = FakeSession(error=socket.gaierror(11001, "getaddrinfo failed"))
+    rest_page = BookPage(items=[], total=0, page=1, page_size=12)
+
+    with patch("app.api.v1.books._list_books_from_rest", return_value=rest_page) as rest:
+        result = await list_books(page=1, page_size=12, q=None, db=session)
+
+    assert rest.called
+    assert result is rest_page
+
+
+@pytest.mark.asyncio
+async def test_list_books_does_not_swallow_programming_errors():
+    """Hanya kegagalan konektivitas yang di-fallback; bug kode tetap terlihat."""
+    session = FakeSession(error=TypeError("bug di kode"))
+
+    with pytest.raises(TypeError):
+        await list_books(page=1, page_size=12, q=None, db=session)

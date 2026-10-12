@@ -1,3 +1,18 @@
+"""Klien Supabase untuk PostgREST, Storage, dan Auth.
+
+Dua klien dengan hak akses berbeda:
+
+- `supabase_admin` memakai service role key dan **melewati RLS**. Dipakai service
+  untuk operasi backend yang sudah diotorisasi di layer API.
+- `supabase_anon` memakai anon key dan tunduk pada RLS. Dipakai alur
+  login/registrasi supaya Supabase Auth berjalan sebagai klien publik, bukan
+  sebagai service role.
+
+Karena `supabase_admin` menembus RLS, otorisasi TIDAK boleh mengandalkan
+database: pemeriksaan peran tetap dilakukan dependency FastAPI di
+`app.core.security`.
+"""
+
 from supabase import create_client, Client
 from app.core.config import settings
 
