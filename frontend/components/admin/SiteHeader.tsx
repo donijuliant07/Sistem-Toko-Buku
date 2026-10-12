@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Menu, Search, Bell, ExternalLink } from "lucide-react"
+import { Menu, Search, Bell, Store } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb"
@@ -132,9 +132,9 @@ export function SiteHeader({ onToggleMobileMenu }: SiteHeaderProps) {
             size="sm"
             className="hidden lg:flex items-center gap-1.5 text-xs border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 rounded-xl font-medium shadow-2xs transition-all"
           >
-            <Link href="/" target="_blank">
+            <Link href="/">
               <span>Buka Toko</span>
-              <ExternalLink className="h-3 w-3 text-zinc-400" />
+              <Store className="h-3 w-3 text-zinc-400" />
             </Link>
           </Button>
         </div>
