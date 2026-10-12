@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { getBooks } from "@/lib/api";
 import type { Book, BookPage } from "@/lib/types";
-import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryShortcuts from "@/components/CategoryShortcuts";
@@ -12,7 +11,8 @@ import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
 import BookDetailModal from "@/components/BookDetailModal";
-import { Product } from "@/data/mockData";
+import { Product, CATEGORIES } from "@/data/mockData";
+import FreepikCategoryIcon from "@/components/FreepikCategoryIcon";
 import { ArrowDownUp, Check, RotateCcw } from "lucide-react";
 
 const initialPage: BookPage = { items: [], total: 0, page: 1, page_size: 12 };
@@ -52,9 +52,17 @@ export default function Home() {
     };
   }, []);
 
+  // Selected category object for labels and keyword filtering
+  const selectedCategoryObj = useMemo(() => {
+    return CATEGORIES.find((c) => c.id === activeCategory);
+  }, [activeCategory]);
+
   useEffect(() => {
     let active = true;
-    getBooks(page.page, query)
+    // When a specific category is chosen, fetch larger catalog set (up to 60 items)
+    // so category keyword filtering has full rich dataset.
+    const fetchPageSize = activeCategory !== "all" ? 60 : 12;
+    getBooks(page.page, query, fetchPageSize)
       .then((data) => {
         if (active) {
           setPage(data);
@@ -66,7 +74,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [page.page, query]);
+  }, [page.page, query, activeCategory]);
 
   const handleSearchSubmit = (q: string) => {
     setPage((curr) => ({ ...curr, page: 1 }));
@@ -75,7 +83,8 @@ export default function Home() {
 
   const handleCategorySelect = (categoryId: string) => {
     setActiveCategory(categoryId);
-    // Smooth scroll to catalog
+    setPage((curr) => ({ ...curr, page: 1 }));
+    // Smooth scroll redirect to catalog section
     const catalogElem = document.getElementById("katalog");
     if (catalogElem) {
       catalogElem.scrollIntoView({ behavior: "smooth" });
@@ -124,9 +133,18 @@ export default function Home() {
       : page.items.slice(0, 6)
   ).map((b) => toProduct(b, "rekomendasi"));
 
-  // Processed catalog products with sorting and stock filtering
+  // Processed catalog products with sorting, category filtering, and stock filtering
   const processedProducts = useMemo(() => {
     let items = page.items.map((b) => toProduct(b, "katalog"));
+
+    // Category filtering
+    if (activeCategory !== "all" && selectedCategoryObj?.keywords?.length) {
+      const kwList = selectedCategoryObj.keywords;
+      items = items.filter((p) => {
+        const text = `${p.title} ${p.authorOrBrand}`.toLowerCase();
+        return kwList.some((kw) => text.includes(kw.toLowerCase()));
+      });
+    }
 
     if (onlyInStock) {
       items = items.filter((p) => p.stock === undefined || p.stock > 0);
@@ -141,7 +159,7 @@ export default function Home() {
     }
 
     return items;
-  }, [page.items, onlyInStock, sortBy]);
+  }, [page.items, onlyInStock, sortBy, activeCategory, selectedCategoryObj]);
 
   const pageCount = Math.max(1, Math.ceil(page.total / page.page_size));
   // Turunan, bukan state: skeleton hanya untuk pemuatan awal katalog.
@@ -149,10 +167,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* 1. Top Bar */}
-      <TopBar />
-
-      {/* 2. Sticky Header with User Identifier */}
+      {/* Header with User Identifier */}
       <Header
         query={query}
         onSearchSubmit={handleSearchSubmit}
@@ -223,18 +238,34 @@ export default function Home() {
         <section id="katalog" className="max-w-300 mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-gray-200 gap-4">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
                   Katalog Lengkap Toko Buku
                 </h3>
+                {activeCategory !== "all" && selectedCategoryObj && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0052cc] border border-blue-200 shadow-2xs">
+                    <FreepikCategoryIcon id={activeCategory} size={16} className="w-4 h-4" />
+                    <span>Kategori: {selectedCategoryObj.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory("all")}
+                      className="ml-1 text-gray-400 hover:text-red-500 font-bold cursor-pointer transition-colors"
+                      title="Kembalikan ke semua kategori"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
                 {query && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-[#0052cc]">
-                    Pencarian
+                    Pencarian: "{query}"
                   </span>
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {query
+                {activeCategory !== "all" && selectedCategoryObj
+                  ? `Menampilkan ${processedProducts.length} judul buku untuk kategori "${selectedCategoryObj.name}".`
+                  : query
                   ? `Hasil pencarian untuk "${query}"`
                   : "Jelajahi koleksi buku resmi kami dengan berbagai kategori bacaan."}
               </p>
@@ -282,11 +313,11 @@ export default function Home() {
                 </select>
               </div>
 
-              {(query || onlyInStock || sortBy !== "relevance") && (
+              {(query || onlyInStock || sortBy !== "relevance" || activeCategory !== "all") && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="p-1.5 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+                  className="p-1.5 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                   title="Reset Filter"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
