@@ -17,8 +17,11 @@ export interface Product {
 export interface CategoryItem {
   id: string;
   name: string;
+  tag?: string;
   icon: string;
   color: string;
+  bgGlow?: string;
+  keywords?: string[];
 }
 
 export interface Banner {
@@ -32,13 +35,104 @@ export interface Banner {
 }
 
 export const CATEGORIES: CategoryItem[] = [
-  { id: "all", name: "Semua", icon: "📚", color: "bg-blue-50 text-blue-600" },
-  { id: "fiksi", name: "Fiksi & Sastra", icon: "📖", color: "bg-purple-50 text-purple-600" },
-  { id: "self-dev", name: "Self-Dev", icon: "🌱", color: "bg-emerald-50 text-emerald-600" },
-  { id: "bisnis", name: "Bisnis", icon: "💼", color: "bg-amber-50 text-amber-600" },
-  { id: "edukasi", name: "Edukasi", icon: "🎓", color: "bg-sky-50 text-sky-600" },
-  { id: "komik", name: "Komik", icon: "🎨", color: "bg-rose-50 text-rose-600" },
-  { id: "english", name: "Buku Asing", icon: "🌐", color: "bg-indigo-50 text-indigo-600" },
+  {
+    id: "all",
+    name: "Semua",
+    tag: "Koleksi Lengkap",
+    icon: "all",
+    color: "text-blue-600 bg-blue-50/70 border-blue-200",
+    bgGlow: "from-blue-500/10 to-indigo-500/10",
+  },
+  {
+    id: "fiksi",
+    name: "Fiksi & Sastra",
+    tag: "Novel & Prosa",
+    icon: "fiksi",
+    color: "text-purple-600 bg-purple-50/70 border-purple-200",
+    bgGlow: "from-purple-500/10 to-pink-500/10",
+    keywords: ["fiksi", "sastra", "novel", "bumi", "laut", "cantik", "dilan", "perahu", "supernova", "hujan", "pergi", "gadis", "orang-orang biasa", "max havelaar", "alkemis", "harry potter", "hobbit", "pangeran kecil", "ayat-ayat", "pulang", "1984", "ronggeng", "menara", "laskar"],
+  },
+  {
+    id: "self-dev",
+    name: "Self-Dev",
+    tag: "Pengembangan Diri",
+    icon: "self-dev",
+    color: "text-emerald-600 bg-emerald-50/70 border-emerald-200",
+    bgGlow: "from-emerald-500/10 to-teal-500/10",
+    keywords: ["atomic habits", "seni untuk bersikap bodo amat", "tidak disukai", "filosofi teras", "goodbye", "tidur", "sleep", "ikigai", "enzyme", "heart", "magnet rezeki", "kebiasaan", "mental", "kebahagiaan"],
+  },
+  {
+    id: "bisnis",
+    name: "Bisnis",
+    tag: "Finansial & Karir",
+    icon: "bisnis",
+    color: "text-amber-600 bg-amber-50/70 border-amber-200",
+    bgGlow: "from-amber-500/10 to-orange-500/10",
+    keywords: ["money", "rich dad", "zero to one", "good to great", "think and grow", "bisnis", "finansial", "investasi", "rezeki"],
+  },
+  {
+    id: "edukasi",
+    name: "Edukasi",
+    tag: "Akademik & Sains",
+    icon: "edukasi",
+    color: "text-sky-600 bg-sky-50/70 border-sky-200",
+    bgGlow: "from-sky-500/10 to-blue-500/10",
+    keywords: ["politik", "penelitian", "hukum", "pendidikan", "matematika", "madilog", "sapiens", "astrofisika", "cosmos", "waktu", "life 3.0", "kuliah", "teori", "ilmiah", "diskrit"],
+  },
+  {
+    id: "komik",
+    name: "Komik",
+    tag: "Manga & Grafis",
+    icon: "komik",
+    color: "text-rose-600 bg-rose-50/70 border-rose-200",
+    bgGlow: "from-rose-500/10 to-pink-500/10",
+    keywords: ["one piece", "naruto", "conan", "spy x family", "miiko", "komik", "manga", "vol."],
+  },
+  {
+    id: "english",
+    name: "Buku Asing",
+    tag: "Buku Internasional",
+    icon: "english",
+    color: "text-indigo-600 bg-indigo-50/70 border-indigo-200",
+    bgGlow: "from-indigo-500/10 to-blue-500/10",
+    keywords: ["the ", "atomic", "rich dad", "zero to one", "good to great", "think and grow", "why we sleep", "goodbye", "life 3.0", "cosmos", "1984", "hobbit", "harry potter", "sapiens", "ikigai", "freire", "english"],
+  },
+  {
+    id: "teknologi",
+    name: "Teknologi",
+    tag: "IT & Komputer",
+    icon: "teknologi",
+    color: "text-cyan-600 bg-cyan-50/70 border-cyan-200",
+    bgGlow: "from-cyan-500/10 to-teal-500/10",
+    keywords: ["life 3.0", "ai", "kecerdasan buatan", "matematika diskrit", "elon musk", "zero to one", "teknologi"],
+  },
+  {
+    id: "anak",
+    name: "Buku Anak",
+    tag: "Cerita & Dongeng",
+    icon: "anak",
+    color: "text-pink-600 bg-pink-50/70 border-pink-200",
+    bgGlow: "from-pink-500/10 to-rose-500/10",
+    keywords: ["lima sekawan", "charlie", "wimpy kid", "na willa", "pangeran kecil", "tanah melus", "anak", "dongeng"],
+  },
+  {
+    id: "religi",
+    name: "Religi",
+    tag: "Spiritual & Hikmah",
+    icon: "religi",
+    color: "text-emerald-700 bg-emerald-50/70 border-emerald-300",
+    bgGlow: "from-emerald-500/10 to-green-500/10",
+    keywords: ["rasulullah", "tasawuf", "riyadhus", "shalihin", "sirah", "la tahzan", "rezeki", "ayat-ayat", "islam", "spiritual"],
+  },
+  {
+    id: "biografi",
+    name: "Biografi",
+    tag: "Tokoh Inspiratif",
+    icon: "biografi",
+    color: "text-amber-700 bg-amber-50/70 border-amber-300",
+    bgGlow: "from-amber-500/10 to-yellow-500/10",
+    keywords: ["bung karno", "elon musk", "becoming", "gus dur", "habibie", "biografi"],
+  },
 ];
 
 export const HERO_BANNERS: Banner[] = [

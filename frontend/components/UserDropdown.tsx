@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/AuthProvider";
 import {
   ChevronDown,
+  ChevronRight,
   LayoutDashboard,
   Package,
   ShoppingBag,
@@ -21,6 +22,7 @@ import {
   ShieldCheck,
   BookOpen,
   Compass,
+  User,
 } from "lucide-react";
 
 export default function UserDropdown() {
@@ -29,9 +31,9 @@ export default function UserDropdown() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 animate-pulse bg-gray-100 rounded-full">
-        <div className="w-7 h-7 bg-gray-200 rounded-full" />
-        <div className="w-16 h-3 bg-gray-200 rounded hidden sm:block" />
+      <div className="flex items-center gap-2 pl-1 pr-2.5 py-1 bg-slate-100/70 border border-slate-200/60 rounded-full animate-pulse">
+        <div className="w-7 h-7 bg-slate-200 rounded-full" />
+        <div className="w-14 h-3 bg-slate-200 rounded hidden sm:block" />
       </div>
     );
   }
@@ -41,13 +43,13 @@ export default function UserDropdown() {
       <div className="flex items-center gap-2">
         <Link
           href="/login"
-          className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-[#0052cc] hover:bg-[#0041a8] rounded-full transition-all shadow-sm hover:shadow active:scale-95"
+          className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-[#0052cc] hover:bg-[#0041a8] rounded-full transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer"
         >
           Masuk
         </Link>
         <Link
           href="/register"
-          className="hidden md:inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-gray-700 hover:text-[#0052cc] bg-gray-100 hover:bg-gray-200 rounded-full transition-all active:scale-95"
+          className="hidden md:inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-gray-700 hover:text-[#0052cc] bg-gray-100 hover:bg-gray-200 rounded-full transition-all active:scale-95 cursor-pointer"
         >
           Daftar
         </Link>
@@ -62,14 +64,9 @@ export default function UserDropdown() {
     user.email?.split("@")[0] ||
     "Pengguna";
   const email = user.email || "";
-  const avatarUrl = user.user_metadata?.avatar_url || "";
-  const initials =
-    fullName
-      .split(" ")
-      .map((part: string) => part[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "U";
+  // Gunakan foto profil kustom pengguna jika ada, atau fallback ke default shadcn avatar (https://github.com/shadcn.png)
+  const avatarUrl =
+    user.user_metadata?.avatar_url || "https://github.com/shadcn.png";
 
   const isAdmin = role === "admin";
 
@@ -83,84 +80,91 @@ export default function UserDropdown() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50/80 transition-all focus:outline-none focus:ring-2 focus:ring-[#0052cc]/20 cursor-pointer group"
-          title="Akun Saya"
+          className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 shadow-2xs transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 cursor-pointer group active:scale-[0.98]"
+          title="Menu Akun"
         >
-          {/* Avatar Identifier */}
-          <Avatar className="h-7 w-7 ring-2 ring-white shadow-xs">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
-            <AvatarFallback
-              className={`text-[11px] font-bold text-white ${
-                isAdmin
-                  ? "bg-gradient-to-tr from-amber-600 to-indigo-600"
-                  : "bg-gradient-to-tr from-blue-600 to-teal-500"
-              }`}
-            >
-              {initials}
+          {/* Default Shadcn Avatar */}
+          <Avatar className="h-7 w-7 border border-slate-200/80 transition-transform duration-200 group-hover:scale-105">
+            <AvatarImage
+              src={avatarUrl}
+              alt={fullName}
+              className="aspect-square h-full w-full object-cover"
+            />
+            <AvatarFallback className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-600">
+              <User className="w-3.5 h-3.5 text-slate-600" />
             </AvatarFallback>
           </Avatar>
 
           {/* User Name & Role Pill */}
           <div className="flex items-center gap-1.5 text-left">
-            <span className="text-xs font-semibold text-gray-800 max-w-[90px] sm:max-w-[120px] truncate group-hover:text-[#0052cc] transition-colors">
+            <span className="text-xs font-medium text-slate-700 max-w-21.25 sm:max-w-30 truncate tracking-tight group-hover:text-slate-900 transition-colors">
               {fullName}
             </span>
 
-            {/* Role Badge Indicator */}
+            {/* Professional Role Badge */}
             {isAdmin ? (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 transition-colors group-hover:bg-amber-100/70">
                 <ShieldCheck className="w-2.5 h-2.5 text-amber-600" />
                 Admin
               </span>
             ) : (
-              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60">
                 Member
               </span>
             )}
           </div>
 
-          <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 ease-out group-data-[state=open]:rotate-180" />
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64 p-1.5 shadow-xl border border-gray-200/80 rounded-xl bg-white">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={6}
+        className="w-72 p-1.5 shadow-lg border border-slate-200/80 rounded-xl bg-white text-slate-900"
+      >
         {/* User Identity Header Card */}
-        <DropdownMenuLabel className="p-2 font-normal bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-lg mb-1 border border-gray-100">
+        <DropdownMenuLabel className="p-2.5 font-normal bg-slate-50/80 rounded-lg mb-1 border border-slate-100">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 ring-2 ring-white shadow-xs">
-              {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
-              <AvatarFallback
-                className={`text-xs font-bold text-white ${
-                  isAdmin
-                    ? "bg-gradient-to-tr from-amber-600 to-indigo-600"
-                    : "bg-gradient-to-tr from-blue-600 to-teal-500"
-                }`}
-              >
-                {initials}
+            <Avatar className="h-10 w-10 border border-slate-200/80 shadow-2xs shrink-0">
+              <AvatarImage
+                src={avatarUrl}
+                alt={fullName}
+                className="aspect-square h-full w-full object-cover"
+              />
+              <AvatarFallback className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                <User className="w-5 h-5 text-slate-600" />
               </AvatarFallback>
             </Avatar>
 
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-gray-900 truncate flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-900 truncate tracking-tight">
                 {fullName}
               </span>
-              <span className="text-[11px] text-gray-500 truncate" title={email}>
+              <span
+                className="text-[11px] text-slate-500 truncate tracking-tight mt-0.5"
+                title={email}
+              >
                 {email}
               </span>
-              <span
-                className={`inline-block self-start mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                  isAdmin
-                    ? "bg-amber-100 text-amber-800 border border-amber-200"
-                    : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                }`}
-              >
-                {isAdmin ? "🛡️ Administrator Toko" : "🛍️ Pelanggan Aktif"}
-              </span>
+              <div className="mt-1.5">
+                {isAdmin ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/80">
+                    <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>Administrator Toko</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200/70">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>Pelanggan Aktif</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </DropdownMenuLabel>
 
-        <DropdownMenuSeparator className="my-1 bg-gray-100" />
+        <DropdownMenuSeparator className="my-1 bg-slate-100" />
 
         {/* Role-Specific Actions */}
         {isAdmin ? (
@@ -168,33 +172,66 @@ export default function UserDropdown() {
             <DropdownMenuItem asChild>
               <Link
                 href="/admin/dashboard"
-                className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                className="group flex items-center justify-between px-2.5 py-2 text-xs rounded-lg transition-all duration-150 hover:bg-slate-100/80 focus:bg-slate-100/80 cursor-pointer"
               >
-                <LayoutDashboard className="w-4 h-4 text-[#0052cc]" />
-                <div className="flex flex-col">
-                  <span className="font-semibold text-gray-800">Dashboard Admin</span>
-                  <span className="text-[10px] text-gray-500">Statistik & ringkasan toko</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-blue-50 flex items-center justify-center text-[#0052cc] group-hover:bg-blue-100/90 group-hover:scale-105 transition-all duration-150 shrink-0">
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-slate-800 group-hover:text-slate-950 transition-colors">
+                      Dashboard Admin
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
+                      Statistik & ringkasan toko
+                    </span>
+                  </div>
                 </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shrink-0" />
               </Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link
                 href="/admin/produk"
-                className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                className="group flex items-center justify-between px-2.5 py-2 text-xs rounded-lg transition-all duration-150 hover:bg-slate-100/80 focus:bg-slate-100/80 cursor-pointer"
               >
-                <BookOpen className="w-4 h-4 text-emerald-600" />
-                <span>Kelola Katalog & Buku</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100/90 group-hover:scale-105 transition-all duration-150 shrink-0">
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-slate-800 group-hover:text-slate-950 transition-colors">
+                      Kelola Katalog & Buku
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
+                      Daftar produk, stok & harga
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shrink-0" />
               </Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link
                 href="/admin/pesanan"
-                className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                className="group flex items-center justify-between px-2.5 py-2 text-xs rounded-lg transition-all duration-150 hover:bg-slate-100/80 focus:bg-slate-100/80 cursor-pointer"
               >
-                <Package className="w-4 h-4 text-purple-600" />
-                <span>Kelola Pesanan Masuk</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-100/90 group-hover:scale-105 transition-all duration-150 shrink-0">
+                    <Package className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-slate-800 group-hover:text-slate-950 transition-colors">
+                      Kelola Pesanan Masuk
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
+                      Verifikasi & status pengiriman
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shrink-0" />
               </Link>
             </DropdownMenuItem>
           </>
@@ -203,40 +240,60 @@ export default function UserDropdown() {
             <DropdownMenuItem asChild>
               <Link
                 href="/orders"
-                className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                className="group flex items-center justify-between px-2.5 py-2 text-xs rounded-lg transition-all duration-150 hover:bg-slate-100/80 focus:bg-slate-100/80 cursor-pointer"
               >
-                <ShoppingBag className="w-4 h-4 text-[#0052cc]" />
-                <div className="flex flex-col">
-                  <span className="font-semibold text-gray-800">Pesanan Saya</span>
-                  <span className="text-[10px] text-gray-500">Riwayat & status pengiriman</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-blue-50 flex items-center justify-center text-[#0052cc] group-hover:bg-blue-100/90 group-hover:scale-105 transition-all duration-150 shrink-0">
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-slate-800 group-hover:text-slate-950 transition-colors">
+                      Pesanan Saya
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
+                      Riwayat & status pesanan
+                    </span>
+                  </div>
                 </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shrink-0" />
               </Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link
                 href="#katalog"
-                className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                className="group flex items-center justify-between px-2.5 py-2 text-xs rounded-lg transition-all duration-150 hover:bg-slate-100/80 focus:bg-slate-100/80 cursor-pointer"
               >
-                <Compass className="w-4 h-4 text-emerald-600" />
-                <div className="flex flex-col">
-                  <span className="font-semibold text-gray-800">Jelajahi Katalog</span>
-                  <span className="text-[10px] text-gray-500">Lihat semua koleksi buku</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100/90 group-hover:scale-105 transition-all duration-150 shrink-0">
+                    <Compass className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-slate-800 group-hover:text-slate-950 transition-colors">
+                      Jelajahi Katalog
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
+                      Lihat semua koleksi buku
+                    </span>
+                  </div>
                 </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shrink-0" />
               </Link>
             </DropdownMenuItem>
           </>
         )}
 
-        <DropdownMenuSeparator className="my-1 bg-gray-100" />
+        <DropdownMenuSeparator className="my-1 bg-slate-100" />
 
-        {/* Sign Out Button */}
+        {/* Sign Out Button with Micro-interaction */}
         <DropdownMenuItem
           onClick={handleSignOut}
-          className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer"
+          className="group flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all duration-150 cursor-pointer focus:bg-red-50 focus:text-red-700"
         >
-          <LogOut className="w-4 h-4 text-red-500" />
-          <span>Keluar dari Akun</span>
+          <div className="w-7 h-7 rounded-md bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-100/80 transition-colors shrink-0">
+            <LogOut className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-150" />
+          </div>
+          <span className="font-medium">Keluar dari Akun</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
