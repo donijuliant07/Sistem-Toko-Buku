@@ -53,22 +53,22 @@ export function CommandSearchDialog({ open, onOpenChange }: CommandSearchDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden sm:max-w-xl">
+      <DialogContent className="p-0 overflow-hidden sm:max-w-xl rounded-2xl border-zinc-200/80 shadow-2xl bg-white">
         <DialogTitle className="sr-only">Pencarian Global</DialogTitle>
         <DialogDescription className="sr-only">Cari produk, pesanan, atau menu admin</DialogDescription>
-        <div className="flex items-center px-4 border-b border-slate-100 dark:border-slate-800">
-          <Search className="h-4 w-4 text-slate-400 mr-2 shrink-0" />
+        <div className="flex items-center px-4 border-b border-zinc-100">
+          <Search className="h-4 w-4 text-zinc-400 mr-2 shrink-0" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari produk, pesanan, pelanggan, atau menu... (Cmd+K)"
-            className="border-0 shadow-none focus-visible:ring-0 text-sm h-12 px-0 bg-transparent"
+            className="border-0 shadow-none focus-visible:ring-0 text-sm h-12 px-0 bg-transparent text-zinc-900 placeholder:text-zinc-400"
             autoFocus
           />
         </div>
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
-            <p className="p-4 text-center text-xs text-slate-400">Tidak ada hasil ditemukan.</p>
+            <p className="p-4 text-center text-xs text-zinc-400">Tidak ada hasil ditemukan.</p>
           ) : (
             filtered.map((item, idx) => {
               const Icon = item.icon
@@ -76,22 +76,22 @@ export function CommandSearchDialog({ open, onOpenChange }: CommandSearchDialogP
                 <button
                   key={idx}
                   onClick={() => handleSelect(item.href)}
-                  className="flex w-full items-center justify-between rounded-lg p-2.5 text-left text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  className="flex w-full items-center justify-between rounded-xl p-2.5 text-left text-xs transition-colors hover:bg-zinc-100 cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
-                      <p className="text-[11px] text-slate-400">{item.subtitle}</p>
+                      <p className="font-semibold text-zinc-900">{item.title}</p>
+                      <p className="text-[11px] text-zinc-500">{item.subtitle}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800">
+                    <span className="rounded-md bg-zinc-100 border border-zinc-200/60 px-1.5 py-0.5 text-[10px] text-zinc-600 font-medium">
                       {item.category}
                     </span>
-                    <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                    <ArrowRight className="h-3.5 w-3.5 text-zinc-400" />
                   </div>
                 </button>
               )

@@ -41,27 +41,26 @@ export function SectionCards({ data, loading }: SectionCardsProps) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {data.map((kpi, idx) => {
         const Icon = getIcon(kpi.title)
-        const isAccent = idx % 2 === 1
         return (
-          <Card key={idx} className="relative overflow-hidden transition-all hover:shadow-md border-[var(--border)] bg-[var(--surface)] rounded-xl shadow-[var(--shadow-card)]">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">
+          <Card key={idx} className="relative overflow-hidden transition-all hover:border-zinc-300 hover:shadow-sm border-zinc-200/80 bg-white rounded-2xl shadow-xs">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-5 pb-2">
+              <CardTitle className="text-xs font-medium text-zinc-500 tracking-tight">
                 {kpi.title}
               </CardTitle>
-              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isAccent ? "bg-[var(--accent-soft)] text-[var(--accent-hover)]" : "bg-[var(--primary-soft)] text-[var(--primary)]"}`}>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700">
                 <Icon className="h-4 w-4" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-extrabold tracking-tight text-[var(--foreground)] tabular-nums">
+            <CardContent className="p-5 pt-0">
+              <div className="text-2xl sm:text-[28px] font-bold tracking-tight text-zinc-900 tabular-nums">
                 {kpi.value}
               </div>
               <div className="mt-2 flex items-center gap-1.5 text-xs">
                 <span
-                  className={`inline-flex items-center font-bold px-1.5 py-0.5 rounded text-[11px] ${
+                  className={`inline-flex items-center font-semibold px-2 py-0.5 rounded-full text-[11px] border ${
                     kpi.isPositive
-                      ? "bg-[var(--success-soft)] text-[var(--success)]"
-                      : "bg-[var(--danger-soft)] text-[var(--danger)]"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                      : "bg-rose-50 text-rose-700 border-rose-200/60"
                   }`}
                 >
                   {kpi.isPositive ? (
@@ -72,7 +71,7 @@ export function SectionCards({ data, loading }: SectionCardsProps) {
                   {kpi.isPositive ? "+" : ""}
                   {kpi.trendPercent}%
                 </span>
-                <span className="text-[var(--muted-foreground)] truncate">{kpi.description}</span>
+                <span className="text-zinc-500 truncate">{kpi.description}</span>
               </div>
             </CardContent>
           </Card>

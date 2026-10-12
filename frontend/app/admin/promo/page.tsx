@@ -128,7 +128,7 @@ export default function AdminPromosPage() {
         action={
           <Button
             onClick={() => setCreateOpen(true)}
-            className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+            className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Buat Promo Baru</span>
@@ -140,27 +140,32 @@ export default function AdminPromosPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="h-44 animate-pulse bg-slate-100 dark:bg-slate-800 border-0" />
+            <Card key={i} className="h-44 rounded-2xl animate-pulse bg-zinc-100 border-0" />
           ))
         ) : promos.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-xs text-slate-400">
+          <div className="col-span-full py-12 text-center text-xs text-zinc-500">
             Belum ada kampanye promo.
           </div>
         ) : (
           promos.map((prm) => (
             <Card
               key={prm.id}
-              className={`relative overflow-hidden transition-all border-slate-200/80 dark:border-slate-800 ${
-                !prm.is_active ? "opacity-60 bg-slate-50 dark:bg-slate-950" : ""
+              className={`relative overflow-hidden transition-all rounded-2xl border-zinc-200/80 bg-white shadow-xs ${
+                !prm.is_active ? "opacity-60 bg-zinc-50" : ""
               }`}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <Badge variant={prm.is_active ? "success" : "secondary"} className="text-[10px]">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                      prm.is_active
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                        : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${prm.is_active ? "bg-emerald-500" : "bg-zinc-400"}`} />
                       {prm.status}
-                    </Badge>
-                    <CardTitle className="text-sm font-bold mt-1 text-slate-900 dark:text-slate-100">
+                    </span>
+                    <CardTitle className="text-sm font-bold mt-2 text-zinc-900 tracking-tight">
                       {prm.name}
                     </CardTitle>
                   </div>
@@ -173,7 +178,7 @@ export default function AdminPromosPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 px-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
+                      className="h-7 w-7 p-0 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                       onClick={() => handleDelete(prm)}
                       title="Hapus promo"
                     >
@@ -184,47 +189,47 @@ export default function AdminPromosPage() {
               </CardHeader>
 
               <CardContent className="space-y-3 text-xs">
-                {/* Kode Voucher */}
-                <div className="flex items-center justify-between rounded-lg bg-blue-50/80 dark:bg-blue-950/60 p-2.5 border border-blue-100 dark:border-blue-900">
+                {/* Kode Voucher AlignUI Sapphire Blue Accent */}
+                <div className="flex items-center justify-between rounded-xl bg-blue-50/70 p-2.5 border border-blue-200/60">
                   <div className="flex items-center gap-2">
                     <Tag className="h-4 w-4 text-blue-600" />
-                    <span className="font-mono font-bold tracking-wider text-blue-700 dark:text-blue-300 text-sm">
+                    <span className="font-mono font-bold tracking-wider text-blue-700 text-sm">
                       {prm.code}
                     </span>
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 text-[10px] text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
+                    className="h-7 px-2 text-[10px] text-blue-700 hover:bg-blue-100 rounded-lg cursor-pointer"
                     onClick={() => handleCopyCode(prm.code)}
                   >
-                    {copiedCode === prm.code ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copiedCode === prm.code ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                   </Button>
                 </div>
 
                 {/* Detail Nilai & Syarat */}
-                <div className="space-y-1 text-slate-600 dark:text-slate-400">
+                <div className="space-y-1.5 text-zinc-600">
                   <div className="flex justify-between">
                     <span>Besar Diskon:</span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                    <span className="font-bold text-zinc-900 tabular-nums">
                       {prm.discount_type === "Persentase" ? `${prm.discount_value}%` : formatRupiah(prm.discount_value)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Min. Belanja:</span>
-                    <span>{formatRupiah(prm.min_purchase)}</span>
+                    <span className="tabular-nums font-medium text-zinc-800">{formatRupiah(prm.min_purchase)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Penggunaan Kuota:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="font-semibold text-zinc-900 tabular-nums">
                       {prm.used_count} / {prm.quota} klaim
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex justify-between">
+                <div className="pt-2 border-t border-zinc-100 text-[11px] text-zinc-500 flex justify-between">
                   <span>Periode:</span>
-                  <span>{formatTanggal(prm.start_date)} - {formatTanggal(prm.end_date)}</span>
+                  <span className="font-medium text-zinc-700">{formatTanggal(prm.start_date)} - {formatTanggal(prm.end_date)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -234,42 +239,43 @@ export default function AdminPromosPage() {
 
       {/* Modal Dialog Buat Promo */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white border border-zinc-200/80 text-zinc-900 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-base">Buat Kampanye Promo Baru</DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogTitle className="text-base font-bold tracking-tight text-zinc-900">Buat Kampanye Promo Baru</DialogTitle>
+            <DialogDescription className="text-xs text-zinc-500">
               Atur kupon voucher diskon atau potongan ongkir toko.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateSubmit} className="space-y-3 py-2 text-xs">
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-700 dark:text-slate-300">Nama Kampanye *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Nama Kampanye *</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Misal: Promo Gajian Akhir Bulan"
+                className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Kode Kupon *</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Kode Kupon *</label>
                 <Input
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="PAYDAY2026"
-                  className="font-mono uppercase"
+                  className="font-mono uppercase rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Tipe Promo *</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Tipe Promo *</label>
                 <Select value={type} onValueChange={(val) => setType(val as PromoDiscountType)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-9 text-xs rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-zinc-200/80 text-zinc-900 rounded-xl shadow-lg">
                     <SelectItem value="Persentase" className="text-xs">Persentase (%)</SelectItem>
                     <SelectItem value="Potongan Tetap" className="text-xs">Potongan Tetap (Rp)</SelectItem>
                     <SelectItem value="Gratis Ongkir" className="text-xs">Gratis Ongkir</SelectItem>
@@ -279,48 +285,52 @@ export default function AdminPromosPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Nilai Diskon</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Nilai Diskon</label>
                 <Input
                   type="number"
                   value={discountValue}
                   onChange={(e) => setDiscountValue(Number(e.target.value))}
+                  className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Min Belanja</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Min Belanja</label>
                 <Input
                   type="number"
                   value={minPurchase}
                   onChange={(e) => setMinPurchase(Number(e.target.value))}
+                  className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Kuota Kupon</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Kuota Kupon</label>
                 <Input
                   type="number"
                   value={quota}
                   onChange={(e) => setQuota(Number(e.target.value))}
+                  className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Berlaku Sampai *</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Berlaku Sampai *</label>
                 <Input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
+                  className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-zinc-500">
               Mulai berlaku hari ini. Kolom tanggal tersimpan sebagai DATE, bukan jam.
             </p>
 
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(false)}>
+            <DialogFooter className="mt-4 gap-2">
+              <Button type="button" variant="outline" size="sm" className="rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 cursor-pointer" onClick={() => setCreateOpen(false)}>
                 Batal
               </Button>
-              <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button type="submit" size="sm" className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-xs font-medium cursor-pointer">
                 Terbitkan Promo
               </Button>
             </DialogFooter>

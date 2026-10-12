@@ -32,7 +32,7 @@ export default function AdminReportsPage() {
           <Button
             size="sm"
             onClick={() => handleExportCSV("Semua Periode")}
-            className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+            className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Ekspor Semua (CSV)</span>
@@ -46,32 +46,32 @@ export default function AdminReportsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <CategoryChart />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Ringkasan Omset Bulanan</CardTitle>
-            <CardDescription className="text-xs">
+        <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs overflow-hidden">
+          <CardHeader className="p-5 border-b border-zinc-100">
+            <CardTitle className="text-base font-bold tracking-tight text-zinc-900">Ringkasan Omset Bulanan</CardTitle>
+            <CardDescription className="text-xs text-zinc-500">
               Histori pendapatan bruto dan pertumbuhan volume order per bulan
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-semibold">Bulan</TableHead>
-                  <TableHead className="font-semibold">Pesanan</TableHead>
-                  <TableHead className="font-semibold">Pendapatan</TableHead>
-                  <TableHead className="font-semibold">Pertumbuhan</TableHead>
-                  <TableHead className="text-right font-semibold">Aksi</TableHead>
+              <TableHeader className="bg-zinc-50/75">
+                <TableRow className="border-b border-zinc-200/80 hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs text-zinc-600">Bulan</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Pesanan</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Pendapatan</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Pertumbuhan</TableHead>
+                  <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {monthlyReports.map((row, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-semibold text-xs text-slate-800 dark:text-slate-200">
+                  <TableRow key={idx} className="border-b border-zinc-100 hover:bg-zinc-50/70 transition-colors">
+                    <TableCell className="font-semibold text-xs text-zinc-900">
                       {row.month}
                     </TableCell>
-                    <TableCell className="text-xs">{row.orders} trx</TableCell>
-                    <TableCell className="text-xs font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                    <TableCell className="text-xs text-zinc-600">{row.orders} trx</TableCell>
+                    <TableCell className="text-xs font-bold text-zinc-900 tabular-nums">
                       {formatRupiah(row.revenue)}
                     </TableCell>
                     <TableCell className="text-xs font-semibold text-emerald-600">
@@ -81,7 +81,7 @@ export default function AdminReportsPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs gap-1 text-slate-600 dark:text-slate-400 hover:text-blue-600"
+                        className="h-7 text-xs gap-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg cursor-pointer"
                         onClick={() => handleExportCSV(row.month)}
                       >
                         <FileSpreadsheet className="h-3.5 w-3.5" />

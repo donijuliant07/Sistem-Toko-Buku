@@ -13,9 +13,13 @@ import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
 import BookDetailModal from "@/components/BookDetailModal";
 import { Product } from "@/data/mockData";
-import { ArrowDownUp, Check, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowDownUp, Check, RotateCcw } from "lucide-react";
 
 const initialPage: BookPage = { items: [], total: 0, page: 1, page_size: 12 };
+
+// Dua request pertama (featured + katalog) berjalan bersamaan saat mount, jadi skeleton
+// ditahan sampai keduanya selesai agar tampilan tidak berkedip.
+const initialRequests = 2;
 
 type SortOption = "relevance" | "price_asc" | "price_desc" | "title_asc";
 
@@ -24,7 +28,7 @@ export default function Home() {
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(0);
   const [error, setError] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -41,7 +45,8 @@ export default function Home() {
           setFeaturedBooks(data.items);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => active && setLoaded((n) => n + 1));
     return () => {
       active = false;
     };
@@ -49,7 +54,6 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     getBooks(page.page, query)
       .then((data) => {
         if (active) {
@@ -58,7 +62,7 @@ export default function Home() {
         }
       })
       .catch(() => active && setError("Katalog buku gagal dimuat dari server."))
-      .finally(() => active && setLoading(false));
+      .finally(() => active && setLoaded((n) => n + 1));
     return () => {
       active = false;
     };
@@ -91,7 +95,9 @@ export default function Home() {
     title: b.title,
     authorOrBrand: b.author,
     price: typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000,
-    originalPrice: (typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000) * 1.15,
+    originalPrice:
+      (typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000) *
+      1.15,
     discountPercent: 15,
     soldCount: (b.stock || 5) * 12,
     badgeLanguage: "ID",
@@ -102,9 +108,21 @@ export default function Home() {
   });
 
   // Showcase books
-  const bestsellerProducts: Product[] = (featuredBooks.length > 0 ? featuredBooks.slice(0, 8) : page.items.slice(0, 8)).map((b) => toProduct(b, "terlaris"));
-  const campusBooks: Product[] = (featuredBooks.length > 8 ? featuredBooks.slice(8, 16) : page.items.slice(0, 6)).map((b) => toProduct(b, "edukasi"));
-  const newReleaseBooks: Product[] = (featuredBooks.length > 16 ? featuredBooks.slice(16, 24) : page.items.slice(0, 6)).map((b) => toProduct(b, "rekomendasi"));
+  const bestsellerProducts: Product[] = (
+    featuredBooks.length > 0
+      ? featuredBooks.slice(0, 8)
+      : page.items.slice(0, 8)
+  ).map((b) => toProduct(b, "terlaris"));
+  const campusBooks: Product[] = (
+    featuredBooks.length > 8
+      ? featuredBooks.slice(8, 16)
+      : page.items.slice(0, 6)
+  ).map((b) => toProduct(b, "edukasi"));
+  const newReleaseBooks: Product[] = (
+    featuredBooks.length > 16
+      ? featuredBooks.slice(16, 24)
+      : page.items.slice(0, 6)
+  ).map((b) => toProduct(b, "rekomendasi"));
 
   // Processed catalog products with sorting and stock filtering
   const processedProducts = useMemo(() => {
@@ -126,6 +144,8 @@ export default function Home() {
   }, [page.items, onlyInStock, sortBy]);
 
   const pageCount = Math.max(1, Math.ceil(page.total / page.page_size));
+  // Turunan, bukan state: skeleton hanya untuk pemuatan awal katalog.
+  const loading = loaded < initialRequests;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -160,7 +180,8 @@ export default function Home() {
             sideBanner={{
               tag: "BESTSELLER 2026",
               title: "Koleksi Buku Pilihan Paling Dicari",
-              subtitle: "Dari fiksi mendalam hingga pengembangan diri inspiratif.",
+              subtitle:
+                "Dari fiksi mendalam hingga pengembangan diri inspiratif.",
               bgGradient: "from-slate-950/95 via-slate-900/85 to-slate-900/60",
               imageUrl: "/images/reading-corner.jpg",
             }}
@@ -178,7 +199,8 @@ export default function Home() {
             sideBanner={{
               tag: "EDUKASI & SASTRA",
               title: "Bacaan Inspiratif Masa Kini",
-              subtitle: "Koleksi sastra Indonesia dan pengembangan diri terlengkap.",
+              subtitle:
+                "Koleksi sastra Indonesia dan pengembangan diri terlengkap.",
               bgGradient: "from-slate-950/95 via-stone-900/85 to-stone-900/60",
               imageUrl: "/images/bookstore-visitor.jpg",
             }}
@@ -198,7 +220,7 @@ export default function Home() {
         )}
 
         {/* 8. Full Catalog / Backend Integration Section */}
-        <section id="katalog" className="max-w-[1200px] mx-auto px-4 py-8">
+        <section id="katalog" className="max-w-300 mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-gray-200 gap-4">
             <div>
               <div className="flex items-center gap-2">
@@ -245,7 +267,9 @@ export default function Home() {
               {/* Sort By Dropdown */}
               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-700 shadow-2xs">
                 <ArrowDownUp className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span className="text-gray-400 text-[11px] hidden sm:inline">Urutkan:</span>
+                <span className="text-gray-400 text-[11px] hidden sm:inline">
+                  Urutkan:
+                </span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -274,7 +298,7 @@ export default function Home() {
 
           {error && (
             <div className="p-4 mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-3">
-              <span>⚠️</span>
+              <span aria-hidden="true">⚠️</span>
               <span>{error}</span>
             </div>
           )}
@@ -282,7 +306,10 @@ export default function Home() {
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-3 border border-gray-100 animate-pulse h-64 flex flex-col justify-between">
+                <div
+                  key={i}
+                  className="bg-white rounded-xl p-3 border border-gray-100 animate-pulse h-64 flex flex-col justify-between"
+                >
                   <div className="w-full h-36 bg-gray-100 rounded-lg mb-2" />
                   <div className="space-y-2">
                     <div className="w-3/4 h-3 bg-gray-100 rounded" />
@@ -306,7 +333,9 @@ export default function Home() {
           ) : (
             <div className="text-center py-16 px-4 bg-white rounded-2xl border border-gray-100 max-w-md mx-auto my-6 shadow-xs">
               <span className="text-4xl block mb-3">📚</span>
-              <h4 className="text-sm font-bold text-gray-800">Buku tidak ditemukan</h4>
+              <h4 className="text-sm font-bold text-gray-800">
+                Buku tidak ditemukan
+              </h4>
               <p className="text-xs text-gray-400 mt-1 mb-4">
                 {query
                   ? `Tidak ada buku yang cocok dengan "${query}".`

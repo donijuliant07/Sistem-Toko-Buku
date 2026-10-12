@@ -155,45 +155,45 @@ export function ProductFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-xl bg-white text-slate-900 border-l border-slate-200 shadow-xl overflow-y-auto">
+      <SheetContent side="right" className="sm:max-w-xl bg-white text-zinc-900 border-l border-zinc-200/80 shadow-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-lg font-bold text-slate-900">
+          <SheetTitle className="text-lg font-bold tracking-tight text-zinc-900">
             {isEdit ? "Edit Informasi Produk" : "Tambah Produk Baru"}
           </SheetTitle>
-          <SheetDescription className="text-xs text-slate-500">
+          <SheetDescription className="text-xs text-zinc-500">
             Isi detail katalog produk InforBook di bawah ini.
           </SheetDescription>
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 text-xs">
           {/* Judul */}
-          <div className="space-y-1">
-            <label className="font-semibold text-slate-800">Judul Produk / Buku *</label>
+          <div className="space-y-1.5">
+            <label className="font-semibold text-zinc-800">Judul Produk / Buku *</label>
             <Input
               {...register("title")}
               placeholder="Contoh: Laut Bercerita"
-              className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-600"
+              className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
             />
             {errors.title && <p className="text-[11px] text-rose-600">{errors.title.message}</p>}
           </div>
 
           {/* Grid 2 Kolom: Penulis & Penerbit */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Penulis / Brand *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Penulis / Brand *</label>
               <Input
                 {...register("author")}
                 placeholder="Leila S. Chudori"
-                className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
               {errors.author && <p className="text-[11px] text-rose-600">{errors.author.message}</p>}
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Penerbit *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Penerbit *</label>
               <Input
                 {...register("publisher")}
                 placeholder="KPG"
-                className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
               {errors.publisher && <p className="text-[11px] text-rose-600">{errors.publisher.message}</p>}
             </div>
@@ -201,24 +201,24 @@ export function ProductFormSheet({
 
           {/* Grid 3 Kolom: ISBN/SKU, Kategori, Tipe */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">ISBN / SKU *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">ISBN / SKU *</label>
               <Input
                 {...register("isbn")}
-                className="bg-white border-slate-200 text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
               {errors.isbn && <p className="text-[11px] text-rose-600">{errors.isbn.message}</p>}
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Kategori *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Kategori *</label>
               <Select
                 value={watch("category")}
                 onValueChange={(val) => setValue("category", val)}
               >
-                <SelectTrigger className="h-9 text-xs bg-white border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-600">
+                <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
                   <SelectValue placeholder="Pilih Kategori" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 text-slate-800 shadow-lg">
+                <SelectContent className="bg-white border-zinc-200/80 text-zinc-900 rounded-xl shadow-lg">
                   {categories.map((c) => (
                     <SelectItem key={c} value={c} className="text-xs">
                       {c}
@@ -227,16 +227,16 @@ export function ProductFormSheet({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Tipe produk *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Tipe produk *</label>
               <Select
                 value={watch("type")}
                 onValueChange={(val) => setValue("type", val as ProductType)}
               >
-                <SelectTrigger className="h-9 text-xs bg-white border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-600">
+                <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 text-slate-800 shadow-lg">
+                <SelectContent className="bg-white border-zinc-200/80 text-zinc-900 rounded-xl shadow-lg">
                   <SelectItem value="Buku" className="text-xs">Buku</SelectItem>
                   <SelectItem value="Non-Buku" className="text-xs">Non-Buku</SelectItem>
                 </SelectContent>
@@ -246,62 +246,62 @@ export function ProductFormSheet({
 
           {/* Grid 3 Kolom: Bahasa, Halaman, Berat */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Bahasa</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Bahasa</label>
               <Select
                 value={watch("language")}
                 onValueChange={(val) => setValue("language", val as "Indonesia" | "Inggris" | "Lainnya")}
               >
-                <SelectTrigger className="h-9 text-xs bg-white border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-600">
+                <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 text-slate-800 shadow-lg">
+                <SelectContent className="bg-white border-zinc-200/80 text-zinc-900 rounded-xl shadow-lg">
                   <SelectItem value="Indonesia" className="text-xs">Indonesia</SelectItem>
                   <SelectItem value="Inggris" className="text-xs">Inggris</SelectItem>
                   <SelectItem value="Lainnya" className="text-xs">Lainnya</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Hal / Halaman</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Hal / Halaman</label>
               <Input
                 type="number"
                 {...register("pages")}
-                className="bg-white border-slate-200 text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Berat (gram) *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Berat (gram) *</label>
               <Input
                 type="number"
                 {...register("weight")}
-                className="bg-white border-slate-200 text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
             </div>
           </div>
 
           {/* Grid Harga & Diskon */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3.5 space-y-3">
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-800">Harga Normal (Rp)</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Harga Normal (Rp)</label>
                 <Input
                   type="number"
                   {...register("normalPrice")}
-                  className="bg-white border-slate-200 text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600"
+                  className="bg-white border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 rounded-xl"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-800">Diskon (%)</label>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Diskon (%)</label>
                 <Input
                   type="number"
                   {...register("discountPercent")}
-                  className="bg-white border-slate-200 text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600"
+                  className="bg-white border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 rounded-xl"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-800">Harga Akhir</label>
-                <div className="h-9 px-3 flex items-center bg-white border border-slate-200 rounded-md font-bold text-blue-700">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">Harga Akhir</label>
+                <div className="h-9 px-3 flex items-center bg-white border border-zinc-200/80 rounded-xl font-bold text-zinc-900 tabular-nums">
                   Rp{calculatedFinal.toLocaleString("id-ID")}
                 </div>
               </div>
@@ -310,24 +310,24 @@ export function ProductFormSheet({
 
           {/* Grid Stok & Status */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Jumlah Stok *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Jumlah Stok *</label>
               <Input
                 type="number"
                 {...register("stock")}
-                className="bg-white border-slate-200 text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-800">Status Publikasi *</label>
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-800">Status Publikasi *</label>
               <Select
                 value={watch("status")}
                 onValueChange={(val) => setValue("status", val as ProductStatus)}
               >
-                <SelectTrigger className="h-9 text-xs bg-white border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-600">
+                <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 text-slate-800 shadow-lg">
+                <SelectContent className="bg-white border-zinc-200/80 text-zinc-900 rounded-xl shadow-lg">
                   <SelectItem value="Aktif" className="text-xs">Aktif</SelectItem>
                   <SelectItem value="Draft" className="text-xs">Draft</SelectItem>
                   <SelectItem value="Habis" className="text-xs">Habis</SelectItem>
@@ -337,34 +337,34 @@ export function ProductFormSheet({
           </div>
 
           {/* Cover Image URL */}
-          <div className="space-y-1">
-            <label className="font-semibold text-slate-800">URL Sampul Cover (Mock Image)</label>
+          <div className="space-y-1.5">
+            <label className="font-semibold text-zinc-800">URL Sampul Cover (Mock Image)</label>
             <Input
               {...register("coverUrl")}
               placeholder="https://..."
-              className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-600"
+              className="bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
             />
           </div>
 
           {/* Deskripsi */}
-          <div className="space-y-1">
-            <label className="font-semibold text-slate-800">Deskripsi Ringkas *</label>
+          <div className="space-y-1.5">
+            <label className="font-semibold text-zinc-800">Deskripsi Ringkas *</label>
             <textarea
               {...register("description")}
               rows={3}
-              className="w-full rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+              className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-2.5 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400"
               placeholder="Penjelasan sinopsis atau keunggulan produk..."
             />
             {errors.description && <p className="text-[11px] text-rose-600">{errors.description.message}</p>}
           </div>
 
-          <div className="pt-4 flex justify-end gap-2">
+          <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="border-slate-200 text-slate-700 hover:bg-slate-50"
+              className="border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-xl cursor-pointer"
             >
               Batal
             </Button>
@@ -372,7 +372,7 @@ export function ProductFormSheet({
               type="submit"
               size="sm"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+              className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-xs font-medium cursor-pointer"
             >
               {isSubmitting ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Tambah Produk"}
             </Button>

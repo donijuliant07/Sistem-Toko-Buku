@@ -112,23 +112,23 @@ export function RecentOrdersTable() {
   }
 
   return (
-    <Card className="col-span-full border-[var(--border)] bg-[var(--surface)]">
-      <CardHeader className="flex flex-col space-y-4 pb-3">
+    <Card className="col-span-full border-zinc-200/80 bg-white rounded-2xl shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-col space-y-4 p-5 pb-3 border-b border-zinc-100">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <CardTitle className="text-base font-bold text-[var(--foreground)]">Pesanan Terbaru</CardTitle>
-            <CardDescription className="text-xs text-[var(--muted-foreground)]">
+            <CardTitle className="text-base font-bold text-zinc-900 tracking-tight">Pesanan Terbaru</CardTitle>
+            <CardDescription className="text-xs text-zinc-500 mt-0.5">
               Daftar transaksi masuk dan status pemrosesan logistik
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <Input
                 placeholder="Cari no. pesanan, pelanggan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs bg-[var(--surface-muted)] border-[var(--border)] text-[var(--foreground)]"
+                className="h-8 pl-8 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl"
               />
             </div>
           </div>
@@ -137,23 +137,23 @@ export function RecentOrdersTable() {
         {/* Status Tabs */}
         <div className="overflow-x-auto pb-1 scrollbar-none">
           <Tabs value={statusTab} onValueChange={setStatusTab}>
-            <TabsList className="bg-[var(--surface-muted)] p-1 h-8">
-              <TabsTrigger value="semua" className="text-xs">Semua</TabsTrigger>
-              <TabsTrigger value="Menunggu Pembayaran" className="text-xs">Menunggu Bayar</TabsTrigger>
-              <TabsTrigger value="Diproses" className="text-xs">Diproses</TabsTrigger>
-              <TabsTrigger value="Dikirim" className="text-xs">Dikirim</TabsTrigger>
-              <TabsTrigger value="Selesai" className="text-xs">Selesai</TabsTrigger>
-              <TabsTrigger value="Batal" className="text-xs">Batal</TabsTrigger>
+            <TabsList className="bg-zinc-100 p-1 h-8 rounded-xl">
+              <TabsTrigger value="semua" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Semua</TabsTrigger>
+              <TabsTrigger value="Menunggu Pembayaran" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Menunggu Bayar</TabsTrigger>
+              <TabsTrigger value="Diproses" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Diproses</TabsTrigger>
+              <TabsTrigger value="Dikirim" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Dikirim</TabsTrigger>
+              <TabsTrigger value="Selesai" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Selesai</TabsTrigger>
+              <TabsTrigger value="Batal" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Batal</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="rounded-lg border border-[var(--border)] overflow-hidden">
+      <CardContent className="p-5">
+        <div className="rounded-xl border border-zinc-200/80 overflow-hidden">
           <Table>
-            <TableHeader>
-              <TableRow>
+            <TableHeader className="bg-zinc-50/75">
+              <TableRow className="border-b border-zinc-200/80 hover:bg-transparent">
                 <TableHead className="w-10">
                   <Checkbox
                     checked={
@@ -163,21 +163,21 @@ export function RecentOrdersTable() {
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="w-36 font-semibold">No. Pesanan</TableHead>
-                <TableHead className="font-semibold">Pelanggan</TableHead>
-                <TableHead className="font-semibold">
+                <TableHead className="w-36 font-semibold text-xs text-zinc-600">No. Pesanan</TableHead>
+                <TableHead className="font-semibold text-xs text-zinc-600">Pelanggan</TableHead>
+                <TableHead className="font-semibold text-xs text-zinc-600">
                   <button
                     onClick={() => setSortOrder((s) => (s === "asc" ? "desc" : "asc"))}
-                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer"
+                    className="flex items-center gap-1 hover:text-zinc-900 cursor-pointer"
                   >
                     <span>Tanggal</span>
                     <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </TableHead>
-                <TableHead className="font-semibold">Metode Bayar</TableHead>
-                <TableHead className="font-semibold">Total Belanja</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="text-right font-semibold">Aksi</TableHead>
+                <TableHead className="font-semibold text-xs text-zinc-600">Metode Bayar</TableHead>
+                <TableHead className="font-semibold text-xs text-zinc-600">Total Belanja</TableHead>
+                <TableHead className="font-semibold text-xs text-zinc-600">Status</TableHead>
+                <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -185,13 +185,13 @@ export function RecentOrdersTable() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell colSpan={8} className="h-12">
-                      <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+                      <div className="h-4 w-full bg-zinc-100 rounded animate-pulse" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-xs text-slate-400">
+                  <TableCell colSpan={8} className="h-32 text-center text-xs text-zinc-400">
                     Tidak ada pesanan ditemukan.
                   </TableCell>
                 </TableRow>
@@ -199,31 +199,31 @@ export function RecentOrdersTable() {
                 filteredOrders.slice(0, 7).map((order) => {
                   const isSelected = selectedRows.includes(order.id)
                   return (
-                    <TableRow key={order.id} data-state={isSelected ? "selected" : undefined}>
+                    <TableRow key={order.id} data-state={isSelected ? "selected" : undefined} className="border-b border-zinc-100 hover:bg-zinc-50/70 transition-colors">
                       <TableCell>
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={() => toggleSelectRow(order.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-semibold text-[var(--primary)] text-xs">
+                      <TableCell className="font-semibold text-zinc-900 text-xs">
                         <Link href={`/admin/pesanan?id=${order.id}`} className="hover:underline">
                           {order.orderNumber}
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs font-medium text-[var(--foreground)]">
+                        <div className="text-xs font-medium text-zinc-900">
                           {order.customerName}
                         </div>
-                        <div className="text-[11px] text-[var(--muted-foreground)]">{order.customerPhone}</div>
+                        <div className="text-[11px] text-zinc-400">{order.customerPhone}</div>
                       </TableCell>
-                      <TableCell className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
+                      <TableCell className="text-xs text-zinc-500 whitespace-nowrap">
                         {formatTanggalJam(order.createdAt)}
                       </TableCell>
-                      <TableCell className="text-xs text-[var(--muted-foreground)]">
+                      <TableCell className="text-xs text-zinc-500">
                         {order.paymentMethod}
                       </TableCell>
-                      <TableCell className="text-xs font-bold text-[var(--primary)] tabular-nums">
+                      <TableCell className="text-xs font-bold text-zinc-900 tabular-nums">
                         {formatRupiah(order.totalAmount)}
                       </TableCell>
                       <TableCell>
@@ -232,24 +232,24 @@ export function RecentOrdersTable() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuLabel className="text-xs">Aksi Pesanan</DropdownMenuLabel>
+                          <DropdownMenuContent align="end" className="w-48 rounded-xl border-zinc-200/80 shadow-lg bg-white">
+                            <DropdownMenuLabel className="text-xs text-zinc-900">Aksi Pesanan</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
-                              <Link href={`/admin/pesanan?id=${order.id}`} className="flex items-center gap-2 text-xs">
+                              <Link href={`/admin/pesanan?id=${order.id}`} className="flex items-center gap-2 text-xs rounded-lg cursor-pointer">
                                 <Eye className="h-3.5 w-3.5" />
                                 <span>Lihat Detail</span>
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlePrintInvoice(order)} className="flex items-center gap-2 text-xs">
+                            <DropdownMenuItem onClick={() => handlePrintInvoice(order)} className="flex items-center gap-2 text-xs rounded-lg cursor-pointer">
                               <Printer className="h-3.5 w-3.5" />
                               <span>Cetak Invoice</span>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-[10px] text-slate-400">Ubah Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-zinc-100" />
+                            <DropdownMenuLabel className="text-[10px] text-zinc-400 uppercase tracking-wider">Ubah Status</DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => handleStatusChange(order.id, "Diproses")}
                               disabled={order.status === "Diproses"}

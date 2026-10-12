@@ -35,16 +35,16 @@ export default function AdminLayout({
 
   if (waiting) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      <div className="admin-theme flex min-h-screen items-center justify-center bg-[#F4F5F7]">
+        <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
       </div>
     )
   }
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      <div className="admin-theme flex min-h-screen items-center justify-center bg-[#F4F5F7]">
+        <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
       </div>
     )
   }
@@ -58,7 +58,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="admin-theme flex min-h-screen bg-[var(--background)] text-[var(--foreground)] font-sans antialiased selection:bg-zinc-900 selection:text-white">
       <AppSidebar
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed(!collapsed)}
@@ -71,7 +71,6 @@ export default function AdminLayout({
           {children}
         </main>
       </div>
-      <FloatingCS />
       <Toaster position="top-right" richColors />
     </div>
   )

@@ -169,24 +169,24 @@ function AdminOrdersContent() {
       />
 
       {/* Tabs Status & Filter Box */}
-      <Card className="border-slate-200/80 dark:border-slate-800">
+      <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs">
         <CardContent className="p-4 space-y-4">
           <div className="overflow-x-auto pb-1 scrollbar-none">
             <Tabs value={statusTab} onValueChange={(val) => { setStatusTab(val); setCurrentPage(1); }}>
-              <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 h-9">
-                <TabsTrigger value="semua" className="text-xs">Semua Pesanan ({orders.length})</TabsTrigger>
-                <TabsTrigger value="Menunggu Pembayaran" className="text-xs">Menunggu Bayar</TabsTrigger>
-                <TabsTrigger value="Diproses" className="text-xs">Diproses</TabsTrigger>
-                <TabsTrigger value="Dikirim" className="text-xs">Dikirim</TabsTrigger>
-                <TabsTrigger value="Selesai" className="text-xs">Selesai</TabsTrigger>
-                <TabsTrigger value="Batal" className="text-xs">Batal</TabsTrigger>
+              <TabsList className="bg-zinc-100 p-1 h-9 rounded-xl inline-flex gap-1 border border-zinc-200/60">
+                <TabsTrigger value="semua" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Semua ({orders.length})</TabsTrigger>
+                <TabsTrigger value="Menunggu Pembayaran" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Menunggu Bayar</TabsTrigger>
+                <TabsTrigger value="Diproses" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Diproses</TabsTrigger>
+                <TabsTrigger value="Dikirim" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Dikirim</TabsTrigger>
+                <TabsTrigger value="Selesai" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Selesai</TabsTrigger>
+                <TabsTrigger value="Batal" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Batal</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
               <Input
                 placeholder="Cari nomor pesanan, nama pembeli, email, atau alamat..."
                 value={searchQuery}
@@ -194,7 +194,7 @@ function AdminOrdersContent() {
                   setSearchQuery(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-8 text-xs h-9 bg-slate-50 dark:bg-slate-900"
+                className="pl-8 text-xs h-9 bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
               />
             </div>
 
@@ -205,10 +205,10 @@ function AdminOrdersContent() {
                 setCurrentPage(1)
               }}
             >
-              <SelectTrigger className="w-full md:w-56 text-xs h-9">
+              <SelectTrigger className="w-full md:w-56 text-xs h-9 rounded-xl bg-zinc-50/70 border-zinc-200/80 text-zinc-900">
                 <SelectValue placeholder="Metode Pembayaran" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-zinc-200/80 text-zinc-900 rounded-xl shadow-lg">
                 <SelectItem value="all" className="text-xs">Semua Metode</SelectItem>
                 <SelectItem value="BCA Virtual Account" className="text-xs">BCA VA</SelectItem>
                 <SelectItem value="Mandiri VA" className="text-xs">Mandiri VA</SelectItem>
@@ -222,75 +222,75 @@ function AdminOrdersContent() {
       </Card>
 
       {/* Tabel Pesanan */}
-      <Card className="border-slate-200/80 dark:border-slate-800">
+      <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-36 font-semibold">No. Pesanan</TableHead>
-                  <TableHead className="font-semibold">Pelanggan</TableHead>
-                  <TableHead className="font-semibold">
+              <TableHeader className="bg-zinc-50/75">
+                <TableRow className="border-b border-zinc-200/80 hover:bg-transparent">
+                  <TableHead className="w-36 font-semibold text-xs text-zinc-600">No. Pesanan</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Pelanggan</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">
                     <button
                       onClick={() => setSortOrder((s) => (s === "asc" ? "desc" : "asc"))}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer"
+                      className="flex items-center gap-1 font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer"
                     >
                       <span>Tanggal Masuk</span>
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="font-semibold">Items</TableHead>
-                  <TableHead className="font-semibold">Metode Bayar</TableHead>
-                  <TableHead className="font-semibold">Total Tagihan</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="text-right font-semibold">Aksi</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Items</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Metode Bayar</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Total Tagihan</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Status</TableHead>
+                  <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={i} className="border-b border-zinc-100">
                       <TableCell colSpan={8} className="h-14">
-                        <div className="h-5 w-full bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+                        <div className="h-5 w-full bg-zinc-100 rounded animate-pulse" />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-xs text-slate-400">
+                    <TableCell colSpan={8} className="h-32 text-center text-xs text-zinc-500">
                       Tidak ada pesanan yang sesuai dengan filter.
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginated.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-semibold text-blue-600 dark:text-blue-400 text-xs">
+                    <TableRow key={order.id} className="border-b border-zinc-100 hover:bg-zinc-50/70 transition-colors">
+                      <TableCell className="font-semibold text-zinc-900 text-xs">
                         <button
                           onClick={() => {
                             setSelectedOrder(order)
                             setDetailOpen(true)
                           }}
-                          className="hover:underline font-bold cursor-pointer"
+                          className="hover:underline font-mono font-bold cursor-pointer text-zinc-900"
                         >
                           {order.orderNumber}
                         </button>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        <div className="text-xs font-semibold text-zinc-900">
                           {order.customerName}
                         </div>
-                        <div className="text-[11px] text-slate-400">{order.customerEmail}</div>
+                        <div className="text-[11px] text-zinc-500">{order.customerEmail}</div>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500 whitespace-nowrap">
+                      <TableCell className="text-xs text-zinc-500 whitespace-nowrap">
                         {formatTanggalJam(order.createdAt)}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600 dark:text-slate-400">
+                      <TableCell className="text-xs text-zinc-600">
                         {order.items.length} item ({order.items.reduce((a, b) => a + b.quantity, 0)} eks)
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600 dark:text-slate-400">
+                      <TableCell className="text-xs text-zinc-600">
                         {order.paymentMethod}
                       </TableCell>
-                      <TableCell className="text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                      <TableCell className="text-xs font-bold text-zinc-900 tabular-nums">
                         {formatRupiah(order.totalAmount)}
                       </TableCell>
                       <TableCell>
@@ -299,35 +299,35 @@ function AdminOrdersContent() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuLabel className="text-xs">Aksi Pesanan</DropdownMenuLabel>
+                          <DropdownMenuContent align="end" className="w-48 bg-white border-zinc-200/80 text-zinc-800 shadow-lg rounded-xl">
+                            <DropdownMenuLabel className="text-xs text-zinc-500 font-semibold">Tindakan Pesanan</DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => {
                                 setSelectedOrder(order)
                                 setDetailOpen(true)
                               }}
-                              className="text-xs flex items-center gap-2 cursor-pointer"
+                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
                             >
-                              <Eye className="h-3.5 w-3.5" />
+                              <Eye className="h-3.5 w-3.5 text-zinc-500" />
                               <span>Lihat Detail Lengkap</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handlePrint(order)}
-                              className="text-xs flex items-center gap-2 cursor-pointer"
+                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
                             >
-                              <Printer className="h-3.5 w-3.5" />
+                              <Printer className="h-3.5 w-3.5 text-zinc-500" />
                               <span>Cetak Invoice</span>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-[10px] text-slate-400">Ubah Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-zinc-100" />
+                            <DropdownMenuLabel className="text-[10px] text-zinc-400 font-semibold">Ubah Status</DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(order.id, "Diproses")}
                               disabled={order.status === "Diproses"}
-                              className="text-xs flex items-center gap-2"
+                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
                             >
                               <Clock className="h-3.5 w-3.5 text-blue-500" />
                               <span>Set Diproses</span>
@@ -335,7 +335,7 @@ function AdminOrdersContent() {
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(order.id, "Dikirim")}
                               disabled={order.status === "Dikirim"}
-                              className="text-xs flex items-center gap-2"
+                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
                             >
                               <Truck className="h-3.5 w-3.5 text-indigo-500" />
                               <span>Set Dikirim</span>
@@ -343,7 +343,7 @@ function AdminOrdersContent() {
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(order.id, "Selesai")}
                               disabled={order.status === "Selesai"}
-                              className="text-xs flex items-center gap-2"
+                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
                             >
                               <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                               <span>Set Selesai</span>
@@ -351,9 +351,9 @@ function AdminOrdersContent() {
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(order.id, "Batal")}
                               disabled={order.status === "Batal"}
-                              className="text-xs flex items-center gap-2 text-red-600 focus:text-red-600"
+                              className="text-xs flex items-center gap-2 text-rose-600 focus:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                             >
-                              <XCircle className="h-3.5 w-3.5 text-red-500" />
+                              <XCircle className="h-3.5 w-3.5 text-rose-500" />
                               <span>Batalkan Pesanan</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -367,7 +367,7 @@ function AdminOrdersContent() {
           </div>
 
           {/* Pagination Controls */}
-          <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-slate-100 dark:border-slate-800 gap-3 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-zinc-200/80 gap-3 text-xs text-zinc-500 bg-white">
             <span>
               Menampilkan {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} -{" "}
               {Math.min(currentPage * pageSize, filteredOrders.length)} dari {filteredOrders.length} transaksi
@@ -376,19 +376,19 @@ function AdminOrdersContent() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs"
+                className="h-8 text-xs rounded-xl border-zinc-200 text-zinc-700 hover:bg-zinc-50"
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               >
                 Sebelumnya
               </Button>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+              <span className="font-semibold text-zinc-900">
                 Halaman {currentPage} / {totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs"
+                className="h-8 text-xs rounded-xl border-zinc-200 text-zinc-700 hover:bg-zinc-50"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               >
