@@ -102,37 +102,37 @@ export default function AdminInventoryPage() {
 
       {/* 3 Summary Mini Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-slate-200/80 dark:border-slate-800">
+        <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Total Stok Fisik</p>
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">{totalStock} Unit</p>
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-zinc-500">Total Stok Fisik</p>
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 tabular-nums">{totalStock} Unit</p>
             </div>
-            <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-zinc-100 text-zinc-700 flex items-center justify-center">
               <Boxes className="h-5 w-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/80 dark:border-slate-800">
+        <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Stok Menipis (≤5)</p>
-              <p className="text-2xl font-extrabold text-amber-600">{lowStockCount} Judul</p>
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-zinc-500">Stok Menipis (≤5)</p>
+              <p className="text-2xl font-bold tracking-tight text-amber-600 tabular-nums">{lowStockCount} Judul</p>
             </div>
-            <div className="h-9 w-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/60">
               <AlertTriangle className="h-5 w-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/80 dark:border-slate-800">
+        <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Stok Habis / Kosong</p>
-              <p className="text-2xl font-extrabold text-red-600">{outOfStockCount} Judul</p>
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-zinc-500">Stok Habis / Kosong</p>
+              <p className="text-2xl font-bold tracking-tight text-rose-600 tabular-nums">{outOfStockCount} Judul</p>
             </div>
-            <div className="h-9 w-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/60">
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </CardContent>
@@ -140,19 +140,19 @@ export default function AdminInventoryPage() {
       </div>
 
       {/* Filter Bar */}
-      <Card className="border-slate-200/80 dark:border-slate-800">
+      <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs">
         <CardContent className="p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             <Input
               placeholder="Cari judul produk atau SKU..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 text-xs h-9 bg-slate-50 dark:bg-slate-900"
+              className="pl-8 text-xs h-9 bg-zinc-50/70 border-zinc-200/80 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400 rounded-xl"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
             {(
               [
                 { label: "Semua", val: "all" },
@@ -165,7 +165,11 @@ export default function AdminInventoryPage() {
                 key={item.val}
                 variant={stockStatusFilter === item.val ? "default" : "outline"}
                 size="sm"
-                className="h-8 text-xs"
+                className={`h-8 text-xs rounded-xl cursor-pointer ${
+                  stockStatusFilter === item.val
+                    ? "bg-zinc-900 text-white hover:bg-zinc-800 shadow-xs"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                }`}
                 onClick={() => setStockStatusFilter(item.val)}
               >
                 {item.label}
@@ -176,72 +180,81 @@ export default function AdminInventoryPage() {
       </Card>
 
       {/* Tabel Inventori */}
-      <Card className="border-slate-200/80 dark:border-slate-800">
+      <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-semibold">Judul & SKU</TableHead>
-                  <TableHead className="font-semibold">Kategori</TableHead>
-                  <TableHead className="font-semibold">Tipe</TableHead>
-                  <TableHead className="font-semibold">Stok Saat Ini</TableHead>
-                  <TableHead className="font-semibold">Indikator</TableHead>
-                  <TableHead className="text-right font-semibold">Aksi Penyesuaian</TableHead>
+              <TableHeader className="bg-zinc-50/75">
+                <TableRow className="border-b border-zinc-200/80 hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs text-zinc-600">Judul & SKU</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Kategori</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Tipe</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Stok Saat Ini</TableHead>
+                  <TableHead className="font-semibold text-xs text-zinc-600">Status</TableHead>
+                  <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi Penyesuaian</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={i} className="border-b border-zinc-100">
                       <TableCell colSpan={6} className="h-12">
-                        <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+                        <div className="h-4 w-full bg-zinc-100 rounded animate-pulse" />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-xs text-slate-400">
+                    <TableCell colSpan={6} className="h-32 text-center text-xs text-zinc-500">
                       Tidak ada produk ditemukan.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filtered.map((prod) => (
-                    <TableRow key={prod.id}>
+                    <TableRow key={prod.id} className="border-b border-zinc-100 hover:bg-zinc-50/70 transition-colors">
                       <TableCell>
-                        <div className="font-semibold text-xs text-slate-800 dark:text-slate-200">
+                        <div className="font-semibold text-xs text-zinc-900">
                           {prod.title}
                         </div>
-                        <div className="text-[11px] text-slate-400">SKU: {prod.isbn}</div>
+                        <div className="text-[11px] text-zinc-500">SKU: {prod.isbn}</div>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600 dark:text-slate-400">
+                      <TableCell className="text-xs text-zinc-600">
                         {prod.category}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500">{prod.type}</TableCell>
-                      <TableCell className="font-bold text-xs tabular-nums">
+                      <TableCell className="text-xs text-zinc-500">{prod.type}</TableCell>
+                      <TableCell className="font-bold text-xs tabular-nums text-zinc-900">
                         {prod.stock} unit
                       </TableCell>
                       <TableCell>
                         {prod.stock <= 0 ? (
-                          <Badge variant="destructive">Habis</Badge>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            Habis
+                          </span>
                         ) : prod.stock <= 5 ? (
-                          <Badge variant="warning">Menipis ({prod.stock})</Badge>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            Menipis ({prod.stock})
+                          </span>
                         ) : (
-                          <Badge variant="success">Aman</Badge>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Aman
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs gap-1.5"
+                          className="h-7 text-xs gap-1.5 rounded-lg border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 cursor-pointer"
                           onClick={() => {
                             setSelectedProduct(prod)
                             setAdjustAmount(20)
                             setAdjustOpen(true)
                           }}
                         >
-                          <PackagePlus className="h-3.5 w-3.5 text-blue-600" />
+                          <PackagePlus className="h-3.5 w-3.5 text-zinc-600" />
                           <span>Sesuaikan Stok</span>
                         </Button>
                       </TableCell>
@@ -256,23 +269,23 @@ export default function AdminInventoryPage() {
 
       {/* Modal Dialog Penyesuaian Stok */}
       <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white border border-zinc-200/80 text-zinc-900 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-base">Penyesuaian Stok Fisik</DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogTitle className="text-base font-bold tracking-tight text-zinc-900">Penyesuaian Stok Fisik</DialogTitle>
+            <DialogDescription className="text-xs text-zinc-500">
               Ubah atau tambahkan stok gudang untuk produk ini.
             </DialogDescription>
           </DialogHeader>
 
           {selectedProduct && (
             <form onSubmit={handleAdjustSubmit} className="space-y-4 py-2 text-xs">
-              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                <p className="font-bold text-slate-800 dark:text-slate-200">{selectedProduct.title}</p>
-                <p className="text-slate-400">Stok Saat Ini: <span className="font-bold text-blue-600">{selectedProduct.stock} unit</span></p>
+              <div className="p-3 bg-zinc-50/70 rounded-xl border border-zinc-200/70">
+                <p className="font-semibold text-zinc-900">{selectedProduct.title}</p>
+                <p className="text-zinc-500 mt-0.5">Stok Saat Ini: <span className="font-bold text-zinc-900">{selectedProduct.stock} unit</span></p>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">
                   Perubahan Stok (+/- unit)
                 </label>
                 <Input
@@ -280,31 +293,33 @@ export default function AdminInventoryPage() {
                   value={adjustAmount}
                   onChange={(e) => setAdjustAmount(parseInt(e.target.value) || 0)}
                   placeholder="Contoh: 20 atau -5"
+                  className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-zinc-500">
                   Stok akhir setelah penyesuaian:{" "}
-                  <strong className="text-slate-800 dark:text-slate-200">
+                  <strong className="text-zinc-900">
                     {Math.max(0, selectedProduct.stock + adjustAmount)} unit
                   </strong>
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-800">
                   Alasan Penyesuaian
                 </label>
                 <Input
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Alasan (misal: restock penerbit, barang rusak, stok opname)"
+                  className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
 
-              <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" size="sm" onClick={() => setAdjustOpen(false)}>
+              <DialogFooter className="mt-4 gap-2">
+                <Button type="button" variant="outline" size="sm" className="rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 cursor-pointer" onClick={() => setAdjustOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button type="submit" size="sm" className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-xs font-medium cursor-pointer">
                   Simpan Penyesuaian
                 </Button>
               </DialogFooter>

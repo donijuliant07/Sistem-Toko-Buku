@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-inter: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
 @layer base {
   :root {
     /* Surface */
@@ -57,6 +63,7 @@
     --ring: #25D366;
 
     --radius: 0.625rem;
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
 
     /* Chart colors */
     --chart-1: #25D366;
@@ -74,6 +81,96 @@
     --sidebar-accent-foreground: #128C7E;
     --sidebar-border: #E3EAE5;
     --sidebar-ring: #25D366;
+  }
+
+  /* ========================================================
+     AlignUI Pro Design System Theme Tokens (Admin Dashboard)
+     Reference: https://pro.alignui.com/
+     ======================================================== */
+  .admin-theme {
+    /* Canvas & Surface */
+    --background: #F4F5F7;
+    --surface: #FFFFFF;
+    --surface-muted: #F4F4F6;
+    --surface-tint: #ECEEF1;
+    --border: #E4E4E7;
+    --border-strong: #D4D4D8;
+
+    /* AlignUI Typography & Neutrals */
+    --foreground: #18181B;
+    --muted-foreground: #71717A;
+
+    /* AlignUI Signature Obsidian / Charcoal Primary Action */
+    --primary: #18181B;
+    --primary-hover: #27272A;
+    --primary-soft: #F4F4F5;
+    --primary-foreground: #FFFFFF;
+    --primary-deep: #09090B;
+
+    /* AlignUI Signature Sapphire Blue Accent */
+    --accent: #2563EB;
+    --accent-hover: #1D4ED8;
+    --accent-soft: #EFF6FF;
+    --accent-foreground: #1E40AF;
+
+    /* Status Tokens */
+    --success: #10B981;
+    --success-soft: #ECFDF5;
+    --warning: #F59E0B;
+    --warning-soft: #FFFBEB;
+    --danger: #EF4444;
+    --danger-soft: #FEF2F2;
+    --info: #3B82F6;
+    --info-soft: #EFF6FF;
+    --shipped: #6366F1;
+    --shipped-soft: #EEF2FF;
+
+    --card: #FFFFFF;
+    --card-foreground: #18181B;
+
+    --popover: #FFFFFF;
+    --popover-foreground: #18181B;
+
+    --secondary: #F4F4F6;
+    --secondary-foreground: #18181B;
+
+    --muted: #F4F4F6;
+
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+
+    --input: #E4E4E7;
+    --ring: #18181B;
+
+    --radius: 0.875rem;
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+
+    /* Chart colors */
+    --chart-1: #18181B;
+    --chart-2: #F97316;
+    --chart-3: #10B981;
+    --chart-4: #3B82F6;
+    --chart-5: #8B5CF6;
+
+    /* Sidebar tokens */
+    --sidebar-background: #FFFFFF;
+    --sidebar-foreground: #18181B;
+    --sidebar-primary: #18181B;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F4F4F5;
+    --sidebar-accent-foreground: #18181B;
+    --sidebar-border: #E4E4E7;
+    --sidebar-ring: #18181B;
+
+    font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.011em;
+  }
+
+  .admin-theme h1,
+  .admin-theme h2,
+  .admin-theme h3,
+  .admin-theme h4 {
+    letter-spacing: -0.02em;
   }
 
   .dark {
@@ -124,6 +221,63 @@
     --sidebar-border: #233029;
     --sidebar-ring: #4FB58A;
   }
+
+  .admin-theme.dark,
+  .dark .admin-theme {
+    --background: #09090B;
+    --surface: #121215;
+    --surface-muted: #18181B;
+    --surface-tint: #27272A;
+    --border: #27272A;
+    --border-strong: #3F3F46;
+
+    --foreground: #FAFAFA;
+    --muted-foreground: #A1A1AA;
+
+    --primary: #FAFAFA;
+    --primary-hover: #F4F4F5;
+    --primary-soft: #27272A;
+    --primary-foreground: #09090B;
+    --primary-deep: #FFFFFF;
+
+    --accent: #FB923C;
+    --accent-hover: #F97316;
+    --accent-soft: #431407;
+    --accent-foreground: #FED7AA;
+
+    --card: #121215;
+    --card-foreground: #FAFAFA;
+
+    --popover: #121215;
+    --popover-foreground: #FAFAFA;
+
+    --secondary: #18181B;
+    --secondary-foreground: #FAFAFA;
+
+    --muted: #18181B;
+
+    --destructive: #F87171;
+    --destructive-foreground: #FFFFFF;
+
+    --input: #27272A;
+    --ring: #FAFAFA;
+
+    --sidebar-background: #09090B;
+    --sidebar-foreground: #FAFAFA;
+    --sidebar-primary: #FAFAFA;
+    --sidebar-primary-foreground: #09090B;
+    --sidebar-accent: #18181B;
+    --sidebar-accent-foreground: #FAFAFA;
+    --sidebar-border: #27272A;
+    --sidebar-ring: #FAFAFA;
+  }
+
+  /* Di dalam layer base: aturan tanpa layer menang atas utility Tailwind v4,
+     sehingga `text-white` pada <Link> tidak pernah berlaku. */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 * {
@@ -140,11 +294,6 @@ body {
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
 }
 
 /* Custom scrollbar */
