@@ -10,7 +10,7 @@ import { formatAuthError } from "@/lib/auth-utils";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { session, loading: authLoading, signUp } = useAuth();
+  const { session, role, roleLoading, loading: authLoading, signUp } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,12 +27,12 @@ export default function RegisterPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  // Redirect if already logged in
+  // Sudah punya sesi: kirim ke area sesuai role, sama seperti halaman login.
+  // Tujuan ditetapkan di sini supaya akun pelanggan tidak pernah dibuang ke /admin.
   useEffect(() => {
-    if (!authLoading && session) {
-      router.replace("/admin/books");
-    }
-  }, [authLoading, router, session]);
+    if (authLoading || !session || roleLoading) return;
+    router.replace(role === "admin" ? "/admin/dashboard" : "/");
+  }, [authLoading, roleLoading, role, router, session]);
 
   function validate(): boolean {
     let valid = true;
