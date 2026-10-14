@@ -4,12 +4,19 @@ RPC `dashboard_summary`, `sales_timeseries`, dan view rekap tidak ada di
 database live, jadi seluruh agregasi dihitung di Python dari tabel `orders`,
 `order_items`, `books`, dan `profiles`. Nilai yang dibaca selalu dari data
 nyata; tidak ada angka contoh yang disajikan sebagai laporan.
+
+Service ini mewarisi `ReportService` (`app/services/base.py`), yang memusatkan
+satu aturan lintas-laporan: pesanan berstatus `cancelled` tidak pernah dihitung
+sebagai penjualan. Method publiknya sengaja tetap `@staticmethod` karena
+laporan tidak menyimpan state — yang diwarisi adalah **kontrak dan aturan**,
+bukan state.
 """
 
 from datetime import date, timedelta
-from typing import Any, Dict, List
+from typing import Any
 
 from app.core.supabase import supabase_admin
+from app.services.base import ReportService
 
 # Nama bulan Indonesia; sengaja tidak bergantung pada locale sistem.
 _MONTH_NAMES_ID = (
@@ -21,11 +28,11 @@ _MONTH_NAMES_ID = (
 _LOW_STOCK_THRESHOLD = 5
 
 
-class DashboardService:
+class DashboardService(ReportService):
     """Agregasi KPI, tren penjualan, proporsi kategori, dan rekap bulanan."""
 
     @staticmethod
-    def get_summary() -> Dict[str, Any]:
+    def get_summary() -> dict[str, Any]:
         # RPC `dashboard_summary` tidak ada di database live, jadi agregasi
         # dihitung dari `orders` + `order_items` + `books`.
         orders = supabase_admin.table("orders").select("id, status, total").execute().data or []
@@ -35,9 +42,9 @@ class DashboardService:
         )
         customers = supabase_admin.table("profiles").select("id").eq("role", "user").execute().data or []
 
-        # `cancelled` adalah nilai yang diterima CHECK constraint database live
-        # (`orders_status_check`); "dibatalkan" tidak pernah tersimpan.
-        active_orders = [row for row in orders if row.get("status") != "cancelled"]
+        # Aturan «pesanan batal bukan penjualan» diwarisi dari `ReportService`,
+        # jadi hanya ada di satu tempat (lihat `_is_revenue_order`).
+        active_orders = [row for row in orders if ReportService._is_revenue_order(row)]
         active_ids = {row["id"] for row in active_orders}
         sold_items = [item for item in items if item.get("order_id") in active_ids]
 
@@ -50,7 +57,7 @@ class DashboardService:
         }
 
     @staticmethod
-    def get_sales_timeseries(days: int = 30) -> List[Dict[str, Any]]:
+    def get_sales_timeseries(days: int = 30) -> list[dict[str, Any]]:
         # RPC `sales_timeseries` tidak ada di database live.
         since = (date.today() - timedelta(days=days - 1)).isoformat()
         orders = (
@@ -62,7 +69,7 @@ class DashboardService:
             or []
         )
 
-        per_day: Dict[str, float] = {}
+        per_day: dict[str, float] = {}
         for row in orders:
             if row.get("status") == "cancelled":
                 continue
@@ -88,7 +95,7 @@ class DashboardService:
         return series
 
     @staticmethod
-    def get_category_breakdown() -> List[Dict[str, Any]]:
+    def get_category_breakdown() -> list[dict[str, Any]]:
         """Proporsi penjualan per kategori, diurutkan dari pendapatan terbesar."""
         res = (
             supabase_admin.table("order_items")
@@ -96,7 +103,7 @@ class DashboardService:
             .execute()
         )
         data = res.data or []
-        cat_map: Dict[str, Dict[str, Any]] = {}
+        cat_map: dict[str, dict[str, Any]] = {}
         total_rev = 0.0
 
         for row in data:
@@ -128,7 +135,7 @@ class DashboardService:
         return result
 
     @staticmethod
-    def get_monthly_reports(months: int = 4) -> List[Dict[str, Any]]:
+    def get_monthly_reports(months: int = 4) -> list[dict[str, Any]]:
         """Rekap penjualan per bulan dari `orders` + `order_items` + `categories`.
 
         Satu bulan tambahan sebelum rentang ikut diambil supaya bulan tertua
@@ -155,13 +162,13 @@ class DashboardService:
             or []
         )
 
-        order_counts: Dict[str, int] = {}
-        revenue: Dict[str, float] = {}
-        category_revenue: Dict[str, Dict[str, float]] = {}
+        order_counts: dict[str, int] = {}
+        revenue: dict[str, float] = {}
+        category_revenue: dict[str, dict[str, float]] = {}
 
         for row in rows:
-            # Pesanan batal tidak pernah dihitung sebagai penjualan.
-            if row.get("status") == "cancelled":
+            # Pesanan batal tidak pernah dihitung sebagai penjualan (aturan diwarisi).
+            if not ReportService._is_revenue_order(row):
                 continue
             created = str(row.get("created_at") or "")
             if len(created) < 7:
@@ -177,7 +184,7 @@ class DashboardService:
                 amount = float(item.get("price") or 0) * int(item.get("quantity") or 0)
                 per_category[category] = per_category.get(category, 0.0) + amount
 
-        reports: List[Dict[str, Any]] = []
+        reports: list[dict[str, Any]] = []
         for offset in range(months - 1, -1, -1):
             start = month_start(offset)
             key = start.strftime("%Y-%m")
