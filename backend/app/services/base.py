@@ -1,9 +1,9 @@
-"""Kontrak dasar service tabel Supabase — rumah bagi *abstraction* dan *inheritance*.
+"""Kontrak dasar service — rumah bagi *abstraction* dan *inheritance*.
 
 Modul ini sengaja ada supaya pilar OOP "abstraction" dan "inheritance" punya
-tempat mendarat yang eksplisit, bukan hanya "kesamaan nama method". Isinya satu
-*abstract base class* (ABC) yang benar-benar dipakai dua service konkret
-(`CategoryService`, `PromoService`) — jadi ABC ini bukan wadah kosong:
+tempat mendarat yang eksplisit, bukan hanya "kesamaan nama method". Isinya
+kumpulan *abstract base class* (ABC) yang benar-benar dipakai implementasi
+konkret, jadi ABC di sini bukan wadah kosong:
 
 1. **State bersama** — nama tabel disimpan sebagai atribut instance **private**
    (name-mangled). Karena ada state, method di sini adalah *instance method*
@@ -21,6 +21,13 @@ seluruh service masuk ke hierarki ini. `OrderService`, `CartService`,
 `DashboardService`, dan `InventoryService` sengaja tetap class mandiri karena
 mereka bukan CRUD satu tabel (lihat komentar modul masing-masing dan
 `app/services/__init__.py`).
+
+Kontrak lain di modul ini mengikuti pembagian yang sama:
+
+- `BookRepository` — baca katalog buku, dua implementasi (ORM + PostgREST).
+- `MarketplaceSourceRepository` / `MarketplacePriceRepository` — konfigurasi dan
+  hasil perbandingan harga marketplace, satu implementasi ORM masing-masing.
+- `ReportService` — agregasi lintas tabel untuk dashboard.
 """
 
 from abc import ABC, abstractmethod
@@ -225,3 +232,70 @@ class ReportService(ABC):
     def _is_revenue_order(row: dict[str, Any]) -> bool:
         """Apakah satu baris pesanan ikut dihitung sebagai penjualan."""
         return row.get("status") != ReportService.EXCLUDED_STATUS
+
+
+class MarketplaceSourceRepository(ABC):
+    """Kontrak penyimpanan *sumber* harga marketplace (tabel `marketplace_sources`).
+
+    Berbeda dari `BookRepository` yang punya dua implementasi (ORM dan PostgREST),
+    kontrak ini hanya punya **satu** implementasi: data ini milik backend sendiri,
+    bukan katalog publik yang perlu jalur cadangan. ABC-nya tetap ada karena tiga
+    alasan nyata:
+
+    1. Layer API hanya boleh bergantung pada kontrak, bukan kelas konkret —
+       sehingga pengujian bisa menyuntikkan fake in-memory (lihat
+       `tests/test_marketplaces.py`) tanpa menyentuh database, seperti yang sudah
+       dilakukan `tests/test_books.py` dengan `FakeSession`.
+    2. Semua method-nya `async`, jadi bentuknya disepakati sekali di sini.
+    3. Nama method-nya dibagi dengan `MarketplacePriceRepository`, sehingga
+       service orkestrasi memperlakukan keduanya dengan cara yang sama.
+    """
+
+    @abstractmethod
+    async def list_for_book(self, book_id: UUID, *, only_active: bool = False) -> list[Any]:
+        """Semua sumber milik satu buku; `only_active` menyaring yang dimatikan admin."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get(self, source_id: UUID) -> Any | None:
+        """Satu sumber; `None` bila tidak ada."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def create(self, payload: Any) -> Any:
+        """Simpan sumber baru dan kembalikan barisnya."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update(self, source_id: UUID, payload: Any) -> Any | None:
+        """Terapkan patch parsial; `None` bila sumbernya tidak ada."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete(self, source_id: UUID) -> bool:
+        """Hapus satu sumber; `False` bila tidak ada yang terhapus."""
+        raise NotImplementedError
+
+
+class MarketplacePriceRepository(ABC):
+    """Kontrak penyimpanan *hasil* harga marketplace (tabel `marketplace_prices`).
+
+    Bentuknya **append-only**: `add_snapshot` hanya menyisipkan baris baru. Tidak
+    ada `update` di kontrak ini dengan sengaja — menimpa baris lama akan
+    menghapus riwayat, padahal riwayat itulah yang membuat tren harga mungkin.
+    """
+
+    @abstractmethod
+    async def latest_for_book(self, book_id: UUID) -> list[Any]:
+        """Snapshot terbaru per marketplace untuk satu buku."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def history_for_book(self, book_id: UUID, *, limit: int = 60) -> list[Any]:
+        """Riwayat harga satu buku, terbaru lebih dulu, dibatasi `limit` baris."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def add_snapshot(self, payload: Any) -> Any:
+        """Sisipkan satu titik harga baru (tidak pernah menimpa baris lama)."""
+        raise NotImplementedError

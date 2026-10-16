@@ -26,4 +26,15 @@ Dua bentuk class hidup berdampingan di paket ini, dan pembagiannya disengaja:
 `DashboardService` adalah kasus ketiga: ia mewarisi `ReportService`
 (`app/services/base.py`) untuk **kontrak + aturan bersama** laporan, sambil tetap
 `@staticmethod` karena tidak punya state untuk disimpan.
+
+Bentuk keempat muncul bersama fitur perbandingan harga:
+
+4. **Service ber-ketergantungan** — `MarketplaceComparisonService`
+   (`app/services/marketplace/service.py`) menyimpan repository sumber dan
+   repository harga sebagai state instance, plus `cache_ttl` dan `clock`. Ia
+   **tidak** memakai `@staticmethod` justru karena ketergantungannya itulah yang
+   membuatnya bisa diuji: pengujian menyuntikkan repository palsu dan waktu palsu
+   lewat konstruktornya. Yang berbeda diserahkan ke adapter marketplace
+   (`app/services/marketplace/base.py`), sehingga service ini tidak tahu apa-apa
+   tentang Tokopedia atau Shopee secara spesifik.
 """

@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, Scale } from "lucide-react";
 import { Product } from "@/data/mockData";
 import { formatRupiah } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/components/AuthProvider";
 import { getAIReview, getBook } from "@/lib/api";
 import type { AIReviewResponse, SpoilerLevel } from "@/lib/types";
 import SpoilerSelectorModal from "@/components/books/SpoilerSelectorModal";
 import AIReviewResult from "@/components/books/AIReviewResult";
+import ComparePriceModal from "@/components/books/ComparePriceModal";
 
 interface BookDetailModalProps {
   product: Product | null;
@@ -23,6 +25,11 @@ export default function BookDetailModal({
 }: BookDetailModalProps) {
   const [quantity, setQuantity] = useState(1);
   const { addToCart, setIsCartOpen } = useCart();
+  const { session } = useAuth();
+
+  // Perbandingan harga hanya untuk pelanggan login (backend memakai `require_user`),
+  // jadi tombolnya pun hanya muncul saat ada sesi — tidak ada tombol yang berujung 403.
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   // Harga & stok dari server. Data katalog (`Product`) tidak membawa stok nyata,
   // jadi angka fallback apa pun akan menyesatkan — lebih baik ambil dari `books`.
@@ -279,6 +286,18 @@ export default function BookDetailModal({
                     )}
                   </div>
 
+                  {/* Bandingkan harga: hanya untuk pelanggan login, sama seperti backend */}
+                  {session && (
+                    <button
+                      type="button"
+                      onClick={() => setIsCompareOpen(true)}
+                      className="mt-2 w-full py-2 px-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-[#0052cc] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Scale className="w-3.5 h-3.5" />
+                      <span>Bandingkan Harga di Marketplace</span>
+                    </button>
+                  )}
+
                   <div className="mt-4 pt-3 border-t border-gray-100">
                     <h4 className="text-xs font-bold text-gray-800 mb-1">
                       Deskripsi Buku
@@ -428,6 +447,16 @@ export default function BookDetailModal({
         bookTitle={product.title}
         bookAuthor={product.authorOrBrand}
         isGenerating={aiState === "generating"}
+      />
+
+      {/* Modal Bandingkan Harga */}
+      <ComparePriceModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        bookId={String(product.id)}
+        bookTitle={product.title}
+        storePrice={serverPrice}
+        accessToken={session?.access_token ?? null}
       />
     </>
   );

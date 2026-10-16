@@ -7,6 +7,11 @@ import type {
   CartMergeInput,
   CartPayload,
   CurrentUser,
+  MarketplaceComparison,
+  MarketplaceInfo,
+  MarketplaceSource,
+  MarketplaceSourceInput,
+  MarketplaceSourceUpdate,
   Order,
   OrderInput,
   OrderPage,
@@ -242,4 +247,84 @@ export async function deletePromo(id: string): Promise<void> {
     method: "DELETE",
     accessToken,
   });
+}
+
+// --- Perbandingan harga marketplace (khusus pelanggan login) ---
+
+/**
+ * Harga satu buku di seluruh marketplace yang sumbernya sudah diisi admin.
+ *
+ * `accessToken` diterima sebagai argumen (bukan diambil sendiri lewat
+ * `getAccessToken()`) karena pemanggilnya — `BookDetailModal` — sudah memegang
+ * token dari halaman: satu pembacaan sesi Supabase, bukan dua untuk satu modal.
+ *
+ * `refresh` melewati cache. Backend membatasi lajunya per buku, jadi pemanggil
+ * yang kena batas itu menerima error 429 dengan pesan yang layak ditampilkan.
+ */
+export async function getMarketplacePrices(
+  bookId: string,
+  accessToken: string,
+  options?: { refresh?: boolean }
+): Promise<ApiEnvelope<MarketplaceComparison>> {
+  const params = options?.refresh ? "?refresh=true" : "";
+  return request<ApiEnvelope<MarketplaceComparison>>(
+    `/books/${encodeURIComponent(bookId)}/marketplace-prices${params}`,
+    { accessToken }
+  );
+}
+
+/** Slug + label marketplace yang didukung, untuk dropdown pengelolaan sumber. */
+export async function getMarketplaces(): Promise<MarketplaceInfo[]> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<MarketplaceInfo[]>>("/marketplaces", { accessToken });
+  return res.data ?? [];
+}
+
+// --- Pengelolaan sumber harga marketplace (khusus admin) ---
+//
+// Semuanya memakai `getAccessToken()` sendiri, bukan menerimanya sebagai argumen
+// seperti `getMarketplacePrices`: dipanggil dari halaman admin yang tidak memegang
+// token di state-nya. Token diambil dari sesi Supabase, dan backend yang
+// memutuskan boleh atau tidak lewat `require_admin` — bukan frontend.
+
+export async function getMarketplaceSources(bookId: string): Promise<MarketplaceSource[]> {
+  const accessToken = await getAccessToken();
+  const params = new URLSearchParams({ book_id: bookId });
+  const res = await request<ApiEnvelope<MarketplaceSource[]>>(
+    `/marketplace-sources?${params.toString()}`,
+    { accessToken }
+  );
+  return res.data ?? [];
+}
+
+export async function createMarketplaceSource(
+  data: MarketplaceSourceInput
+): Promise<MarketplaceSource> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<MarketplaceSource>>("/marketplace-sources", {
+    method: "POST",
+    body: JSON.stringify(data),
+    accessToken,
+  });
+  return res.data;
+}
+
+export async function updateMarketplaceSource(
+  id: string,
+  data: MarketplaceSourceUpdate
+): Promise<MarketplaceSource> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<MarketplaceSource>>(
+    `/marketplace-sources/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(data), accessToken }
+  );
+  return res.data;
+}
+
+export async function deleteMarketplaceSource(id: string): Promise<void> {
+  const accessToken = await getAccessToken();
+  await request<ApiEnvelope<{ id: string }>>(
+    `/marketplace-sources/${encodeURIComponent(id)}`,
+    { method: "DELETE", accessToken }
+  );
 }

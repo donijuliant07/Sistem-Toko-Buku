@@ -1,7 +1,8 @@
 """Model SQLAlchemy.
 
-Merepresentasikan tabel yang diakses lewat sesi ORM. Saat ini hanya tabel yang
-disentuh endpoint tulis `books`: `Book`, `Profile`, dan `Promo`.
+Merepresentasikan tabel yang diakses lewat sesi ORM: katalog buku beserta
+turunan yang butuh transaksi (`Book`, `Profile`, `Promo`), dan tabel
+perbandingan harga marketplace (`MarketplaceSource`, `MarketplacePrice`).
 
 Sebagian besar tabel lain yang dipakai aplikasi (`orders`, `order_items`,
 `payments`, `carts`, `cart_items`, `categories`) dibaca lewat PostgREST di
@@ -10,7 +11,8 @@ model ini sengaja tidak mencerminkan seluruh skema database.
 """
 
 from app.models.book import Book
+from app.models.marketplace import MarketplacePrice, MarketplaceSource
 from app.models.profile import Profile
 from app.models.promo import Promo
 
-__all__ = ["Book", "Profile", "Promo"]
+__all__ = ["Book", "MarketplacePrice", "MarketplaceSource", "Profile", "Promo"]

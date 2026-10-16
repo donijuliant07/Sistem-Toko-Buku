@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Library,
+  Link2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { siteConfig } from "@/config/site"
@@ -69,6 +70,7 @@ const navGroups: NavGroup[] = [
     label: "Pemasaran",
     items: [
       { title: "Promo & Voucher", href: "/admin/promo", icon: Tag },
+      { title: "Link Harga Marketplace", href: "/admin/marketplace-sources", icon: Link2 },
       { title: "Banner Toko", href: "/admin/promo#banner", icon: ImageIcon },
       { title: "Ulasan Produk", href: "/admin/produk#ulasan", icon: MessageSquare },
     ],

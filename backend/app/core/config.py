@@ -37,6 +37,13 @@ class Settings(BaseSettings):
         description="Free OpenRouter Qwen Model",
     )
 
+    #: Kunci API Google Books, dipakai adapter `google_books`. Kuota harian untuk
+    #: permintaan tanpa kunci terukur `0`, jadi tanpa nilai ini setiap pencarian
+    #: harga Google Books berakhir HTTP 429. Dibuat gratis di Google Cloud Console
+    #: (aktifkan "Books API" lalu buat API key). Kosong = fitur tetap jalan,
+    #: hanya marketplace itu yang muncul di `warnings`.
+    GOOGLE_BOOKS_API_KEY: str = Field(default="", description="Google Books API Key")
+
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
         description="Database URL PostgreSQL",

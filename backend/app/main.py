@@ -15,6 +15,7 @@ from app.api.v1 import (
     orders,
     inventory,
     dashboard,
+    marketplaces,
     promos,
     uploads,
 )
@@ -36,6 +37,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(books.router, prefix=settings.API_V1_PREFIX)
+app.include_router(marketplaces.router, prefix=settings.API_V1_PREFIX)
 app.include_router(categories.router, prefix=settings.API_V1_PREFIX)
 app.include_router(orders.router, prefix=settings.API_V1_PREFIX)
 app.include_router(orders.shipping_router, prefix=settings.API_V1_PREFIX)

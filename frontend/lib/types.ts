@@ -213,3 +213,104 @@ export type AIReviewResponse = {
   ending_analysis?: string | null;
   cached?: boolean;
 };
+
+// --- Perbandingan harga marketplace ---
+/** Cocok dengan CHECK `ck_marketplace_*_slug` di database. */
+export type MarketplaceSlug =
+  | "tokopedia"
+  | "shopee"
+  | "lazada"
+  | "blibli"
+  | "bukalapak"
+  | "google_books"
+  | "open_library"
+  | "demo_store_a"
+  | "demo_store_b"
+  | "demo_store_c";
+
+/**
+ * `admin_url` = link produk dari admin, `search` = hasil pencarian otomatis,
+ * `mock` = **data contoh, bukan harga nyata**.
+ *
+ * `mock` ada di sini supaya keaslian sebuah kutipan bisa dibaca dari datanya
+ * sendiri. Alternatifnya — mencocokkan `marketplace` dengan daftar slug demo di
+ * frontend — berarti daftar itu harus ditulis dua kali dan bisa berbeda diam-diam.
+ */
+export type PriceSource = "admin_url" | "search" | "manual" | "mock";
+
+export type MarketplaceQuote = {
+  marketplace: MarketplaceSlug;
+  label: string;
+  /** Backend mengirim `Decimal`, jadi JSON-nya berupa string — jangan diasumsikan number. */
+  price: string | number;
+  currency: string;
+  product_url: string | null;
+  product_title: string | null;
+  seller_name: string | null;
+  in_stock: boolean | null;
+  match_score: number | null;
+  source: PriceSource;
+  fetched_at: string;
+};
+
+export type MarketplaceHistoryPoint = {
+  price: string | number;
+  fetched_at: string;
+};
+
+export type MarketplaceComparison = {
+  book_id: string;
+  book_title: string;
+  /** Harga toko sendiri, dibaca backend dari tabel `books`. */
+  store_price: string | number;
+  /** Selalu terurut harga menaik; `quotes[0]` yang termurah. */
+  quotes: MarketplaceQuote[];
+  lowest_price: string | number | null;
+  highest_price: string | number | null;
+  /** Positif = ada marketplace yang lebih murah dari toko ini. */
+  savings: string | number | null;
+  history: Record<string, MarketplaceHistoryPoint[]>;
+  fetched_at: string;
+  from_cache: boolean;
+  /** Marketplace yang gagal diambil; perbandingan tetap sah tanpa mereka. */
+  warnings: string[];
+};
+
+export type MarketplaceInfo = {
+  slug: MarketplaceSlug;
+  label: string;
+};
+
+/** Satu sumber harga seperti yang dilihat admin di halaman pengelolaan. */
+export type MarketplaceSource = {
+  id: string;
+  book_id: string;
+  marketplace: MarketplaceSlug;
+  label: string;
+  /**
+   * Link produk yang diisi admin. `null` berarti harga dicari otomatis lewat
+   * `search_keyword` — bukan berarti sumbernya rusak; backend menolak sumber yang
+   * tidak punya keduanya (`ck_marketplace_sources_target`).
+   */
+  product_url: string | null;
+  search_keyword: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceSourceInput = {
+  book_id: string;
+  marketplace: MarketplaceSlug;
+  /** Minimal salah satu dari `product_url` / `search_keyword` harus diisi. */
+  product_url?: string | null;
+  search_keyword?: string | null;
+  is_active?: boolean;
+};
+
+/** Patch parsial; hanya field yang dikirim yang diubah. Minimal satu field. */
+export type MarketplaceSourceUpdate = {
+  product_url?: string | null;
+  search_keyword?: string | null;
+  is_active?: boolean;
+};
