@@ -10,6 +10,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Sparkles,
   Trash2,
 } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
@@ -47,6 +48,7 @@ import {
   getBooks,
   getMarketplaceSources,
   getMarketplaces,
+  seedMarketplaceSources,
   updateMarketplaceSource,
 } from "@/lib/api"
 import type { Book, MarketplaceInfo, MarketplaceSource, MarketplaceSlug } from "@/lib/types"
@@ -75,6 +77,7 @@ export default function AdminMarketplaceSourcesPage() {
   //: Naikkan untuk memuat ulang sumber buku terpilih tanpa mengubah daftar
   //: dependensinya — cara termurah memicu ulang effect di atas setelah menulis.
   const [reloadToken, setReloadToken] = React.useState(0)
+  const [seeding, setSeeding] = React.useState(false)
   const [marketplaces, setMarketplaces] = React.useState<MarketplaceInfo[]>([])
 
   // Form dialog. `editing` null = mode tambah.
@@ -238,6 +241,24 @@ export default function AdminMarketplaceSourcesPage() {
     }
   }
 
+  const handleSeedDefaults = async () => {
+    if (!selected) return
+    setSeeding(true)
+    try {
+      const created = await seedMarketplaceSources(selected.id)
+      toast.success(
+        created.length > 0
+          ? `${created.length} sumber marketplace bawaan ditambahkan.`
+          : "Semua sumber marketplace bawaan sudah terdaftar."
+      )
+      reload()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengisi sumber bawaan")
+    } finally {
+      setSeeding(false)
+    }
+  }
+
   const handleToggleActive = async (source: MarketplaceSource, next: boolean) => {
     // Optimistis: saklar harus terasa langsung merespons. Dikembalikan bila gagal.
     setSources((prev) =>
@@ -340,13 +361,29 @@ export default function AdminMarketplaceSourcesPage() {
               </p>
             ) : (
               <>
-                <div className="border-b border-zinc-200/80 px-4 py-3">
-                  <p className="text-sm font-bold text-zinc-900">{selected.title}</p>
-                  <p className="text-[11px] text-zinc-500">
-                    {sources.length} sumber terdaftar
-                    {availableMarketplaces.length > 0 &&
-                      ` · ${availableMarketplaces.length} marketplace belum dipakai`}
-                  </p>
+                <div className="flex items-start justify-between gap-3 border-b border-zinc-200/80 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-zinc-900">{selected.title}</p>
+                    <p className="text-[11px] text-zinc-500">
+                      {sources.length} sumber terdaftar
+                      {availableMarketplaces.length > 0 &&
+                        ` · ${availableMarketplaces.length} marketplace belum dipakai`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSeedDefaults}
+                    disabled={seeding || loadingSources || availableMarketplaces.length === 0}
+                    className="cursor-pointer gap-1.5 rounded-xl text-xs"
+                  >
+                    {seeding ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    <span>Isi Sumber Default</span>
+                  </Button>
                 </div>
 
                 {loadingSources ? (

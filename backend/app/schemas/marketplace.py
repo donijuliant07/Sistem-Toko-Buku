@@ -22,6 +22,12 @@ from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.price_validation import (
+    AIValidationStatus,
+    PriceStatistics,
+    ValidatedMarketplaceQuote,
+)
+
 #: Slug marketplace yang dikenal sistem. Daftar ini adalah cerminan CHECK
 #: constraint `ck_marketplace_sources_slug` / `ck_marketplace_prices_slug`.
 MarketplaceSlug = Literal[
@@ -29,7 +35,8 @@ MarketplaceSlug = Literal[
     "shopee",
     "lazada",
     "blibli",
-    "bukalapak",
+    "gramedia",
+    "periplus",
     "google_books",
     "open_library",
     "demo_store_a",
@@ -138,6 +145,12 @@ class MarketplaceComparisonResponse(BaseModel):
     book_title: str
     store_price: Decimal
     quotes: list[MarketplacePriceRead]
+    valid_offers: list[ValidatedMarketplaceQuote] = Field(default_factory=list)
+    review_offers: list[ValidatedMarketplaceQuote] = Field(default_factory=list)
+    rejected_offers: list[ValidatedMarketplaceQuote] = Field(default_factory=list)
+    price_statistics: PriceStatistics | None = None
+    ai_validation_status: AIValidationStatus = "unavailable"
+    validation_summary: list[str] = Field(default_factory=list)
     lowest_price: Decimal | None = None
     highest_price: Decimal | None = None
     savings: Decimal | None = Field(

@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Sparkles, Loader2, AlertCircle, Scale } from "lucide-react";
 import { getBook, getAIReview } from "@/lib/api";
 import type { Book, AIReviewResponse, SpoilerLevel } from "@/lib/types";
 import TopBar from "@/components/TopBar";
@@ -13,18 +12,25 @@ import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
 import { formatRupiah } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/components/AuthProvider";
 import SpoilerSelectorModal from "@/components/books/SpoilerSelectorModal";
 import AIReviewResult from "@/components/books/AIReviewResult";
+import ComparePriceModal from "@/components/books/ComparePriceModal";
 
 export default function BookDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params?.id as string;
 
   const [book, setBook] = useState<Book | null>(null);
-  const [loading, setLoading] = useState(true);
+  //: Buku yang `book` di atas benar-benar miliknya. Dipakai untuk menurunkan
+  //: keadaan "sedang memuat" alih-alih menyimpannya sebagai state: `setState`
+  //: sinkron di badan effect memicu render berantai (`react-hooks/set-state-in-effect`).
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  const loading = loadedId !== id;
   const [quantity, setQuantity] = useState(1);
   const { addToCart, setIsCartOpen } = useCart();
+  const { session } = useAuth();
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   // AI Review States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,11 +40,18 @@ export default function BookDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
+    let active = true;
     getBook(id)
-      .then((data) => setBook(data))
+      .then((data) => {
+        if (active) setBook(data);
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoadedId(id);
+      });
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const handleGenerateAIReview = async (spoilerLevel: SpoilerLevel) => {
@@ -225,6 +238,18 @@ export default function BookDetailPage() {
                 </span>
               </div>
 
+              {/* Bandingkan Harga Marketplace */}
+              {session && (
+                <button
+                  type="button"
+                  onClick={() => setIsCompareOpen(true)}
+                  className="mt-3 w-full py-2.5 px-4 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-[#0052cc] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                >
+                  <Scale className="w-4 h-4" />
+                  <span>Bandingkan Harga di Marketplace Lain</span>
+                </button>
+              )}
+
               {/* Description */}
               <div className="mt-6">
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Deskripsi Buku</h3>
@@ -339,6 +364,16 @@ export default function BookDetailPage() {
         bookTitle={book.title}
         bookAuthor={book.author}
         isGenerating={aiState === "generating"}
+      />
+
+      {/* Modal Bandingkan Harga */}
+      <ComparePriceModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        bookId={book.id}
+        bookTitle={book.title}
+        storePrice={price}
+        accessToken={session?.access_token ?? null}
       />
 
       <Footer />

@@ -35,7 +35,12 @@ from uuid import UUID
 import httpx
 
 from app.services.marketplace.base import AdapterError, FetchResult, build_client
+from app.services.marketplace.decision_engine import PriceValidationEngine
 from app.services.marketplace.registry import get_adapter, marketplace_label
+from app.services.marketplace.scraper_client import (
+    SCRAPER_SUPPORTED_SLUGS,
+    ScraperServiceClient,
+)
 
 #: Umur cache snapshot. Selama masih lebih muda, klik berikutnya membaca DB saja —
 #: inilah yang mencegah fitur ini menyerang marketplace berkali-kali.
@@ -48,6 +53,25 @@ HISTORY_LIMIT = 60
 #: menarik seluruh tabel.
 HISTORY_ROWS_LIMIT = 400
 
+#: Batas waktu **total** satu putaran scraping. Adapter HTML sudah punya batas
+#: per permintaan, tetapi beberapa marketplace yang lambat bisa menjumlahkan
+#: menjadi menit-menit — dan modal perbandingan harga tampak membeku karena
+#: tidak ada yang pernah menyerah. Bila batas ini tercapai, marketplace yang
+#: belum selesai dianggap gagal (masuk `warnings`), dan harga lama/dari cache
+#: tetap ditampilkan. Lebih panjang dari batas panggilan scraper
+#: (`SCRAPER_TIMEOUT_SECONDS`, 20 dtk) lebih satu putaran adapter.
+SCRAPE_TIMEOUT_SECONDS = 25.0
+
+
+#: Berapa lama pantangan mencoba ulang diterapkan per buku setelah satu putaran
+#: penuh kena batas waktu. Cukup untuk meredakan beban, cukup singkat agar buku
+#: itu pulih sendiri walau admin tidak melakukan apa pun.
+FULL_ATTEMPT_BACKOFF = timedelta(minutes=10)
+
+#: Pantangan per buku: ``book_id -> {"until": datetime, "signature": str}``.
+#: In-memory dan per-proses, seperti `_LAST_FORCE_REFRESH` di layer API: cukup
+#: untuk pemakaian satu proses, dan tidak berpura-pura jadi cache terdistribusi.
+_FULL_ATTEMPT_COOLDOWN: dict[str, tuple[datetime, tuple[str, ...]]] = {}
 
 def _utcnow() -> datetime:
     """Waktu sekarang UTC, timezone-aware — sama bentuknya dengan kolom `timestamptz`."""
@@ -87,12 +111,19 @@ class MarketplaceComparisonService:
         cache_ttl: timedelta = DEFAULT_CACHE_TTL,
         clock: Callable[[], datetime] = _utcnow,
         client_factory: Callable[[], httpx.AsyncClient] = build_client,
+        scraper_client: ScraperServiceClient | None = None,
+        validation_engine: PriceValidationEngine | None = None,
     ) -> None:
         self._sources = source_repo
         self._prices = price_repo
         self._cache_ttl = cache_ttl
         self._clock = clock
         self._client_factory = client_factory
+        self._scraper = scraper_client if scraper_client is not None else ScraperServiceClient()
+        self._validator = validation_engine if validation_engine is not None else PriceValidationEngine()
+        # Dibaca per instance supaya pengujian bisa memperpendeknya tanpa menunggu
+        # 25 detik sungguhan.
+        self._scrape_timeout = SCRAPE_TIMEOUT_SECONDS
 
     @property
     def sources(self) -> Any:
@@ -125,43 +156,122 @@ class MarketplaceComparisonService:
         keyword = " ".join(part for part in (book_title, book.get("author") or "") if part).strip()
 
         sources = await self._sources.list_for_book(book_id, only_active=True)
+        sources, backoff_warnings = self._apply_full_attempt_backoff(book_id, sources)
         snapshots = await self._prices.latest_for_book(book_id)
         latest_by_slug = {row.marketplace: row for row in snapshots}
+        # Riwayat dijalankan saat sesi database menganggur — yaitu selama
+        # `_scrape` menunggu jaringan — lalu ditunggu sebelum penulisan
+        # snapshot. `AsyncSession` tidak boleh dipakai dua operasi sekaligus,
+        # jadi query ini tidak boleh berjalan bersamaan dengan flush.
+        history_task = asyncio.create_task(self._history(book_id))
+        try:
+            return await self._compare_with_history(
+                book_id=book_id,
+                book=book,
+                book_title=book_title,
+                keyword=keyword,
+                sources=sources,
+                latest_by_slug=latest_by_slug,
+                history_task=history_task,
+                force_refresh=force_refresh,
+                extra_warnings=backoff_warnings,
+            )
+        except BaseException:
+            # Permintaan dibatalkan/error di tengah scraping: jangan tinggalkan
+            # query riwayat yang masih berjalan di sesi database bersama.
+            history_task.cancel()
+            raise
 
+    async def _compare_with_history(
+        self,
+        *,
+        book_id: UUID,
+        book: dict[str, Any],
+        book_title: str,
+        keyword: str,
+        sources: list[Any],
+        latest_by_slug: dict[str, Any],
+        history_task: asyncio.Task[dict[str, list[dict[str, Any]]]],
+        force_refresh: bool,
+        extra_warnings: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Sisa `compare_book` setelah riwayat dijadwalkan (lihat di sana)."""
         now = self._clock()
-        warnings: list[str] = []
+        warnings: list[str] = list(extra_warnings or [])
         quotes: dict[str, FetchResult] = {}
         scraped_slugs: set[str] = set()
+        # Setiap jalur yang keluar dari fungsi ini menunggu/membatalkan task
+        # riwayat, supaya tidak ada query yatim di sesi database bersama.
+        history: dict[str, list[dict[str, Any]]] = {}
+        new_snapshots: list[Any] = []
 
-        # Snapshot yang masih segar dipakai apa adanya; hanya yang basi di-scrape.
-        # Yang basi **tidak** langsung dipakai: kalau pembaruannya gagal, barulah
-        # harga lamanya dipakai sebagai cadangan (lihat setelah penulisan).
-        stale: list[Any] = []
-        for source in sources:
-            row = latest_by_slug.get(source.marketplace)
-            if row is None or force_refresh or self._is_stale(row, now):
-                stale.append(source)
-            else:
-                quotes[source.marketplace] = _result_from_row(row)
+        try:
+            # Snapshot yang masih segar dipakai apa adanya; hanya yang basi di-scrape.
+            # Yang basi **tidak** langsung dipakai: kalau pembaruannya gagal, barulah
+            # harga lamanya dipakai sebagai cadangan (lihat setelah penulisan).
+            stale: list[Any] = []
+            for source in sources:
+                row = latest_by_slug.get(source.marketplace)
+                if row is None or force_refresh or self._is_stale(row, now):
+                    stale.append(source)
+                else:
+                    quotes[source.marketplace] = _result_from_row(row)
 
-        if stale:
-            fresh, failures = await self._scrape(
-                sources=stale, book_title=book_title, keyword=keyword
-            )
-            warnings.extend(failures)
-            for source in stale:
-                result = fresh.get(source.marketplace)
-                if result is None:
-                    # Gagal diperbarui: tampilkan harga lama yang masih tersimpan
-                    # bila ada, dengan peringatan yang sudah dicatat di atas.
-                    row = latest_by_slug.get(source.marketplace)
-                    if row is not None and not force_refresh:
-                        quotes[source.marketplace] = _result_from_row(row)
-                    continue
-                quotes[source.marketplace] = result
-                scraped_slugs.add(source.marketplace)
-                # Baris baru, bukan penimpaan: riwayat harga tumbuh dari sini.
-                await self._prices.add_snapshot(result.as_snapshot(str(book_id)))
+            if stale:
+                try:
+                    fresh, failures = await asyncio.wait_for(
+                        self._scrape(
+                            sources=stale,
+                            book_title=book_title,
+                            author=book.get("author"),
+                            keyword=keyword,
+                        ),
+                        timeout=self._scrape_timeout,
+                    )
+                except TimeoutError:
+                    self._mark_full_attempt(book_id, sources)
+                    # Satu marketplace yang menggantung tidak boleh menahan seluruh
+                    # respons: tampilkan yang ada (cache/riwayat) + peringatan.
+                    fresh, failures = {}, [
+                        (
+                            "Pencarian harga melebihi batas waktu; "
+                            "menampilkan harga terakhir yang tersedia."
+                        )
+                    ]
+                warnings.extend(failures)
+                for source in stale:
+                    result = fresh.get(source.marketplace)
+                    if result is None:
+                        # Gagal diperbarui: tampilkan harga lama yang masih tersimpan
+                        # bila ada, dengan peringatan yang sudah dicatat di atas.
+                        row = latest_by_slug.get(source.marketplace)
+                        if row is not None and not force_refresh:
+                            quotes[source.marketplace] = _result_from_row(row)
+                        continue
+                    quotes[source.marketplace] = result
+                    scraped_slugs.add(source.marketplace)
+                    # Baris baru, bukan penimpaan: riwayat harga tumbuh dari sini.
+                    # Dikumpulkan dulu supaya satu perbandingan = satu batch insert.
+                    new_snapshots.append(result.as_snapshot(str(book_id)))
+                history_read_before_insert = history_task.done()
+                if new_snapshots:
+                    await self._prices.add_snapshots(new_snapshots)
+            history = await history_task
+            # Bila query riwayat selesai selama scraping, ia belum melihat titik
+            # yang baru disimpan; sisipkan di memori daripada query ulang.
+            if new_snapshots and history_read_before_insert:
+                for snapshot in new_snapshots:
+                    points = history.setdefault(snapshot["marketplace"], [])
+                    points.append(
+                        {
+                            "price": _to_decimal(snapshot["price"]),
+                            "fetched_at": _as_aware(snapshot["fetched_at"]),
+                        }
+                    )
+                    del points[:-HISTORY_LIMIT]
+        except BaseException:
+            history_task.cancel()
+            raise
 
         if not sources:
             warnings.append("Belum ada sumber marketplace untuk buku ini.")
@@ -169,18 +279,41 @@ class MarketplaceComparisonService:
         ordered = sorted(quotes.values(), key=lambda item: item.price)
         store_price = _to_decimal(book.get("price"))
 
+        raw_quote_payloads = [
+            _quote_payload(item, latest_by_slug.get(slug), now, scraped=slug in scraped_slugs)
+            for slug, item in sorted(quotes.items(), key=lambda pair: pair[1].price)
+        ]
+
+        # Jalankan validasi harga hybrid (deterministik + analisis AI)
+        validation_outcome = await self._validator.validate_comparison(
+            book=book,
+            raw_quotes=raw_quote_payloads,
+        )
+
+        valid_offers = validation_outcome["valid_offers"]
+        review_offers = validation_outcome["review_offers"]
+        rejected_offers = validation_outcome["rejected_offers"]
+
+        # Prioritaskan harga terbaik dari penawaran yang lolos validasi
+        lowest_price = validation_outcome["lowest_price"] if valid_offers else (ordered[0].price if ordered else None)
+        highest_price = validation_outcome["highest_price"] if valid_offers else (ordered[-1].price if ordered else None)
+        savings = (store_price - lowest_price) if lowest_price is not None else None
+
         return {
             "book_id": book_id,
             "book_title": book_title,
             "store_price": store_price,
-            "quotes": [
-                _quote_payload(item, latest_by_slug.get(slug), now, scraped=slug in scraped_slugs)
-                for slug, item in sorted(quotes.items(), key=lambda pair: pair[1].price)
-            ],
-            "lowest_price": ordered[0].price if ordered else None,
-            "highest_price": ordered[-1].price if ordered else None,
-            "savings": (store_price - ordered[0].price) if ordered else None,
-            "history": await self._history(book_id),
+            "quotes": raw_quote_payloads,
+            "valid_offers": valid_offers,
+            "review_offers": review_offers,
+            "rejected_offers": rejected_offers,
+            "price_statistics": validation_outcome["price_statistics"],
+            "ai_validation_status": validation_outcome["ai_validation_status"],
+            "validation_summary": validation_outcome["validation_summary"],
+            "lowest_price": lowest_price,
+            "highest_price": highest_price,
+            "savings": savings,
+            "history": history,
             "fetched_at": now,
             "from_cache": not stale,
             "warnings": warnings,
@@ -189,6 +322,45 @@ class MarketplaceComparisonService:
     # ------------------------------------------------------------------
     # Bagian internal
     # ------------------------------------------------------------------
+
+    def _apply_full_attempt_backoff(self, book_id: UUID, sources: list[Any]) -> tuple[list[Any], list[str]]:
+        """Singkirkan sementara marketplace yang baru saja membuat putaran gagal total.
+
+        Semua marketplace dicari dalam satu panggilan scraper. Bila panggilan itu
+        kehabisan waktu, mencoba lagi saat pengguna berikutnya membuka buku yang
+        sama akan menghasilkan kegagalan yang sama — sambil menahan permintaan
+        itu juga. Selama masa pantangan, marketplace tersebut tidak diminta;
+        harga terakhir (bila ada) tetap tampil.
+
+        Pantangan dilewati begitu daftar marketplace yang diminta berubah
+        (admin menambah/menghapus sumber) atau waktu habis, sehingga buku yang
+        sebelumnya gagal tetap bisa pulih tanpa intervensi.
+        """
+        key = str(book_id)
+        entry = _FULL_ATTEMPT_COOLDOWN.get(key)
+        if entry is None:
+            return sources, []
+        until, signature = entry
+        now = self._clock()
+        current = tuple(sorted(source.marketplace for source in sources))
+        if now >= until or signature != current:
+            _FULL_ATTEMPT_COOLDOWN.pop(key, None)
+            return sources, []
+
+        remaining = int((until - now).total_seconds() / 60) + 1
+        return [], [
+            (
+                "Pencarian harga marketplace baru saja gagal seluruhnya; "
+                f"mencoba lagi dalam {remaining} menit."
+            )
+        ]
+
+    def _mark_full_attempt(self, book_id: UUID, sources: list[Any]) -> None:
+        """Catat putaran yang gagal total agar tidak diulang segera."""
+        _FULL_ATTEMPT_COOLDOWN[str(book_id)] = (
+            self._clock() + FULL_ATTEMPT_BACKOFF,
+            tuple(sorted(source.marketplace for source in sources)),
+        )
 
     def _is_stale(self, row: Any, now: datetime) -> bool:
         """Apakah snapshot sudah lebih tua dari `cache_ttl`."""
@@ -203,31 +375,76 @@ class MarketplaceComparisonService:
         sources: list[Any],
         book_title: str,
         keyword: str,
+        author: str | None = None,
     ) -> tuple[dict[str, FetchResult], list[str]]:
         """Scrape seluruh sumber basi secara paralel.
 
-        `return_exceptions=True` disengaja: satu marketplace yang memblokir
-        permintaan tidak boleh membatalkan perbandingan marketplace lain.
+        Marketplace e-commerce (Tokopedia, Lazada, Blibli, Gramedia, Periplus, Shopee)
+        diambil lewat **service scraper** Playwright dalam **satu panggilan**:
+        worker dan backend tidak sama-sama mencari, dan slug-slug itu
+        berjalan bersamaan di worker — syarat agar muat dalam batas waktu.
+        Sumber dengan `product_url` dari admin melewati scraper dan langsung
+        dibuka adapter, karena halaman yang dimaksud sudah pasti benar.
+
+        Adapter bawaan tetap dipakai untuk marketplace yang bukan e-commerce
+        (Google Books, Open Library, demo). Bila service scraper belum
+        dikonfigurasi, sumber e-commerce jatuh ke adapter bawaan dan
+        peringatannya menjelaskan penyebabnya.
         """
         client = self._client_factory()
         results: dict[str, FetchResult] = {}
         failures: list[str] = []
         try:
-            tasks = [self._fetch_one(client, source, book_title, keyword) for source in sources]
-            outcomes = await asyncio.gather(*tasks, return_exceptions=True)
+            remaining_sources = list(sources)
+            scraper_sources = [
+                s for s in sources
+                if s.marketplace in SCRAPER_SUPPORTED_SLUGS and not getattr(s, "product_url", None)
+            ]
+            if scraper_sources and self._scraper.is_configured:
+                wanted = tuple(dict.fromkeys(s.marketplace for s in scraper_sources))
+                remaining_sources = [s for s in remaining_sources if s not in scraper_sources]
+                try:
+                    outcome = await self._scraper.search_prices(
+                        client,
+                        book_title=book_title,
+                        author=author,
+                        keywords={
+                            s.marketplace: s.search_keyword
+                            for s in scraper_sources
+                            if getattr(s, "search_keyword", None)
+                        },
+                        wanted_slugs=wanted,
+                    )
+                except AdapterError as err:
+                    # Seluruh marketplace e-commerce gagal dalam satu panggilan:
+                    # satu peringatan, bukan lima.
+                    failures.append(str(err))
+                else:
+                    results.update(outcome.offers)
+                    # Kegagalan per-slug hanya dilaporkan untuk marketplace yang
+                    # memang diminta buku ini.
+                    failures.extend(
+                        message
+                        for message in outcome.failures
+                        if any(
+                            marketplace_label(slug) in message
+                            for slug in wanted
+                        )
+                    )
+
+            if remaining_sources:
+                tasks = [self._fetch_one(client, source, book_title, keyword) for source in remaining_sources]
+                outcomes = await asyncio.gather(*tasks, return_exceptions=True)
+                for source, outcome in zip(remaining_sources, outcomes):
+                    if isinstance(outcome, FetchResult):
+                        results[source.marketplace] = outcome
+                    elif isinstance(outcome, AdapterError):
+                        failures.append(str(outcome))
+                    elif isinstance(outcome, BaseException):
+                        failures.append(f"{marketplace_label(source.marketplace)} gagal diambil ({type(outcome).__name__}).")
         finally:
             await client.aclose()
 
-        for source, outcome in zip(sources, outcomes):
-            if isinstance(outcome, FetchResult):
-                results[source.marketplace] = outcome
-            elif isinstance(outcome, AdapterError):
-                failures.append(str(outcome))
-            elif isinstance(outcome, BaseException):
-                # Bukan kegagalan marketplace yang dikenal — jangan diam-diam
-                # disamarkan sebagai peringatan biasa, tapi jangan pula
-                # menggagalkan permintaan.
-                failures.append(f"{marketplace_label(source.marketplace)} gagal diambil ({type(outcome).__name__}).")
         return results, failures
 
     async def _fetch_one(

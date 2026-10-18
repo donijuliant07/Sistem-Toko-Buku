@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+.pw-browsers/
+_store_probe.py
+_html_probe.py
+_*.out

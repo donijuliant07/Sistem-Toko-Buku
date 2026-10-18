@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+
+# temporary debug / scrape artifacts
+_*.json
+_*.html
+_*.out
+_pp.txt
+_probe_*.py

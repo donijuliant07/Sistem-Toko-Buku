@@ -221,7 +221,8 @@ export type MarketplaceSlug =
   | "shopee"
   | "lazada"
   | "blibli"
-  | "bukalapak"
+  | "gramedia"
+  | "periplus"
   | "google_books"
   | "open_library"
   | "demo_store_a"
@@ -238,6 +239,35 @@ export type MarketplaceSlug =
  */
 export type PriceSource = "admin_url" | "search" | "manual" | "mock";
 
+export type ValidationStatus = "valid" | "review" | "rejected";
+export type ProductMatchStatus = "match" | "likely_match" | "uncertain" | "mismatch";
+export type PriceAssessment =
+  | "fair"
+  | "potential_outlier"
+  | "extreme_low"
+  | "extreme_high"
+  | "insufficient_data";
+export type AIValidationStatus = "completed" | "fallback" | "unavailable" | "disabled" | "error";
+
+export type DetectedProductAttributes = {
+  is_bundle: boolean;
+  is_ebook: boolean;
+  is_preorder: boolean;
+  is_used: boolean;
+  is_non_book: boolean;
+  condition_note?: string | null;
+  detected_isbn?: string | null;
+};
+
+export type PriceStatistics = {
+  sample_size: number;
+  median_price: string | number | null;
+  min_price: string | number | null;
+  max_price: string | number | null;
+  price_spread: string | number | null;
+  is_reliable: boolean;
+};
+
 export type MarketplaceQuote = {
   marketplace: MarketplaceSlug;
   label: string;
@@ -251,7 +281,17 @@ export type MarketplaceQuote = {
   match_score: number | null;
   source: PriceSource;
   fetched_at: string;
+  validation_status?: ValidationStatus;
+  match_status?: ProductMatchStatus;
+  price_assessment?: PriceAssessment;
+  confidence?: number;
+  reasons?: string[];
+  is_outlier?: boolean;
+  deviation_percent?: number | null;
+  attributes?: DetectedProductAttributes;
 };
+
+export type ValidatedMarketplaceQuote = MarketplaceQuote;
 
 export type MarketplaceHistoryPoint = {
   price: string | number;
@@ -265,6 +305,12 @@ export type MarketplaceComparison = {
   store_price: string | number;
   /** Selalu terurut harga menaik; `quotes[0]` yang termurah. */
   quotes: MarketplaceQuote[];
+  valid_offers?: ValidatedMarketplaceQuote[];
+  review_offers?: ValidatedMarketplaceQuote[];
+  rejected_offers?: ValidatedMarketplaceQuote[];
+  price_statistics?: PriceStatistics | null;
+  ai_validation_status?: AIValidationStatus;
+  validation_summary?: string[];
   lowest_price: string | number | null;
   highest_price: string | number | null;
   /** Positif = ada marketplace yang lebih murah dari toko ini. */

@@ -14,10 +14,11 @@ from __future__ import annotations
 
 from app.services.marketplace.adapters.catalog import (
     BlibliAdapter,
-    BukalapakAdapter,
     GoogleBooksAdapter,
+    GramediaAdapter,
     LazadaAdapter,
     OpenLibraryAdapter,
+    PeriplusAdapter,
     ShopeeAdapter,
     TokopediaAdapter,
 )
@@ -39,7 +40,8 @@ ADAPTER_CLASSES: tuple[type[MarketplaceAdapter], ...] = (
     ShopeeAdapter,
     LazadaAdapter,
     BlibliAdapter,
-    BukalapakAdapter,
+    GramediaAdapter,
+    PeriplusAdapter,
     OpenLibraryAdapter,
 )
 
