@@ -1,0 +1,28 @@
+﻿2026-10-18 00:31:51,176 [INFO] scraper_main: Service Scraper dijalankan...
+2026-10-18 00:31:51,176 [INFO] src.pipeline: Memulai pipeline cron scraping harga buku...
+2026-10-18 00:31:56,255 [INFO] src.browser: Chromium browser berhasil dinyalakan.
+2026-10-18 00:31:59,692 [INFO] src.pipeline: Ditemukan 1 buku untuk diproses.
+2026-10-18 00:31:59,692 [INFO] src.pipeline: === [Mulai] Scraping buku: 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan' (ID: 85f369fc-c60a-40b3-8c9c-394695ce4b14) ===
+2026-10-18 00:31:59,926 [INFO] src.scrapers.tokopedia: [Tokopedia] Mencari: Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan Max Tegmark
+2026-10-18 00:31:59,936 [INFO] src.scrapers.lazada: [Lazada] Mencari: Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan Max Tegmark
+2026-10-18 00:32:02,899 [INFO] src.scrapers.lazada: [Lazada] 20 kartu ditemukan untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan'
+2026-10-18 00:32:03,033 [INFO] src.scrapers.blibli: [Blibli] Mencari: Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan Max Tegmark
+2026-10-18 00:32:05,485 [INFO] src.scrapers.blibli: [Blibli] 1 kartu untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan Max'
+2026-10-18 00:32:05,485 [WARNING] src.scrapers.blibli: [Blibli] Tidak ada produk relevan untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan'
+2026-10-18 00:32:05,600 [INFO] src.scrapers.shopee: [Shopee] Mencari: Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan Max Tegmark
+2026-10-18 00:32:09,216 [WARNING] src.pipeline:   -> Tidak tersedia Shopee untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan': Shopee: pencarian dialihkan ke verifikasi/login.
+2026-10-18 00:32:09,303 [WARNING] src.scrapers.bukalapak: [Bukalapak] Katalog produk Bukalapak sudah dihapus; 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan' dilewati.
+2026-10-18 00:32:09,317 [WARNING] src.pipeline:   -> Tidak tersedia Bukalapak untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan': Bukalapak: katalog produk sudah tidak tersedia.
+2026-10-18 00:32:09,902 [INFO] src.scrapers.tokopedia: [Tokopedia] 0 kartu ditemukan untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan' (percobaan 1)
+2026-10-18 00:32:15,433 [INFO] src.scrapers.tokopedia: [Tokopedia] 0 kartu ditemukan untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan' (percobaan 2)
+2026-10-18 00:32:15,433 [WARNING] src.scrapers.tokopedia: [Tokopedia] Tidak ada produk relevan untuk 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan'
+2026-10-18 00:32:15,459 [WARNING] src.pipeline:   -> Tokopedia: tidak ada penawaran.
+2026-10-18 00:32:15,459 [WARNING] src.pipeline:   -> Blibli: tidak ada penawaran.
+2026-10-18 00:32:15,459 [WARNING] src.pipeline:   -> Shopee: pencarian dialihkan ke verifikasi/login.
+2026-10-18 00:32:15,459 [WARNING] src.pipeline:   -> Bukalapak: katalog produk sudah tidak tersedia.
+2026-10-18 00:32:17,712 [INFO] src.pipeline:   -> Disimpan ke DB: Lazada - Rp 122,200 (Life 3.0 : Menjadi Manusia Pada Era Kecerdasan Buatan, score 0.96)
+2026-10-18 00:32:17,712 [INFO] src.pipeline: === [Selesai] 'Life 3.0: Menjadi Manusia di Era Kecerdasan Buatan': 1/5 penawaran tersimpan (lazada); tanpa penawaran: blibli, bukalapak, shopee, tokopedia ===
+
+2026-10-18 00:32:21,956 [INFO] src.browser: Chromium browser ditutup.
+2026-10-18 00:32:21,956 [INFO] src.pipeline: Pipeline selesai dalam 30.78s: 1 buku diproses, 1 snapshot harga baru disimpan ke Supabase.
+2026-10-18 00:32:21,956 [INFO] scraper_main: Hasil eksekusi: {'books_processed': 1, 'quotes_saved': 1, 'duration_seconds': 30.78}

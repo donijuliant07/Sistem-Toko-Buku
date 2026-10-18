@@ -1,0 +1,22 @@
+# Jangan kirim kredensial dan artefak lokal ke image.
+# `.env` hanya dipakai di lokal; di Railway nilai datang dari env var dashboard.
+.env
+.env.*
+!.env.example
+
+# Virtualenv lokal (Windows) dan cache
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pw-browsers/
+
+# Log dan hasil probe
+*.log
+_*.out
+_*.py
+
+# Kontrol versi dan dokumen
+.git/
+.gitignore
+README.md
