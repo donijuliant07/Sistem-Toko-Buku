@@ -30,17 +30,46 @@ type RequestOptions = RequestInit & { accessToken?: string };
 
 type ApiEnvelope<T> = { sukses: boolean; pesan: string; data: T };
 
+/**
+ * Batas waktu permintaan bila pemanggil tidak menyebut satu sendiri.
+ *
+ * Tanpa ini, `fetch` menunggu tanpa batas sampai server menjawab — modal yang
+ * menunggu backend lambat (scraping marketplace) tidak pernah pindah ke layar
+ * error, dan terlihat "freeze". Dipasangkan dengan `AbortSignal.any` supaya
+ * signal milik pemanggil (mis. tombol Batal) tetap berlaku.
+ */
+const DEFAULT_TIMEOUT_MS = 45_000;
+
+/** `Error` dengan nama `AbortError` — dibedakan pemanggil untuk pesan "dibatalkan". */
+function timeoutSignal(ms: number): AbortSignal {
+  return AbortSignal.timeout(ms);
+}
+
 async function request<T>(path: string, init?: RequestOptions): Promise<T> {
-  const { accessToken, headers, ...requestInit } = init ?? {};
-  const response = await fetch(`${apiUrl}${path}`, {
-    ...requestInit,
-    headers: {
-      Accept: "application/json",
-      ...(requestInit.body ? { "Content-Type": "application/json" } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  });
+  const { accessToken, headers, signal, ...requestInit } = init ?? {};
+  const signals: AbortSignal[] = [timeoutSignal(DEFAULT_TIMEOUT_MS)];
+  if (signal) signals.push(signal);
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}${path}`, {
+      ...requestInit,
+      headers: {
+        Accept: "application/json",
+        ...(requestInit.body ? { "Content-Type": "application/json" } : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...headers,
+      },
+      signal: AbortSignal.any(signals),
+    });
+  } catch (cause) {
+    // Abort dari pemanggil diteruskan apa adanya; timeout diubah menjadi pesan
+    // yang bisa dibaca pengguna, karena `TimeoutError` mentah tidak informatif.
+    if (cause instanceof DOMException && cause.name === "TimeoutError") {
+      throw new Error("Server tidak merespons dalam batas waktu. Coba lagi.");
+    }
+    throw cause;
+  }
 
   if (!response.ok) {
     let detail = `Request failed (${response.status})`;
@@ -264,12 +293,12 @@ export async function deletePromo(id: string): Promise<void> {
 export async function getMarketplacePrices(
   bookId: string,
   accessToken: string,
-  options?: { refresh?: boolean }
+  options?: { refresh?: boolean; signal?: AbortSignal }
 ): Promise<ApiEnvelope<MarketplaceComparison>> {
   const params = options?.refresh ? "?refresh=true" : "";
   return request<ApiEnvelope<MarketplaceComparison>>(
     `/books/${encodeURIComponent(bookId)}/marketplace-prices${params}`,
-    { accessToken }
+    { accessToken, signal: options?.signal }
   );
 }
 
@@ -307,6 +336,22 @@ export async function createMarketplaceSource(
     accessToken,
   });
   return res.data;
+}
+
+/**
+ * Isi sumber marketplace bawaan (satu per marketplace scraper) untuk satu buku.
+ *
+ * Hanya menambah sumber yang belum ada; konfigurasi admin yang sudah ada tidak
+ * ditimpa. Mengembalikan sumber yang **baru** dibuat — daftar kosong berarti
+ * semuanya sudah terdaftar.
+ */
+export async function seedMarketplaceSources(bookId: string): Promise<MarketplaceSource[]> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<MarketplaceSource[]>>(
+    `/books/${encodeURIComponent(bookId)}/marketplace-sources/seed`,
+    { method: "POST", accessToken }
+  );
+  return res.data ?? [];
 }
 
 export async function updateMarketplaceSource(
