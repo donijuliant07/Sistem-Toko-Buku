@@ -25,7 +25,6 @@ from decimal import Decimal
 from uuid import UUID
 
 import pytest
-
 from app.api.v1.marketplaces import comparison_service
 from app.core.security import UserPayload, get_current_user, require_admin
 from app.db.session import get_db
@@ -57,9 +56,17 @@ from app.services.marketplace.registry import (
     supported_marketplaces,
     supported_slugs,
 )
-from app.services.marketplace.service import MarketplaceComparisonService
+from app.services.marketplace.scraper_client import (
+    SCRAPER_SUPPORTED_SLUGS,
+    PrefetchOutcome,
+)
+from app.services.marketplace.service import (
+    FULL_ATTEMPT_BACKOFF,
+    MarketplaceComparisonService,
+)
+from httpx import ASGITransport, AsyncClient
 
-NOW = datetime(2026, 10, 15, 12, 0, tzinfo=UTC)
+NOW =datetime(2026, 10, 15, 12, 0, tzinfo=UTC)
 
 BOOK = {
     "id": "11111111-1111-1111-1111-111111111111",
@@ -123,6 +130,22 @@ class FakeSourceRepository:
     async def get(self, source_id):
         return next((row for row in self.rows if row.id == source_id), None)
 
+    async def create_many_if_absent(self, rows):
+        created = []
+        for row in rows:
+            if any(existing.marketplace == row["marketplace"] for existing in self.rows):
+                continue
+            source = FakeSource(
+                row["marketplace"],
+                product_url=row.get("product_url"),
+                search_keyword=row.get("search_keyword"),
+                active=row.get("is_active", True),
+            )
+            self.rows.append(source)
+            created.append(source)
+        self.created.extend(created)
+        return created
+
     async def create(self, payload):
         row = FakeSource(payload.marketplace, product_url=str(payload.product_url or "") or None,
                          search_keyword=payload.search_keyword)
@@ -166,6 +189,9 @@ class FakePriceRepository:
         self.rows.append(row)
         return row
 
+    async def add_snapshots(self, payloads):
+        return [await self.add_snapshot(payload) for payload in payloads]
+
 
 class StubAdapter(MarketplaceAdapter):
     """Adapter palsu: mengembalikan harga yang sudah ditentukan, atau melempar."""
@@ -197,8 +223,21 @@ class StubAdapter(MarketplaceAdapter):
         )
 
 
-def build(stub_slugs=None, *, sources=None, prices=None, clock=lambda: NOW, adapters=None, ttl=timedelta(hours=6)):
-    """Susun service dengan repository palsu dan registry adapter yang diganti."""
+def build(
+    stub_slugs=None,
+    *,
+    sources=None,
+    prices=None,
+    clock=lambda: NOW,
+    adapters=None,
+    ttl=timedelta(hours=6),
+    scraper=None,
+):
+    """Susun service dengan repository palsu, registry adapter, dan scraper palsu.
+
+    `scraper` default-nya klien yang **tidak dikonfigurasi**, sehingga pengujian
+    yang hanya peduli pada adapter tidak pernah mencoba menjalankan Chromium.
+    """
     source_repo = FakeSourceRepository(sources if sources is not None else [])
     price_repo = FakePriceRepository(prices if prices is not None else [])
     registry = adapters if adapters is not None else {
@@ -207,6 +246,7 @@ def build(stub_slugs=None, *, sources=None, prices=None, clock=lambda: NOW, adap
     service = MarketplaceComparisonService(
         source_repo, price_repo, cache_ttl=ttl, clock=clock,
         client_factory=_StubClient,
+        scraper_client=scraper or _UnconfiguredScraper(),
     )
     return service, source_repo, price_repo, registry
 
@@ -230,6 +270,41 @@ class _StubClient:
 
     async def aclose(self):
         return None
+
+
+class _UnconfiguredScraper:
+    """Klien scraper yang alamatnya kosong: sumber e-commerce jatuh ke adapter."""
+
+    is_configured = False
+
+    async def search_prices(self, client, **kwargs):
+        from app.services.marketplace.base import AdapterError
+
+        raise AdapterError("Service scraper belum dikonfigurasi (SCRAPER_SERVICE_URL kosong).")
+
+
+class _StubScraper:
+    """Klien scraper palsu: mengembalikan penawaran yang ditentukan, atau melempar."""
+
+    is_configured = True
+
+    def __init__(self, offers=None, *, error=None):
+        self._offers = offers or {}
+        self._error = error
+        self.calls = []
+        self.last_keywords = None
+        self.last_wanted = None
+
+    async def search_prices(self, client, *, book_title, author=None, keywords=None, wanted_slugs=None):
+        self.calls.append(book_title)
+        self.last_keywords = keywords
+        self.last_wanted = wanted_slugs
+        if self._error:
+            raise self._error
+        wanted = set(wanted_slugs or self._offers)
+        offers = {slug: item for slug, item in self._offers.items() if slug in wanted}
+        failures = [f"{slug.title()}: tidak ada penawaran." for slug in sorted(wanted - set(offers))]
+        return PrefetchOutcome(offers=offers, failures=failures)
 
 
 class _BookRow:
@@ -441,6 +516,154 @@ async def test_inactive_source_is_never_scraped():
 
 
 # ---------------------------------------------------------------------------
+# 3b. Jalur service scraper (Playwright), pengganti SerpApi
+# ---------------------------------------------------------------------------
+
+def _scraper_offer(slug, *, price="89000", title=BOOK["title"], url=None):
+    return FetchResult(
+        marketplace=slug,
+        label=marketplace_label(slug),
+        title=title,
+        price=Decimal(price),
+        url=url or f"https://{slug}.test/p/1",
+        match_score=0.95,
+        source="search",
+    )
+
+
+@pytest.mark.asyncio
+async def test_scraper_offer_is_saved_as_snapshot():
+    """Harga dari service scraper dipakai langsung: adapter tidak dipanggil lagi."""
+    scraped = _scraper_offer("tokopedia", price="87000")
+    adapters = {"tokopedia": StubAdapter("tokopedia"), "lazada": StubAdapter("lazada")}
+    scraper = _StubScraper({
+        "tokopedia": scraped,
+        "lazada": _scraper_offer("lazada", price="91000"),
+    })
+    service, _, price_repo, registry = build(
+        sources=[FakeSource("tokopedia"), FakeSource("lazada")],
+        adapters=adapters,
+        scraper=scraper,
+    )
+
+    result = await _with_registry(registry, lambda: service.compare_book(BOOK))
+
+    assert scraper.calls == [BOOK["title"]]
+    assert scraper.last_wanted == ("tokopedia", "lazada")
+    assert result["lowest_price"] == Decimal(87000)
+    assert sorted(row["marketplace"] for row in price_repo.added) == ["lazada", "tokopedia"]
+    assert all(row["source"] == "search" for row in price_repo.added)
+    assert all(adapter.calls == 0 for adapter in adapters.values())
+    assert result["warnings"] == []
+
+
+@pytest.mark.asyncio
+async def test_admin_product_url_bypasses_the_scraper():
+    """Link produk dari admin tetap dikerjakan adapter; scraper hanya untuk pencarian."""
+    adapters = {"tokopedia": StubAdapter("tokopedia", price="99000")}
+    scraper = _StubScraper({})
+    service, _, _, registry = build(
+        sources=[FakeSource("tokopedia", product_url="https://tokopedia.test/p/1")],
+        adapters=adapters,
+        scraper=scraper,
+    )
+
+    result = await _with_registry(registry, lambda: service.compare_book(BOOK))
+
+    assert scraper.calls == []
+    assert adapters["tokopedia"].last_product_url == "https://tokopedia.test/p/1"
+    assert result["quotes"][0]["price"] == Decimal(99000)
+
+
+@pytest.mark.asyncio
+async def test_scraper_failure_reports_warning_without_adapter_fallback():
+    """Scraper yang dikonfigurasi gagal: satu peringatan, dan tidak jatuh ke adapter bawaan."""
+    adapters = {"tokopedia": StubAdapter("tokopedia", price="95000")}
+    scraper = _StubScraper(error=AdapterError("Service scraper tidak bisa dihubungi."))
+    service, _, price_repo, registry = build(
+        sources=[FakeSource("tokopedia")],
+        adapters=adapters,
+        scraper=scraper,
+    )
+
+    result = await _with_registry(registry, lambda: service.compare_book(BOOK))
+
+    assert adapters["tokopedia"].calls == 0
+    assert result["quotes"] == []
+    assert result["warnings"] == ["Service scraper tidak bisa dihubungi."]
+    assert len(price_repo.added) == 0
+
+
+
+
+
+def test_parse_scrape_response_creates_search_source_and_deduplicates_failures():
+    from app.services.marketplace.scraper_client import parse_scrape_response
+
+    payload = {
+        "offers": {
+            "tokopedia": {
+                "title": BOOK["title"],
+                "price": "75000",
+                "product_url": "https://tokopedia.test/p/1",
+                "seller_name": "Official Store",
+                "in_stock": True,
+                "match_score": 0.95,
+            }
+        },
+        "failures": {
+            "shopee": "Shopee: pencarian dialihkan ke verifikasi/login.",
+        },
+    }
+    outcome = parse_scrape_response(
+        payload,
+        book_title=BOOK["title"],
+        wanted_slugs=("tokopedia", "shopee", "lazada"),
+    )
+    assert outcome.offers["tokopedia"].source == "search"
+    assert outcome.offers["tokopedia"].price == Decimal(75000)
+    assert outcome.failures == [
+        "Shopee: pencarian dialihkan ke verifikasi/login.",
+        "Lazada: tidak ada penawaran.",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_repeated_total_failure_is_backed_off():
+    """Setelah batas waktu semua marketplace, percobaan berikutnya tidak menunggu lagi."""
+    from app.services.marketplace.service import _FULL_ATTEMPT_COOLDOWN
+
+    _FULL_ATTEMPT_COOLDOWN.clear()
+
+    class HangingScraper:
+        is_configured = True
+        calls = 0
+
+        async def search_prices(self, client, **_kwargs):
+            HangingScraper.calls += 1
+            await asyncio.sleep(3600)
+
+    adapters = {"tokopedia": StubAdapter("tokopedia")}
+    hanging = HangingScraper()
+    service, _, _, registry = build(
+        sources=[FakeSource("tokopedia")], adapters=adapters, scraper=hanging
+    )
+    service._scrape_timeout = 0.05
+    try:
+        first = await _with_registry(registry, lambda: service.compare_book(BOOK))
+        second = await _with_registry(registry, lambda: service.compare_book(BOOK))
+    finally:
+        _FULL_ATTEMPT_COOLDOWN.clear()
+
+    assert hanging.calls == 1
+    assert adapters["tokopedia"].calls == 0
+    assert first["quotes"] == [] and second["quotes"] == []
+    assert "batas waktu" in first["warnings"][0]
+    assert "mencoba lagi" in second["warnings"][0]
+    assert FULL_ATTEMPT_BACKOFF == timedelta(minutes=10)
+
+
+# ---------------------------------------------------------------------------
 # 4. Ketahanan
 # ---------------------------------------------------------------------------
 
@@ -458,7 +681,9 @@ async def test_one_failing_marketplace_does_not_break_the_comparison():
     result = await _with_registry(registry, lambda: service.compare_book(BOOK))
 
     assert [q["marketplace"] for q in result["quotes"]] == ["tokopedia"]
-    assert result["warnings"] == ["Shopee menolak permintaan (HTTP 403)."]
+    # Service scraper tidak dikonfigurasi pada pengujian ini; kegagalan Shopee
+    # tetap dilaporkan oleh adapter cadangan.
+    assert "Shopee menolak permintaan (HTTP 403)." in result["warnings"]
 
 
 @pytest.mark.asyncio
@@ -576,11 +801,12 @@ def test_every_adapter_builds_an_absolute_https_url_and_escapes_the_keyword(slug
     assert "bumi" in url
 
 
-def test_bukalapak_raises_its_match_threshold_above_the_default():
-    """Bukalapak memakai ambang lebih tinggi; itu keputusan yang harus tetap disengaja."""
+def test_bookstore_adapters_use_default_match_threshold():
+    """Gramedia & Periplus memakai ambang bawaan adapter katalog."""
     default = get_adapter("tokopedia").match_threshold
 
-    assert get_adapter("bukalapak").match_threshold > default
+    assert get_adapter("gramedia").match_threshold == default
+    assert get_adapter("periplus").match_threshold == default
 
 
 def test_google_books_appends_the_api_key_only_when_configured(monkeypatch):
@@ -664,6 +890,7 @@ async def test_open_library_failure_becomes_a_warning_not_a_broken_comparison():
         FakeSource("tokopedia", search_keyword="bumi manusia"),
     ]
     # Tokopedia diganti stub: adapter nyatanya akan benar-benar menghubungi internet.
+    # Service scraper tidak dikonfigurasi, jadi peringatannya juga ikut dihitung.
     service, _, price_repo, registry = build(
         sources=sources,
         adapters={
@@ -675,8 +902,7 @@ async def test_open_library_failure_becomes_a_warning_not_a_broken_comparison():
     result = await _with_registry(registry, lambda: service.compare_book(BOOK))
 
     assert [quote["marketplace"] for quote in result["quotes"]] == ["tokopedia"]
-    assert len(result["warnings"]) == 1
-    assert "Open Library" in result["warnings"][0]
+    assert "Open Library" in " ".join(result["warnings"])
     assert len(price_repo.added) == 1, "yang gagal tidak boleh menulis snapshot"
 
 
@@ -1093,3 +1319,48 @@ def test_source_timestamp_columns_are_distinct_objects():
     table = MarketplaceSource.__table__
 
     assert table.c.created_at is not table.c.updated_at
+
+
+# ---------------------------------------------------------------------------
+# 9. Sumber marketplace bawaan
+# ---------------------------------------------------------------------------
+
+from app.services.marketplace.seeding import build_default_source_rows, default_keyword
+
+
+def test_default_source_rows_cover_scraper_marketplaces_only():
+    """Penyemaian membuat sumber untuk lima marketplace scraper, tanpa slug demo."""
+    rows = build_default_source_rows("book-1", title="Bumi Manusia", author="Pramoedya")
+
+    assert [row["marketplace"] for row in rows] == list(SCRAPER_SUPPORTED_SLUGS)
+    assert {row["marketplace"] for row in rows} <= {item.slug for item in supported_marketplaces()}
+    assert all(row["product_url"] is None for row in rows)
+    assert all(row["search_keyword"] == "Bumi Manusia Pramoedya" for row in rows)
+
+
+def test_default_keyword_is_collapsed_trimmed_and_capped():
+    """Spasi berlebih dirapikan; kata kunci panjang dipotong ke batas kolom."""
+    assert default_keyword("  Bumi   Manusia ", None) == "Bumi Manusia"
+    assert len(default_keyword("A" * 400, "B" * 100)) == 255
+    assert build_default_source_rows("book-1", title="   ", author=None) == []
+
+
+
+@pytest.mark.asyncio
+async def test_seed_endpoint_creates_sources_and_is_idempotent():
+    """Endpoint isi ulang menambah lima sumber sekali; panggilan kedua tanpa hasil."""
+    service, source_repo, _, _ = build()
+
+    app.dependency_overrides[require_admin] = lambda: {"role": "admin", "sub": "admin-1"}
+    app.dependency_overrides[comparison_service] = lambda: service
+    app.dependency_overrides[get_db] = lambda: FakeSession()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as http:
+        first = await http.post(f"/api/v1/books/{BOOK['id']}/marketplace-sources/seed")
+        second = await http.post(f"/api/v1/books/{BOOK['id']}/marketplace-sources/seed")
+
+    assert first.status_code == 200
+    assert [item["marketplace"] for item in first.json()["data"]] == list(SCRAPER_SUPPORTED_SLUGS)
+    assert second.status_code == 200
+    assert second.json()["data"] == []
+    assert len(source_repo.rows) == len(SCRAPER_SUPPORTED_SLUGS)

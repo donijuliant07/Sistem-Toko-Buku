@@ -272,6 +272,16 @@ class MarketplaceSourceRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def create_many_if_absent(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Sisipkan sumber yang belum ada; kembalikan hanya yang baru dibuat.
+
+        Idempoten: pasangan `(book_id, marketplace)` yang sudah terdaftar
+        dilewati lewat aturan unik database, sehingga pemanggilan berulang
+        dengan payload yang sama tidak menambah baris apa pun.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     async def delete(self, source_id: UUID) -> bool:
         """Hapus satu sumber; `False` bila tidak ada yang terhapus."""
         raise NotImplementedError
@@ -298,4 +308,13 @@ class MarketplacePriceRepository(ABC):
     @abstractmethod
     async def add_snapshot(self, payload: Any) -> Any:
         """Sisipkan satu titik harga baru (tidak pernah menimpa baris lama)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def add_snapshots(self, payloads: list[Any]) -> list[Any]:
+        """Sisipkan banyak titik harga dalam satu round trip; urutan dipertahankan.
+
+        Ada agar satu perbandingan tidak memicu satu perjalanan database per
+        marketplace — sumber utama lambatnya modal perbandingan harga.
+        """
         raise NotImplementedError

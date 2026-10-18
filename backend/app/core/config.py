@@ -6,8 +6,8 @@ bawah. Nilai default sengaja permisif untuk pengembangan lokal, tetapi wajib
 ditimpa di lingkungan nyata (lihat `.env.example`).
 """
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -44,10 +44,27 @@ class Settings(BaseSettings):
     #: hanya marketplace itu yang muncul di `warnings`.
     GOOGLE_BOOKS_API_KEY: str = Field(default="", description="Google Books API Key")
 
+    #: Alamat service scraper Playwright (`scraper-service`, `POST /scrape`).
+    #: Kosong = harga marketplace e-commerce hanya diambil dari adapter bawaan,
+    #: yang saat ini diblokir anti-bot — UI tetap jalan dengan peringatan.
+    SCRAPER_SERVICE_URL: str = Field(default="", description="URL service scraper Playwright")
+
+    #: Token yang dikirim ke service scraper (header `X-Scraper-Token`).
+    SCRAPER_API_TOKEN: str = Field(default="", description="Token service scraper")
+
+    #: Batas satu panggilan service scraper. Harus lebih kecil dari
+    #: `SCRAPE_TIMEOUT_SECONDS` supaya backend sempat melaporkan kegagalannya.
+    SCRAPER_TIMEOUT_SECONDS: float = Field(default=20.0, gt=0, description="Batas waktu panggilan scraper")
+
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
         description="Database URL PostgreSQL",
     )
+
+    #: Umur maksimum koneksi pool sebelum didaur ulang (detik). Supabase memutus
+    #: koneksi yang menganggur; tanpa ini permintaan pertama setelah diam lama
+    #: gagal sekali lalu mencoba lagi — terlihat sebagai "freeze" di UI.
+    DATABASE_POOL_RECYCLE_SECONDS: int = Field(default=1800, ge=60)
 
     @property
     def database_url(self) -> str:

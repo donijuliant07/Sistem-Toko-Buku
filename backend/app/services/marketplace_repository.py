@@ -20,6 +20,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.marketplace import MarketplacePrice, MarketplaceSource
@@ -77,6 +78,26 @@ class OrmMarketplaceSourceRepository(MarketplaceSourceRepository):
         await self._db.flush()
         return source
 
+    async def create_many_if_absent(self, rows: list[dict[str, Any]]) -> list[Any]:
+        """Sisipkan sumber yang pasangan `(book_id, marketplace)`-nya belum ada.
+
+        `ON CONFLICT DO NOTHING` memakai aturan unik
+        `uq_marketplace_sources_book_marketplace`, jadi pemanggilan berulang
+        (mis. endpoint isi ulang diklik dua kali) tidak menimpa konfigurasi
+        admin yang sudah ada. Hanya baris yang benar-benar baru dikembalikan.
+        """
+        if not rows:
+            return []
+        statement = (
+            pg_insert(MarketplaceSource)
+            .values(rows)
+            .on_conflict_do_nothing(index_elements=["book_id", "marketplace"])
+            .returning(MarketplaceSource)
+        )
+        result = await self._db.execute(statement)
+        await self._db.flush()
+        return list(result.scalars().all())
+
     async def update(self, source_id: UUID, payload: Any) -> Any | None:
         """Terapkan hanya field yang benar-benar dikirim klien (`exclude_unset`)."""
         source = await self.get(source_id)
@@ -131,11 +152,28 @@ class OrmMarketplacePriceRepository(MarketplacePriceRepository):
 
     async def add_snapshot(self, payload: Any) -> Any:
         """Sisipkan satu titik harga; tidak pernah menimpa baris lama."""
-        data = payload if isinstance(payload, dict) else payload.model_dump(mode="json")
-        snapshot = MarketplacePrice(**{k: data[k] for k in _SNAPSHOT_COLUMNS if k in data})
-        self._db.add(snapshot)
-        await self._db.flush()
+        [snapshot] = await self.add_snapshots([payload])
         return snapshot
+
+    async def add_snapshots(self, payloads: list[Any]) -> list[Any]:
+        """Sisipkan banyak titik harga sekaligus dengan **satu** `flush()`.
+
+        Satu perbandingan biasanya menghasilkan 3–5 snapshot. Sebelumnya
+        masing-masing memicu round trip sendiri ke database (yang lewat pooler
+        bisa sampai detik per baris), sehingga modal perbandingan harga terasa
+        menggantung. Urutan masukan dipertahankan.
+        """
+        snapshots = []
+        for item in payloads:
+            data = item if isinstance(item, dict) else item.model_dump(mode="json")
+            snapshots.append(
+                MarketplacePrice(**{k: data[k] for k in _SNAPSHOT_COLUMNS if k in data})
+            )
+        if not snapshots:
+            return []
+        self._db.add_all(snapshots)
+        await self._db.flush()
+        return snapshots
 
     async def _fetch(self, book_id: UUID) -> list[Any]:
         """Seluruh snapshot satu buku, terbaru lebih dulu."""

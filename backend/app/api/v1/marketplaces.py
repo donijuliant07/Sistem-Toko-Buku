@@ -39,6 +39,7 @@ from app.schemas.marketplace import (
 )
 from app.services.book_service import OrmBookRepository
 from app.services.marketplace.registry import marketplace_label, supported_marketplaces
+from app.services.marketplace.seeding import build_default_source_rows
 from app.services.marketplace.service import MarketplaceComparisonService, build_service
 from app.services.marketplace_repository import (
     OrmMarketplacePriceRepository,
@@ -137,6 +138,40 @@ async def list_marketplaces(
             MarketplaceInfo(slug=adapter.slug, label=adapter.label)
             for adapter in supported_marketplaces()
         ],
+    )
+
+
+@router.post(
+    "/books/{book_id}/marketplace-sources/seed",
+    response_model=ApiResponse[list[MarketplaceSourceRead]],
+)
+async def seed_book_marketplace_sources(
+    book_id: str,
+    current_user: Annotated[UserPayload, Depends(require_admin)],
+    service: Annotated[MarketplaceComparisonService, Depends(comparison_service)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ApiResponse[list[MarketplaceSourceRead]]:
+    """Isi sumber marketplace bawaan untuk buku yang sudah ada.
+
+    Buku baru mendapat sumber otomatis saat dibuat; endpoint ini untuk buku lama
+    yang belum punya sumber sama sekali. Idempoten: sumber yang sudah ada untuk
+    marketplace yang sama dibiarkan apa adanya.
+    """
+    parsed = _uuid_or_422(book_id)
+    await _ensure_book_exists(parsed, db)
+    book = await OrmBookRepository(db).get(parsed)
+    created_rows = await service.sources.create_many_if_absent(
+        build_default_source_rows(parsed, title=book.get("title") or "", author=book.get("author"))
+    )
+    await db.commit()
+    return ApiResponse(
+        sukses=True,
+        pesan=(
+            f"{len(created_rows)} sumber marketplace ditambahkan."
+            if created_rows
+            else "Semua sumber marketplace bawaan sudah terdaftar."
+        ),
+        data=[_source_payload(source) for source in created_rows],
     )
 
 

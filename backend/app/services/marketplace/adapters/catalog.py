@@ -80,20 +80,28 @@ class BlibliAdapter(MarketplaceAdapter):
         return f"https://www.blibli.com/jual/{_quote(keyword)}"
 
 
-class BukalapakAdapter(MarketplaceAdapter):
-    """Bukalapak — `/products?search[keywords]=`.
+class GramediaAdapter(MarketplaceAdapter):
+    """Gramedia — `/search?q=`."""
 
-    Ambang kecocokan dinaikkan: judul lapak di Bukalapak panjang dan penuh
-    embel-embel ("ORI - Buku X Bonus Pembatas"), sehingga buku yang sama selalu
-    mendapat skor lebih rendah daripada di marketplace lain.
-    """
-
-    slug = "bukalapak"
-    label = "Bukalapak"
-    match_threshold = 0.6
+    slug = "gramedia"
+    label = "Gramedia"
 
     def build_search_url(self, keyword: str) -> str:
-        return f"https://www.bukalapak.com/products?search%5Bkeywords%5D={_quote(keyword)}"
+        return f"https://www.gramedia.com/search?q={_quote(keyword)}"
+
+
+class PeriplusAdapter(MarketplaceAdapter):
+    """Periplus — `/product/Search?filter_name=`."""
+
+    slug = "periplus"
+    label = "Periplus"
+
+    def build_search_url(self, keyword: str) -> str:
+        return (
+            "https://www.periplus.com/product/Search"
+            f"?filter_category_id=0&filter_name={_quote(keyword)}"
+            "&is_suggestion_click=0&suggestion_doc_id=&suggestion_type="
+        )
 
 
 class GoogleBooksAdapter(MarketplaceAdapter):

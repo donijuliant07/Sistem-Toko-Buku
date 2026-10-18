@@ -19,6 +19,7 @@ from app.db.session import get_db
 from app.main import app
 from app.models import Book
 from app.schemas.book import BookCreate, BookPage, BookUpdate
+from app.services.marketplace.scraper_client import SCRAPER_SUPPORTED_SLUGS
 
 
 class EmptyResult:
@@ -164,6 +165,87 @@ async def test_book_write_endpoints_reject_user(client, method):
     response = await getattr(client, method)(path, **kwargs)
 
     assert response.status_code == 403
+
+
+class CapturingSession:
+    """Sesi ORM minimal untuk jalur tulis: mencatat `add` dan SQL yang dieksekusi."""
+
+    def __init__(self):
+        self.added = []
+        self.statements = []
+        self.commits = 0
+        self.rollbacks = 0
+
+    def add(self, instance):
+        self.added.append(instance)
+
+    async def flush(self, *_args, **_kwargs):
+        return None
+
+    async def execute(self, statement):
+        self.statements.append(statement)
+        return EmptyResult()
+
+    async def commit(self):
+        self.commits += 1
+
+    async def rollback(self):
+        self.rollbacks += 1
+
+    async def refresh(self, instance):
+        # Kolom `server_default` baru terisi setelah flush/commit sungguhan.
+        now = datetime(2026, 1, 1, tzinfo=UTC)
+        instance.created_at = instance.created_at or now
+        instance.updated_at = instance.updated_at or now
+
+
+def _inserted_marketplaces(session: CapturingSession) -> list[str]:
+    """Slug marketplace dari pernyataan INSERT massal yang dikirim ke DB.
+
+    `ON CONFLICT DO NOTHING` dibentuk SQLAlchemy dari `insert()`; argumennya
+    satu-satunya sumber kebenaran tentang baris yang benar-benar disisipkan.
+    """
+    from sqlalchemy.dialects import postgresql
+
+    assert len(session.statements) == 1
+    compiled = session.statements[0].compile(dialect=postgresql.dialect())
+    params = compiled.construct_params(compiled.params)
+    # SQLAlchemy menamai parameter massal `<kolom>_m<baris>`.
+    return [params[key] for key in params if key.startswith("marketplace_m")]
+
+
+@pytest.mark.asyncio
+async def test_book_create_seeds_default_marketplace_sources(client):
+    """Buku baru mendapat lima sumber marketplace scraper dalam transaksi yang sama."""
+    _as_role("admin")
+    session = CapturingSession()
+    app.dependency_overrides[get_db] = lambda: session
+
+    response = await client.post("/api/v1/books", json=valid_book_data())
+
+    assert response.status_code == 201
+    assert session.commits == 1
+    assert [book.title for book in session.added] == ["Clean Code"]
+    assert _inserted_marketplaces(session) == list(SCRAPER_SUPPORTED_SLUGS)
+
+
+@pytest.mark.asyncio
+async def test_book_create_rolls_back_sources_when_isbn_conflicts(client):
+    """ISBN bentrok membatalkan buku **dan** sumbernya; tidak ada sumber yatim."""
+    _as_role("admin")
+    session = CapturingSession()
+
+    async def conflict(_statement):
+        raise IntegrityError("INSERT", {}, Exception("uq_books_isbn"))
+
+    session.execute = conflict
+    app.dependency_overrides[get_db] = lambda: session
+
+    response = await client.post("/api/v1/books", json=valid_book_data())
+
+    assert response.status_code == 409
+    assert session.rollbacks == 1
+    assert session.commits == 0
 
 
 @pytest.mark.asyncio

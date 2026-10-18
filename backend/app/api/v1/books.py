@@ -21,6 +21,7 @@ HTTP, dan memilih jalur cadangan.
 """
 
 import logging
+import uuid
 from typing import Any
 from uuid import UUID
 
@@ -35,6 +36,8 @@ from app.schemas.ai_review import AIReviewRequest, AIReviewResponse
 from app.schemas.book import BookCreate, BookPage, BookRead, BookUpdate
 from app.services.ai_review_service import generate_ai_book_review
 from app.services.book_service import OrmBookRepository, RestBookRepository
+from app.services.marketplace.seeding import build_default_source_rows
+from app.services.marketplace_repository import OrmMarketplaceSourceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -142,13 +145,28 @@ async def create_book(
     _payload: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> Book:
-    """Buat buku baru. Hanya admin (diverifikasi dari tabel `profiles`)."""
+    """Buat buku baru. Hanya admin (diverifikasi dari tabel `profiles`).
+
+    Buku baru langsung mendapat sumber marketplace bawaan (lihat
+    `app.services.marketplace.seeding`) dalam transaksi yang sama, sehingga
+    perbandingan harga bisa dipakai tanpa admin mengisi sumber satu per satu.
+    Bila ISBN bentrok, `rollback` membatalkan keduanya — tidak ada sumber yatim.
+    """
     values = data.model_dump()
     if values.get("cover_url") is not None:
         values["cover_url"] = str(values["cover_url"])
     book = Book(**values)
+    # `id` diisi `default=uuid.uuid4` saat flush, jadi dikirim eksplisit lebih
+    # dulu supaya baris sumber tidak perlu kueri tambahan untuk `book.id`.
+    book.id = uuid.uuid4()
     db.add(book)
     try:
+        # `flush` menulis baris buku lebih dulu: sumber marketplace punya FK ke
+        # `books.id`, dan `commit` tunggal tetap membuat keduanya atomik.
+        await db.flush()
+        await OrmMarketplaceSourceRepository(db).create_many_if_absent(
+            build_default_source_rows(book.id, title=book.title, author=book.author)
+        )
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
