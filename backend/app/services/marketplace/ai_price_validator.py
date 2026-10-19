@@ -77,7 +77,7 @@ class AIPriceValidator:
         timeout: float = AI_VALIDATOR_TIMEOUT_SECONDS,
     ) -> None:
         self._api_key = api_key if api_key is not None else (os.getenv("OPENROUTER_API_KEY") or settings.OPENROUTER_API_KEY)
-        self._model = model_name or os.getenv("OPENROUTER_MODEL") or settings.OPENROUTER_MODEL or "qwen/qwen-2.5-72b-instruct:free"
+        self._model = model_name or os.getenv("OPENROUTER_MODEL") or settings.OPENROUTER_MODEL or "nvidia/nemotron-3-ultra-550b-a55b:free"
         self._timeout = timeout
 
     @property
