@@ -3,6 +3,8 @@ import { DM_Sans, Fraunces, Inter } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
+import BookAdvisorWidget from "@/components/BookAdvisorWidget";
+import { SoundEffects } from "@/components/ui/sound";
 import "./globals.css";
 
 const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"] });
@@ -18,12 +20,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="id" className={`${sans.variable} ${display.variable} ${inter.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <AuthProvider>
-          <CartProvider>
-            {children}
-            <CartDrawer />
-          </CartProvider>
-        </AuthProvider>
+        <SoundEffects>
+          <AuthProvider>
+            <CartProvider>
+              {children}
+              <CartDrawer />
+              <BookAdvisorWidget />
+            </CartProvider>
+          </AuthProvider>
+        </SoundEffects>
       </body>
     </html>
   );

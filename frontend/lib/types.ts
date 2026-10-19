@@ -360,3 +360,78 @@ export type MarketplaceSourceUpdate = {
   search_keyword?: string | null;
   is_active?: boolean;
 };
+
+// --- AI Book Advisor Types ---
+export type ReadingLevel = "beginner" | "intermediate" | "advanced";
+export type PreferredStyle = "practical" | "theoretical" | "narrative" | "illustrative";
+export type PreferredLength = "short" | "medium" | "long";
+export type ConversationState = "collecting_preferences" | "ready_to_recommend" | "showing_recommendations";
+
+export interface BookPreferences {
+  interests: string[];
+  genres: string[];
+  reading_level: ReadingLevel | null;
+  reading_goals: string[];
+  preferred_style: PreferredStyle | null;
+  preferred_language: string | null;
+  min_budget: number | string | null;
+  max_budget: number | string | null;
+  preferred_length: PreferredLength | null;
+  favorite_authors: string[];
+  liked_books: string[];
+  disliked_books: string[];
+  format_preferences: string[];
+  availability_preferences: "in_stock_only" | null;
+}
+
+export interface CandidateBook {
+  id: string;
+  title: string;
+  author: string;
+  price: string | number;
+  stock: number;
+  description?: string | null;
+  cover_url?: string | null;
+  category?: string | null;
+}
+
+export interface Recommendation {
+  book: CandidateBook;
+  reason: string;
+  score: number;
+}
+
+export interface AdvisorChatRequest {
+  message: string;
+  session_id?: string | null;
+}
+
+export interface AdvisorChatResponse {
+  session_id: string;
+  assistant_message: string;
+  conversation_state: ConversationState;
+  preferences: BookPreferences;
+  missing_preferences: string[];
+  recommendations: Recommendation[];
+  follow_up_question: string | null;
+}
+
+export interface AdvisorMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AdvisorSessionRead {
+  session_id: string;
+  conversation_state: ConversationState;
+  preferences: BookPreferences;
+  messages: AdvisorMessage[];
+}
+
+export interface AdvisorFeedbackRequest {
+  session_id: string;
+  book_id: string;
+  feedback: "liked" | "not_relevant";
+  reason?: string | null;
+}
+
