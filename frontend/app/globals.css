@@ -4,6 +4,38 @@
 
 @theme {
   --font-inter: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ring-duration: 150ms;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-tint: var(--surface-tint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-bubble-sent: var(--bubble-sent);
+  --color-bubble-sent-foreground: var(--bubble-sent-foreground);
+  --color-bubble-received: var(--bubble-received);
+  --color-bubble-received-foreground: var(--bubble-received-foreground);
+  --color-shell-fg-muted: var(--shell-fg-muted);
+  --color-shell-fg-faint: var(--shell-fg-faint);
 }
 
 @layer base {
@@ -329,4 +361,97 @@ body {
 .marquee-paused {
   animation-play-state: paused !important;
 }
+
+/* ========================================================
+   Kobra Conversation & Sound Layer Tokens & Styles
+   ======================================================== */
+:root {
+  --blue: #0a7cff;
+  --blue-foreground: #ffffff;
+  --bubble-sent: var(--blue);
+  --bubble-sent-foreground: var(--blue-foreground);
+  --bubble-received: #e9e9eb;
+  --bubble-received-foreground: #000000;
+  --shell-fg-muted: #333333;
+  --shell-fg-faint: #6d6d6d;
+}
+
+.dark {
+  --bubble-received: #3b3b3d;
+  --bubble-received-foreground: #ffffff;
+  --shell-fg-muted: #d4d4d4;
+  --shell-fg-faint: #8e8e8e;
+}
+
+@utility transition-ring {
+  transition-property: color, background-color, border-color, box-shadow, outline-color, outline-offset;
+  transition-duration: var(--ring-duration);
+  transition-timing-function: var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0ms;
+  }
+}
+
+.sound-slash {
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1.02;
+  --slash-ms: 200ms;
+  transition: stroke-dashoffset var(--slash-ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+[data-muted="true"] .sound-slash {
+  stroke-dashoffset: 0;
+  --slash-ms: 260ms;
+}
+
+.sound-wave {
+  transform-box: view-box;
+  transform-origin: 11px 12px;
+  transition: opacity 130ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) var(--wave-delay, 0ms),
+    transform 130ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) var(--wave-delay, 0ms),
+    filter 130ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) var(--wave-delay, 0ms);
+}
+
+[data-muted="true"] .sound-wave {
+  opacity: 0;
+  transform: scale(0.25);
+  filter: blur(1px);
+}
+
+.sound-wave-inner {
+  --wave-delay: 45ms;
+}
+
+.sound-wave-outer {
+  --wave-delay: 20ms;
+}
+
+[data-muted="true"] .sound-wave-inner {
+  --wave-delay: 50ms;
+}
+
+[data-muted="true"] .sound-wave-outer {
+  --wave-delay: 75ms;
+}
+
+.sound-speaker {
+  --speaker-ms: 220ms;
+  --speaker-delay: 0ms;
+  transition: transform var(--speaker-ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) var(--speaker-delay, 0ms);
+}
+
+[data-muted="true"] .sound-speaker {
+  transform: translateX(5.5px);
+  --speaker-ms: 260ms;
+  --speaker-delay: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-slash,
+  .sound-wave,
+  .sound-speaker {
+    transition: none;
+  }
+}
+
 
