@@ -15,6 +15,7 @@ from app.api.v1 import (
     books,
     cart,
     categories,
+    community,
     dashboard,
     inventory,
     marketplaces,
@@ -45,9 +46,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Hanya untuk development: dev server Next bisa dibuka lewat IP LAN mesin ini.
+# Daftar eksplisit `FRONTEND_ORIGINS` tetap berlaku di semua environment.
+_DEV_LAN_ORIGIN_REGEX = (
+    r"^http://(?:localhost|\[::1\]|127\.0\.0\.1|10(?:\.\d{1,3}){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}"
+    r"|192\.168(?:\.\d{1,3}){2}):3000$"
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=_DEV_LAN_ORIGIN_REGEX if settings.dev_lan_origins_trusted else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,6 +74,7 @@ app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(promos.router, prefix=settings.API_V1_PREFIX)
 app.include_router(uploads.router, prefix=settings.API_V1_PREFIX)
 app.include_router(book_advisor.router, prefix=settings.API_V1_PREFIX)
+app.include_router(community.router, prefix=settings.API_V1_PREFIX)
 
 # Klien Gemini dibuat malas pada pemanggilan pertama dan ditutup lewat
 # lifespan di atas; tanpa API key tidak ada koneksi yang dibuka.

@@ -435,3 +435,114 @@ export interface AdvisorFeedbackRequest {
   reason?: string | null;
 }
 
+
+// --- Book Community (grup diskusi + chat) ---
+// Bentuk respons mengikuti `app/schemas/community.py`. Izin (`can_*`) dihitung
+// backend agar UI tidak menebak dari role global.
+
+export type GroupCategory =
+  | "manga_anime"
+  | "business_startup"
+  | "self_improvement"
+  | "fantasy_fiction"
+  | "technology"
+  | "book_club"
+  | "general";
+
+export type GroupVisibility = "public" | "private";
+export type MemberRole = "owner" | "moderator" | "member";
+export type ChatMessageType = "text" | "book";
+
+export interface MemberProfile {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+export interface GroupSummary {
+  id: string;
+  name: string;
+  description: string;
+  category: GroupCategory;
+  visibility: GroupVisibility;
+  avatar_url: string | null;
+  member_count: number;
+  is_member: boolean;
+  my_role: MemberRole | null;
+  created_at: string;
+}
+
+export interface GroupDetail extends GroupSummary {
+  created_by: string;
+  can_manage_group: boolean;
+  can_manage_members: boolean;
+  can_send: boolean;
+}
+
+export interface GroupPage {
+  items: GroupSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface GroupMember {
+  user: MemberProfile;
+  role: MemberRole;
+  joined_at: string;
+}
+
+export type UserSearchResult = MemberProfile;
+
+export interface GroupCreateInput {
+  name: string;
+  description?: string;
+  category: GroupCategory;
+  visibility: GroupVisibility;
+}
+
+export interface GroupUpdateInput {
+  name?: string;
+  description?: string;
+  category?: GroupCategory;
+}
+
+export interface SharedBook {
+  id: string;
+  title: string;
+  author: string;
+  price: string | number;
+  cover_url: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  group_id: string;
+  message_type: ChatMessageType;
+  content: string;
+  sender: MemberProfile;
+  book: SharedBook | null;
+  client_message_id: string | null;
+  created_at: string;
+}
+
+export interface MessagePage {
+  items: ChatMessage[];
+  next_cursor: string | null;
+}
+
+export interface MessageCreateInput {
+  message_type: ChatMessageType;
+  content?: string;
+  book_id?: string | null;
+  client_message_id?: string | null;
+}
+
+export interface CommunityListParams {
+  q?: string;
+  category?: GroupCategory;
+  mine?: boolean;
+  page?: number;
+  page_size?: number;
+}

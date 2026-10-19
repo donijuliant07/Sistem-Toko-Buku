@@ -35,7 +35,15 @@ Alternative direct command:
 uv run uvicorn app.main:app --reload
 ```
 
-Health endpoint: `http://localhost:8000/api/v1/health`  
+> Windows: `main.py` sudah memakai `--host 0.0.0.0` (IPv4). Browser yang
+> me-resolve `localhost` ke IPv6 (`::1`) bisa gagal menghubungi backend, jadi
+> buka frontend lewat `http://localhost:3000` **atau** `http://127.0.0.1:3000`
+> — keduanya sudah ada di `FRONTEND_ORIGINS`. `--host ::` **tidak** dipakai:
+> di Windows socket IPv6 bersifat v6-only, sehingga IPv4 ikut mati. Untuk
+> pengembangan, `app/main.py` juga menerima origin LAN `:3000` (IP privat)
+> agar dev server Next bisa dibuka dari mesin lain.
+
+Health endpoint: `http://localhost:8000/health`  
 Current-user endpoint: `http://localhost:8000/api/v1/me`  
 Admin check endpoint: `http://localhost:8000/api/v1/admin/check`  
 Book list endpoint: `http://localhost:8000/api/v1/books`  
@@ -57,3 +65,12 @@ uv run ruff check .
 ## AI Book Advisor
 
 Rekomendasi buku berbasis percakapan (endpoint `/api/v1/book-advisor/*`). Dokumentasi lengkap, kontrak API, strategi ranking, konfigurasi, dan batasan: [BOOK-ADVISOR.md](BOOK-ADVISOR.md).
+
+## Book Community
+
+Grup diskusi buku + chat real-time, buka grup publik, berbagi buku dari katalog (endpoint `/api/v1/community/*`). Skema tabel, matriks izin, mekanisme RLS/Realtime, dan batasan: [COMMUNITY.md](COMMUNITY.md).
+
+```powershell
+uv run alembic upgrade head          # menerapkan tabel komunitas (20261019_10)
+uv run pytest tests/test_community.py
+```

@@ -19,6 +19,7 @@ export const siteConfig = {
     { label: "Buku Terlaris", href: "#buku-terlaris" },
     { label: "Back to Campus", href: "#back-to-campus" },
     { label: "Brand Pilihan", href: "#brand-pilihan" },
+    { label: "Komunitas", href: "/komunitas" },
     // Tidak ada tautan ke area admin dari storefront publik.
     { label: "Voucher Diskon", href: "#promo", isHighlight: true },
   ],
