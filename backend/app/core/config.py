@@ -31,10 +31,50 @@ class Settings(BaseSettings):
     FRONTEND_ORIGINS: str = "http://localhost:3000"
     STORAGE_BUCKET_PRODUCTS: str = "product-images"
 
+    #: Google AI Studio (Gemini API) untuk Penasihat Buku (`/book-advisor`).
+    #: Dibuat gratis di https://aistudio.google.com/apikey . Kosong = Penasihat
+    #: Buku memakai fallback aturan tanpa memanggil model.
+    GEMINI_API_KEY: str = Field(default="", description="Google AI Studio (Gemini) API Key")
+    GEMINI_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description="Model Gemini untuk Penasihat Buku",
+    )
+    #: Base URL API Gemini. Bisa diarahkan ke gateway lain yang kompatibel.
+    GEMINI_BASE_URL: str = Field(
+        default="https://generativelanguage.googleapis.com/v1beta",
+        description="Base URL Google Gemini API",
+    )
+    #: Batas satu panggilan model (detik). Lebih kecil dari batas request
+    #: frontend supaya pengguna menerima fallback, bukan timeout kosong.
+    GEMINI_TIMEOUT_SECONDS: float = Field(
+        default=30.0, gt=0, description="Batas waktu panggilan model Gemini"
+    )
+    #: Batas token keluaran per panggilan — kontrol biaya/kuota per giliran.
+    GEMINI_MAX_OUTPUT_TOKENS: int = Field(
+        default=900, ge=64, description="Token keluaran maksimum Gemini"
+    )
+
+    #: OpenRouter — dipakai ulasan AI dan validator harga marketplace (bukan
+    #: Penasihat Buku, yang memakai Gemini).
     OPENROUTER_API_KEY: str = Field(default="", description="OpenRouter API Key")
     OPENROUTER_MODEL: str = Field(
-        default="qwen/qwen-2.5-72b-instruct:free",
-        description="Free OpenRouter Qwen Model",
+        default="nvidia/nemotron-3-ultra-550b-a55b:free",
+        description="Model gratis OpenRouter",
+    )
+    #: Endpoint Chat Completions OpenRouter. Bisa diarahkan ke gateway lain
+    #: yang kompatibel tanpa mengubah kode.
+    OPENROUTER_BASE_URL: str = Field(
+        default="https://openrouter.ai/api/v1",
+        description="Base URL API OpenRouter",
+    )
+    #: Batas satu panggilan model (detik). Lebih kecil dari batas request
+    #: frontend supaya pengguna menerima fallback, bukan timeout kosong.
+    OPENROUTER_TIMEOUT_SECONDS: float = Field(
+        default=30.0, gt=0, description="Batas waktu panggilan model OpenRouter"
+    )
+    #: Batas token keluaran per panggilan — kontrol biaya per giliran.
+    OPENROUTER_MAX_OUTPUT_TOKENS: int = Field(
+        default=900, ge=64, description="Token keluaran maksimum OpenRouter"
     )
 
     #: Kunci API Google Books, dipakai adapter `google_books`. Kuota harian untuk

@@ -53,3 +53,7 @@ curl.exe http://localhost:8000/api/v1/me -H "Authorization: Bearer ACCESS_TOKEN"
 uv run pytest
 uv run ruff check .
 ```
+
+## AI Book Advisor
+
+Rekomendasi buku berbasis percakapan (endpoint `/api/v1/book-advisor/*`). Dokumentasi lengkap, kontrak API, strategi ranking, konfigurasi, dan batasan: [BOOK-ADVISOR.md](BOOK-ADVISOR.md).

@@ -188,9 +188,9 @@ async def _call_openrouter_qwen(
 ) -> Optional[AIReviewResponse]:
     """
     Memanggil API OpenRouter menggunakan model Qwen (Gratis)
-    Model: qwen/qwen-2.5-72b-instruct:free atau qwen/qwen-2-7b-instruct:free
+    Model: nvidia/nemotron-3-ultra-550b-a55b:free atau qwen/qwen-2-7b-instruct:free
     """
-    model_name = os.getenv("OPENROUTER_MODEL", settings.OPENROUTER_MODEL) or "qwen/qwen-2.5-72b-instruct:free"
+    model_name = os.getenv("OPENROUTER_MODEL", settings.OPENROUTER_MODEL) or "nvidia/nemotron-3-ultra-550b-a55b:free"
 
     system_prompt = (
         "Anda adalah seorang pengulas buku profesional berbahasa Indonesia. "

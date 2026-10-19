@@ -21,6 +21,9 @@ import type {
   PromoUpdate,
   SpoilerLevel,
   AIReviewResponse,
+  AdvisorChatResponse,
+  AdvisorFeedbackRequest,
+  AdvisorSessionRead,
 } from "./types";
 import { supabase } from "./supabase";
 
@@ -373,3 +376,43 @@ export async function deleteMarketplaceSource(id: string): Promise<void> {
     { method: "DELETE", accessToken }
   );
 }
+
+// --- AI Book Advisor ---
+export async function sendAdvisorChat(
+  message: string,
+  sessionId?: string | null,
+  token?: string
+): Promise<AdvisorChatResponse> {
+  const accessToken = token || (await getAccessToken());
+  const res = await request<ApiEnvelope<AdvisorChatResponse>>("/book-advisor/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, session_id: sessionId || null }),
+    accessToken,
+  });
+  return res.data;
+}
+
+export async function getAdvisorSessionMessages(
+  sessionId: string,
+  token?: string
+): Promise<AdvisorSessionRead> {
+  const accessToken = token || (await getAccessToken());
+  const res = await request<ApiEnvelope<AdvisorSessionRead>>(
+    `/book-advisor/sessions/${encodeURIComponent(sessionId)}/messages`,
+    { accessToken }
+  );
+  return res.data;
+}
+
+export async function sendAdvisorFeedback(
+  feedback: AdvisorFeedbackRequest,
+  token?: string
+): Promise<void> {
+  const accessToken = token || (await getAccessToken());
+  await request<ApiEnvelope<unknown>>("/book-advisor/feedback", {
+    method: "POST",
+    body: JSON.stringify(feedback),
+    accessToken,
+  });
+}
+
