@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str = Field(default="your-service-role-key", description="Service Role Key Supabase")
     SUPABASE_JWT_SECRET: str = Field(default="super-secret-jwt-key", description="JWT Secret Supabase Auth")
 
-    FRONTEND_ORIGINS: str = "http://localhost:3000"
+    #: Kedua ejaan loopback didaftarkan: browser Windows bisa membuka dev server
+    #: lewat `127.0.0.1` sementara origin `localhost` saja akan ditolak CORS.
+    FRONTEND_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     STORAGE_BUCKET_PRODUCTS: str = "product-images"
 
     #: Google AI Studio (Gemini API) untuk Penasihat Buku (`/book-advisor`).
@@ -119,6 +121,19 @@ class Settings(BaseSettings):
         origin string kosong yang membuat CORS menolak secara tidak terduga.
         """
         return [origin.strip() for origin in self.FRONTEND_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def dev_lan_origins_trusted(self) -> bool:
+        """Origin LAN dev (port 3000) boleh diterima saat mengembangkan.
+
+        Next `next dev` mendengarkan di semua antarmuka, sehingga dev server
+        kadang dibuka lewat IP LAN (mis. `http://192.168.1.5:3000`). Origin
+        seperti itu tidak bisa didaftarkan sekali untuk semua mesin, jadi hanya
+        di `development` kita memakai `allow_origin_regex` untuk jaringan privat
+        (127.0.0.0/8, 10/8, 172.16/12, 192.168/16) pada port 3000. Di
+        production regex tidak dipakai sama sekali — hanya daftar eksplisit.
+        """
+        return self.ENVIRONMENT == "development"
 
 
 settings = Settings()
