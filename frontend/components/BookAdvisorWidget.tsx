@@ -14,13 +14,11 @@ import {
   Bot,
   AlertCircle,
   HelpCircle,
-  CheckCircle2,
 } from "lucide-react";
 import {
   Conversation,
   ConversationBubble,
   ConversationContent,
-  ConversationReactions,
 } from "@/components/ui/conversation";
 import { SoundToggle } from "@/components/ui/sound";
 import { useAuth } from "@/components/AuthProvider";
@@ -64,7 +62,6 @@ export default function BookAdvisorWidget() {
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<BookPreferences | null>(null);
-  const [currentState, setCurrentState] = useState<ConversationState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, "liked" | "not_relevant">>({});
@@ -72,6 +69,8 @@ export default function BookAdvisorWidget() {
   const { session } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Penghitung id pesan klien; `Date.now()` di badan komponen tidak murni bagi React Compiler.
+  const messageSeqRef = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,7 +100,7 @@ export default function BookAdvisorWidget() {
     }).format(new Date());
 
     const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: `user-${++messageSeqRef.current}`,
       role: "user",
       content: text,
       sentAt: timeStr,
@@ -116,10 +115,9 @@ export default function BookAdvisorWidget() {
       const response = await sendAdvisorChat(text, sessionId, session.access_token);
       setSessionId(response.session_id);
       setPreferences(response.preferences);
-      setCurrentState(response.conversation_state);
 
       const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
+        id: `assistant-${++messageSeqRef.current}`,
         role: "assistant",
         content: response.assistant_message,
         sentAt: new Intl.DateTimeFormat("id-ID", {
@@ -146,13 +144,12 @@ export default function BookAdvisorWidget() {
   const handleReset = () => {
     setSessionId(null);
     setPreferences(null);
-    setCurrentState(null);
     setReactions({});
     setError(null);
     setMessages([
       {
         ...INITIAL_GREETING,
-        id: `greeting-${Date.now()}`,
+        id: `greeting-${++messageSeqRef.current}`,
         sentAt: new Intl.DateTimeFormat("id-ID", {
           hour: "2-digit",
           minute: "2-digit",
@@ -369,6 +366,7 @@ export default function BookAdvisorWidget() {
                                     >
                                       <div className="flex gap-3">
                                         {book.cover_url ? (
+                                          // eslint-disable-next-line @next/next/no-img-element -- cover dari host katalog dinamis; tidak terdaftar di next.config
                                           <img
                                             src={book.cover_url}
                                             alt={book.title}

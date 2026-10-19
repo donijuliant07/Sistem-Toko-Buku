@@ -58,6 +58,8 @@ export default function AdminBooksPage() {
       }
       getBooks(1, query, 100).finally(() => setReady(true));
     });
+    // getBooks hanya memakai `query` saat ini; memasukkannya ke deps memicu fetch tiap render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase.auth, query]);
 
   if (!ready) {

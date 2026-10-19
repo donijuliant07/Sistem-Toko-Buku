@@ -47,6 +47,7 @@ function OrdersContent() {
   useEffect(() => {
     if (!session?.access_token) return;
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- tampilkan skeleton setiap kali sesi berubah sebelum fetch
     setLoading(true);
     getMyOrders(session.access_token)
       .then((res) => active && setPage(res))

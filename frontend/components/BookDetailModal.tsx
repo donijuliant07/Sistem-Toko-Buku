@@ -50,6 +50,7 @@ export default function BookDetailModal({
   useEffect(() => {
     if (!isOpen || !productId) return;
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- kosongkan stok/harga lama sebelum memuat data buku yang baru dipilih
     setServerStock(null);
     setServerPrice(null);
     getBook(productId)
@@ -303,7 +304,7 @@ export default function BookDetailModal({
                       Deskripsi Buku
                     </h4>
                     <p className="text-xs text-gray-600 leading-relaxed max-h-24 overflow-y-auto pr-1">
-                      {(product as any).description ||
+                      {(product as Product & { description?: string }).description ||
                         "Buku pilihan berkualitas tinggi dari toko InforBook. Cocok untuk koleksi pribadi, referensi studi, maupun hadiah bermakna."}
                     </p>
                   </div>

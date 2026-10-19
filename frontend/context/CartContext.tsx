@@ -10,7 +10,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from "@/lib/api";
-import type { CartItem, CartItemAddInput, CartPayload } from "@/lib/types";
+import type { CartItem, CartPayload } from "@/lib/types";
 
 /**
  * Keranjang.
@@ -136,6 +136,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Keranjang tamu hanya dibaca saat belum login.
   useEffect(() => {
     if (token) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keranjang tamu hanya ada di localStorage (sistem eksternal), dibaca setelah mount
     setGuestItems(readGuestCart());
     setGuestLoaded(true);
   }, [token]);
@@ -155,6 +156,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!token) {
       syncedUserRef.current = null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- logout: buang keranjang server dari state
       setServerCart(null);
       return;
     }

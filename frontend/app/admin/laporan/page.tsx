@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Download, FileSpreadsheet, TrendingUp, Calendar } from "lucide-react"
+import { Download, FileSpreadsheet } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -31,6 +31,8 @@ const productSchema = z.object({
 })
 
 type ProductFormValues = z.infer<typeof productSchema>
+/** Tipe input form: sebelum `z.coerce` mengubah angka, nilainya hanya string/unknown. */
+type FormInput = z.input<typeof productSchema>
 
 interface ProductFormSheetProps {
   open: boolean
@@ -60,15 +62,18 @@ export function ProductFormSheet({
 }: ProductFormSheetProps) {
   const isEdit = !!product
 
+  // nilai Terkontrol dibaca lewat `useWatch` (bukan `watch()` saat render) agar
+  // React Compiler tidak melewati memo komponen ini.
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema) as any,
+  } = useForm<FormInput, unknown, ProductFormValues>({
+    // zod v4 tidak langsung cocok dengan generic RHF; cast sempit hanya di titik ini.
+    resolver: zodResolver(productSchema) as unknown as Resolver<FormInput, unknown, ProductFormValues>,
     defaultValues: {
       title: "",
       author: "",
@@ -149,8 +154,12 @@ export function ProductFormSheet({
     }
   }
 
-  const normalPrice = watch("normalPrice")
-  const discountPercent = watch("discountPercent")
+  const normalPrice = Number(useWatch({ control, name: "normalPrice" }) ?? 0)
+  const discountPercent = Number(useWatch({ control, name: "discountPercent" }) ?? 0)
+  const categoryValue = useWatch({ control, name: "category" })
+  const typeValue = useWatch({ control, name: "type" })
+  const languageValue = useWatch({ control, name: "language" })
+  const statusValue = useWatch({ control, name: "status" })
   const calculatedFinal = Math.round((normalPrice || 0) * (1 - (discountPercent || 0) / 100))
 
   return (
@@ -212,7 +221,7 @@ export function ProductFormSheet({
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-800">Kategori *</label>
               <Select
-                value={watch("category")}
+                value={categoryValue}
                 onValueChange={(val) => setValue("category", val)}
               >
                 <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
@@ -230,7 +239,7 @@ export function ProductFormSheet({
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-800">Tipe produk *</label>
               <Select
-                value={watch("type")}
+                value={typeValue}
                 onValueChange={(val) => setValue("type", val as ProductType)}
               >
                 <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
@@ -249,7 +258,7 @@ export function ProductFormSheet({
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-800">Bahasa</label>
               <Select
-                value={watch("language")}
+                value={languageValue}
                 onValueChange={(val) => setValue("language", val as "Indonesia" | "Inggris" | "Lainnya")}
               >
                 <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">
@@ -321,7 +330,7 @@ export function ProductFormSheet({
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-800">Status Publikasi *</label>
               <Select
-                value={watch("status")}
+                value={statusValue}
                 onValueChange={(val) => setValue("status", val as ProductStatus)}
               >
                 <SelectTrigger className="h-9 text-xs bg-zinc-50/70 border-zinc-200/80 text-zinc-900 rounded-xl">

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { siteConfig } from "@/config/site"
 import { toast } from "sonner"
-import { Store, User, Bell, Palette, Save } from "lucide-react"
+import { Store, User, Bell, Save } from "lucide-react"
 
 export default function AdminSettingsPage() {
   const [storeName, setStoreName] = React.useState(siteConfig.name)

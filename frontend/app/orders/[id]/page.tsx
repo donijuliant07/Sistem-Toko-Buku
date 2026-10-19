@@ -76,6 +76,7 @@ function OrderDetailContent() {
   useEffect(() => {
     if (!session?.access_token || !id) return;
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- tampilkan skeleton setiap kali id/sesi berubah sebelum fetch
     setLoading(true);
     getOrder(id, session.access_token)
       .then((res) => active && setOrder(res.data))

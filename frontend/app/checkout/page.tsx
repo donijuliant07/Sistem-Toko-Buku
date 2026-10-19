@@ -56,6 +56,7 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (session?.user?.email) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- isi field email dari sesi yang baru tersedia setelah auth selesai
       setEmail((current) => current || session.user.email || "");
     }
   }, [session]);

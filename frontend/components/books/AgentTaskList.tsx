@@ -1,22 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Circle,
-  Clock,
-  Loader2,
-  LucideIcon,
-  Search,
-  ShieldCheck,
-  ShoppingBag,
-  Sparkles,
-  TrendingDown,
-  XCircle,
-} from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, ChevronUp, Circle, Clock, Loader2, XCircle } from "lucide-react";
 
 export type TaskStatus = "pending" | "running" | "completed" | "error";
 
@@ -32,7 +17,6 @@ export interface TaskItem {
 interface AgentTaskListProps {
   bookTitle: string;
   isComparing: boolean;
-  onAllCompleted?: () => void;
   collapsibleWhenDone?: boolean;
 }
 
@@ -47,7 +31,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function AgentTaskList({
   bookTitle,
   isComparing,
-  onAllCompleted,
   collapsibleWhenDone = true,
 }: AgentTaskListProps) {
   const [tasks, setTasks] = useState<TaskItem[]>([
@@ -94,6 +77,7 @@ export default function AgentTaskList({
   useEffect(() => {
     if (!isComparing) {
       // Tandai semua selesai jika isComparing selesai
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- menandai animasi selesai saat prop berubah, tanpa memicu fetch baru
       setTasks((prev) =>
         prev.map((t) => ({
           ...t,

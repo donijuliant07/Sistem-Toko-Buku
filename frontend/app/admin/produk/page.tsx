@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
-  Filter,
   ArrowUpDown,
   BookOpen,
 } from "lucide-react"
@@ -29,7 +28,7 @@ import {
 import { ProductStatusBadge } from "@/components/admin/StatusBadge"
 import { ProductFormSheet } from "@/components/admin/products/ProductFormSheet"
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog"
-import { Product, ProductCategory, ProductType } from "@/types"
+import { Product } from "@/types"
 import { productService } from "@/lib/services"
 import { formatRupiah } from "@/lib/utils"
 import { toast } from "sonner"
@@ -103,12 +102,9 @@ export default function AdminProductsPage() {
         return true
       })
       .sort((a, b) => {
-        let valA: any = (a as any)[sortField]
-        let valB: any = (b as any)[sortField]
-        if (sortField === "price") {
-          valA = a.finalPrice
-          valB = b.finalPrice
-        }
+        // Harga memakai finalPrice (setelah diskon); field lain dibaca apa adanya.
+        const valA = sortField === "price" ? a.finalPrice : a[sortField]
+        const valB = sortField === "price" ? b.finalPrice : b[sortField]
         if (valA < valB) return sortOrder === "asc" ? -1 : 1
         if (valA > valB) return sortOrder === "asc" ? 1 : -1
         return 0
