@@ -14,6 +14,7 @@ tetap satu sumber.
 from datetime import date
 from typing import Any
 
+from app.core.clock import store_today
 from app.core.supabase import supabase_admin
 from app.schemas.promo import PromoCreate, PromoUpdate
 from app.services.base import SupabaseTableService
@@ -54,7 +55,7 @@ class PromoView:
         """
         if not self.__row.get("is_active"):
             return "Nonaktif"
-        today = date.today()
+        today = store_today()
         if today > date.fromisoformat(str(self.__row["end_date"])):
             return "Kadaluarsa"
         if today < date.fromisoformat(str(self.__row["start_date"])):

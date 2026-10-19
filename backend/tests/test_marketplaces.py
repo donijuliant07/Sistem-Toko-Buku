@@ -25,6 +25,8 @@ from decimal import Decimal
 from uuid import UUID
 
 import pytest
+from httpx import ASGITransport, AsyncClient
+
 from app.api.v1.marketplaces import comparison_service
 from app.core.security import UserPayload, get_current_user, require_admin
 from app.db.session import get_db
@@ -64,7 +66,6 @@ from app.services.marketplace.service import (
     FULL_ATTEMPT_BACKOFF,
     MarketplaceComparisonService,
 )
-from httpx import ASGITransport, AsyncClient
 
 NOW =datetime(2026, 10, 15, 12, 0, tzinfo=UTC)
 

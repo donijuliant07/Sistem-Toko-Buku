@@ -3,13 +3,14 @@
 The tests mock `supabase_admin`, so they never touch a real database.
 """
 
-import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
-from app.main import app
-from app.core.security import get_current_user, require_admin, UserPayload
+import pytest
+from fastapi.testclient import TestClient
+
+from app.core.security import UserPayload, get_current_user, require_admin
 from app.core.shipping import SHIPPING_OPTIONS
+from app.main import app
 from app.schemas.order import OrderCreate
 from app.services.order_service import _serialize_order
 
@@ -348,15 +349,19 @@ def test_create_order_does_not_retry_unrelated_database_errors():
     books_table = MagicMock()
     books_table.select.return_value.in_.return_value.execute.return_value.data = [BOOK_ROW]
 
-    orders_table.insert.return_value.execute.side_effect = Exception("permission denied")
+    # `AttributeError` dipakai sebagai contoh bug pemrograman: bukan anggota
+    # SERVICE_ERRORS, jadi harus naik sebagai 500, bukan disamarkan jadi 400.
+    orders_table.insert.return_value.execute.side_effect = AttributeError("bug pemrograman")
 
     admin = MagicMock()
     admin.table.side_effect = lambda name: {"orders": orders_table, "books": books_table}[name]
 
-    with patch("app.services.order_service.supabase_admin", admin):
-        response = client.post("/api/v1/orders", json=legacy_order_payload())
-
-    assert response.status_code == 400
+    with (
+        patch("app.services.order_service.supabase_admin", admin),
+        pytest.raises(AttributeError),
+    ):
+        # `raise_server_exceptions` adalah opsi TestClient, bukan `post()`.
+        TestClient(app, raise_server_exceptions=True).post("/api/v1/orders", json=legacy_order_payload())
     assert orders_table.insert.call_count == 1
 
 

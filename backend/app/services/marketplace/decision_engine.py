@@ -13,15 +13,12 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 from typing import Any
-from uuid import UUID
 
 import httpx
 
 from app.schemas.price_validation import (
     AIValidationResult,
-    AIValidationStatus,
     PriceAssessment,
-    PriceStatistics,
     ProductMatchStatus,
     ValidatedMarketplaceQuote,
     ValidationStatus,
@@ -264,9 +261,8 @@ class PriceValidationEngine:
                     reasons.append("Indikasi harga anomali / outlier terhadap median pasar.")
 
             # Jika penawaran valid dan tidak ada alasan penolakan/review
-            if final_status == "valid":
-                if not reasons:
-                    reasons.append("Lolos validasi: produk cocok dan harga wajar.")
+            if final_status == "valid" and not reasons:
+                reasons.append("Lolos validasi: produk cocok dan harga wajar.")
 
             validated_quote = ValidatedMarketplaceQuote(
                 marketplace=marketplace,

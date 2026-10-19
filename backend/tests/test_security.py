@@ -1,11 +1,12 @@
+from datetime import UTC, datetime, timedelta
+
 import jwt
 import pytest
-from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.core import security
-from app.core.security import get_current_user, require_admin, require_user, UserPayload
+from app.core.security import UserPayload, get_current_user, require_admin, require_user
 
 TEST_SECRET = "test-secret-with-at-least-32-bytes-long"
 
@@ -18,7 +19,7 @@ def jwt_secret(monkeypatch):
 def make_token(**claims: object) -> str:
     claims.setdefault("aud", "authenticated")
     claims.setdefault("sub", "user-123")
-    claims.setdefault("exp", datetime.now(timezone.utc) + timedelta(minutes=5))
+    claims.setdefault("exp", datetime.now(UTC) + timedelta(minutes=5))
     return jwt.encode(claims, TEST_SECRET, algorithm="HS256")
 
 
@@ -116,7 +117,7 @@ async def test_resolve_user_role_fails_closed_when_lookup_errors(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_current_user_rejects_expired_token(jwt_secret):
-    token = make_token(exp=datetime.now(timezone.utc) - timedelta(minutes=5))
+    token = make_token(exp=datetime.now(UTC) - timedelta(minutes=5))
     credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
     with pytest.raises(HTTPException) as error:

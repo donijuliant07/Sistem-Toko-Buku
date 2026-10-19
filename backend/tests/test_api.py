@@ -1,7 +1,9 @@
-from fastapi.testclient import TestClient
 from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+
+from app.core.security import UserPayload, get_current_user, require_admin
 from app.main import app
-from app.core.security import get_current_user, require_admin, UserPayload
 
 client = TestClient(app)
 

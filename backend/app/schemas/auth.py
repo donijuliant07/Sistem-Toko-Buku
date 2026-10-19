@@ -1,4 +1,4 @@
-from typing import Optional
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -11,7 +11,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
     full_name: str = Field(..., min_length=2, description="Nama lengkap pengguna")
-    phone: Optional[str] = None
+    phone: str | None = None
 
 
 class UserProfileResponse(BaseModel):
@@ -19,7 +19,7 @@ class UserProfileResponse(BaseModel):
     email: str
     full_name: str
     role: str
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     created_at: str
 
 

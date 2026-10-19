@@ -7,7 +7,7 @@ yang tersimpan tidak pernah basi, dan pesanan tetap divalidasi ulang oleh
 """
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.core.supabase import supabase_admin
 from app.schemas.cart import CartMergeItem
@@ -52,7 +52,7 @@ class CartService:
     """
 
     @staticmethod
-    def _get_or_create_cart(user_id: str) -> Dict[str, Any]:
+    def _get_or_create_cart(user_id: str) -> dict[str, Any]:
         res = (
             supabase_admin.table("carts")
             .select("id, user_id")
@@ -66,7 +66,7 @@ class CartService:
         return supabase_admin.table("carts").insert({"user_id": user_id}).execute().data[0]
 
     @staticmethod
-    def _item_rows(cart_id: str) -> List[Dict[str, Any]]:
+    def _item_rows(cart_id: str) -> list[dict[str, Any]]:
         res = (
             supabase_admin.table("cart_items")
             .select("id, book_id, quantity")
@@ -77,16 +77,16 @@ class CartService:
         return res.data or []
 
     @staticmethod
-    def _fetch_books(book_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+    def _fetch_books(book_ids: list[str]) -> dict[str, dict[str, Any]]:
         if not book_ids:
             return {}
         res = supabase_admin.table("books").select(_BOOK_FIELDS).in_("id", book_ids).execute()
         return {row["id"]: row for row in (res.data or [])}
 
     @staticmethod
-    def _serialize(cart_id: str, rows: List[Dict[str, Any]],
-                   books: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-        items: List[Dict[str, Any]] = []
+    def _serialize(cart_id: str, rows: list[dict[str, Any]],
+                   books: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        items: list[dict[str, Any]] = []
         total_items = 0
         total_price = 0.0
 
@@ -137,14 +137,14 @@ class CartService:
         }
 
     @staticmethod
-    def get(user_id: str) -> Dict[str, Any]:
+    def get(user_id: str) -> dict[str, Any]:
         cart = CartService._get_or_create_cart(user_id)
         rows = CartService._item_rows(cart["id"])
         books = CartService._fetch_books([r["book_id"] for r in rows if r.get("book_id")])
         return CartService._serialize(cart["id"], rows, books)
 
     @staticmethod
-    def _require_book(book_id: str) -> Dict[str, Any]:
+    def _require_book(book_id: str) -> dict[str, Any]:
         res = supabase_admin.table("books").select(_BOOK_FIELDS).eq("id", book_id).execute()
         rows = res.data or []
         if not rows:
@@ -152,7 +152,7 @@ class CartService:
         return rows[0]
 
     @staticmethod
-    def _require_quantity(book: Dict[str, Any], quantity: int) -> None:
+    def _require_quantity(book: dict[str, Any], quantity: int) -> None:
         stock = int(book.get("stock") or 0)
         if quantity > stock:
             raise ValueError(f"Stok '{book.get('title')}' tidak mencukupi (sisa {stock}).")
@@ -160,7 +160,7 @@ class CartService:
             raise ValueError(f"Jumlah maksimal {_MAX_QUANTITY} eksemplar per buku.")
 
     @staticmethod
-    def add_item(user_id: str, book_id: str, quantity: int) -> Dict[str, Any]:
+    def add_item(user_id: str, book_id: str, quantity: int) -> dict[str, Any]:
         """Tambahkan `quantity` ke baris yang ada (bukan menimpanya).
 
         Menjumlahkan dulu lalu memvalidasi terhadap `books.stock` mencegah
@@ -185,7 +185,7 @@ class CartService:
         return CartService.get(user_id)
 
     @staticmethod
-    def _item_by_id(item_id: str) -> Optional[Dict[str, Any]]:
+    def _item_by_id(item_id: str) -> dict[str, Any] | None:
         res = (
             supabase_admin.table("cart_items")
             .select("id, cart_id, book_id, quantity")
@@ -196,7 +196,7 @@ class CartService:
         return rows[0] if rows else None
 
     @staticmethod
-    def _owned_item(user_id: str, item_id: str) -> Dict[str, Any]:
+    def _owned_item(user_id: str, item_id: str) -> dict[str, Any]:
         """Ambil item dan pastikan ia milik keranjang user ini.
 
         Kepemilikan diperiksa eksplisit, bukan diserahkan ke filter query, supaya
@@ -211,7 +211,7 @@ class CartService:
         return item
 
     @staticmethod
-    def update_item(user_id: str, item_id: str, quantity: int) -> Dict[str, Any]:
+    def update_item(user_id: str, item_id: str, quantity: int) -> dict[str, Any]:
         item = CartService._owned_item(user_id, item_id)
         CartService._require_quantity(CartService._require_book(item["book_id"]), quantity)
 
@@ -219,19 +219,19 @@ class CartService:
         return CartService.get(user_id)
 
     @staticmethod
-    def remove_item(user_id: str, item_id: str) -> Dict[str, Any]:
+    def remove_item(user_id: str, item_id: str) -> dict[str, Any]:
         CartService._owned_item(user_id, item_id)
         supabase_admin.table("cart_items").delete().eq("id", item_id).execute()
         return CartService.get(user_id)
 
     @staticmethod
-    def clear(user_id: str) -> Dict[str, Any]:
+    def clear(user_id: str) -> dict[str, Any]:
         cart = CartService._get_or_create_cart(user_id)
         supabase_admin.table("cart_items").delete().eq("cart_id", cart["id"]).execute()
         return CartService.get(user_id)
 
     @staticmethod
-    def merge(user_id: str, items: List[CartMergeItem]) -> Dict[str, Any]:
+    def merge(user_id: str, items: list[CartMergeItem]) -> dict[str, Any]:
         """Gabungkan keranjang tamu (localStorage) setelah login.
 
         Baris yang tidak valid dilewati, bukan menggagalkan permintaan: merge

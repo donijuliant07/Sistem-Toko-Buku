@@ -11,12 +11,20 @@ Aturan akses:
 """
 
 import math
-from typing import Annotated, Optional
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 from app.core import shipping
-from app.core.security import get_current_user, require_admin, require_user, UserPayload
+from app.core.errors import SERVICE_ERRORS
+from app.core.security import UserPayload, get_current_user, require_admin, require_user
 from app.schemas.common import ApiResponse, PaginatedResponse, PaginationMeta
-from app.schemas.order import OrderCreate, OrderStatusUpdate, PaymentStatusUpdate, OrderResponse
+from app.schemas.order import (
+    OrderCreate,
+    OrderResponse,
+    OrderStatusUpdate,
+    PaymentStatusUpdate,
+)
 from app.services.order_service import order_service
 
 router = APIRouter(prefix="/orders", tags=["Pesanan"])
@@ -46,8 +54,8 @@ async def list_shipping_options():
 async def list_orders(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    search: Optional[str] = Query(None, description="Cari No. Invoice"),
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter status pesanan"),
+    search: str | None = Query(None, description="Cari No. Invoice"),
+    status_filter: str | None = Query(None, alias="status", description="Filter status pesanan"),
     current_user: Annotated[UserPayload, Depends(get_current_user)] = None,
 ):
     # Admin melihat seluruh pesanan toko; pelanggan hanya pesanannya sendiri.
@@ -119,10 +127,10 @@ async def expire_overdue_orders(
             pesan=f"{len(expired)} pesanan kedaluwarsa dibatalkan.",
             data={"expired_order_ids": expired},
         )
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal membatalkan pesanan kedaluwarsa: {str(e)}",
+            detail=f"Gagal membatalkan pesanan kedaluwarsa: {e!s}",
         )
 
 
@@ -142,10 +150,10 @@ async def create_order(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal membuat pesanan: {str(e)}",
+            detail=f"Gagal membuat pesanan: {e!s}",
         )
 
 
@@ -164,10 +172,10 @@ async def update_order_status(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal memperbarui status pesanan: {str(e)}",
+            detail=f"Gagal memperbarui status pesanan: {e!s}",
         )
 
 
@@ -188,9 +196,9 @@ async def update_payment_status(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal memperbarui status pembayaran: {str(e)}",
+            detail=f"Gagal memperbarui status pembayaran: {e!s}",
         )
 

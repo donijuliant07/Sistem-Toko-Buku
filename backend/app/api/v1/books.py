@@ -22,7 +22,7 @@ HTTP, dan memilih jalur cadangan.
 
 import logging
 import uuid
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -110,10 +110,10 @@ async def load_book_for_write(book_id: UUID, db: AsyncSession) -> Book:
 
 @router.get("", response_model=BookPage)
 async def list_books(
+    db: Annotated[AsyncSession, Depends(get_db)],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=100),
-    db: AsyncSession = Depends(get_db),
 ) -> BookPage:
     """Daftar buku dengan pencarian opsional dan paginasi.
 
@@ -133,7 +133,7 @@ async def list_books(
 @router.get("/{book_id}", response_model=BookRead)
 async def read_book(
     book_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Detail satu buku. Katalog publik — tidak butuh token."""
     return await load_book_for_read(book_id, db)
@@ -142,8 +142,8 @@ async def read_book(
 @router.post("", response_model=BookRead, status_code=status.HTTP_201_CREATED)
 async def create_book(
     data: BookCreate,
-    _payload: dict = Depends(require_admin),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _payload: Annotated[dict, Depends(require_admin)],
 ) -> Book:
     """Buat buku baru. Hanya admin (diverifikasi dari tabel `profiles`).
 
@@ -184,8 +184,8 @@ async def create_book(
 async def update_book(
     book_id: UUID,
     data: BookUpdate,
-    _payload: dict = Depends(require_admin),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _payload: Annotated[dict, Depends(require_admin)],
 ) -> Book:
     """Perbarui buku. Hanya admin. PUT dan PATCH diperlakukan sama (patch parsial)."""
     book = await load_book_for_write(book_id, db)
@@ -210,8 +210,8 @@ async def update_book(
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_book(
     book_id: UUID,
-    _payload: dict = Depends(require_admin),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _payload: Annotated[dict, Depends(require_admin)],
 ) -> Response:
     """Hapus buku. Hanya admin."""
     book = await load_book_for_write(book_id, db)
@@ -224,7 +224,7 @@ async def delete_book(
 async def get_ai_book_review(
     book_id: UUID,
     payload: AIReviewRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AIReviewResponse:
     """Buat atau ambil ulasan AI untuk sebuah buku pada tingkat spoiler tertentu."""
     book = await load_book_for_read(book_id, db)

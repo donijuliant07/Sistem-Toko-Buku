@@ -13,8 +13,8 @@ database: pemeriksaan peran tetap dilakukan dependency FastAPI di
 `app.core.security`.
 """
 
-from supabase import create_client, Client
 from app.core.config import settings
+from supabase import Client, create_client
 
 # Service role client - bypasses RLS for backend authorized operations
 supabase_admin: Client = create_client(

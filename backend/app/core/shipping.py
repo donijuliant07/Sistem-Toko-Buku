@@ -9,10 +9,9 @@ ponytail: tabel statis. Ganti dengan kuotasi kurir (mis. RajaOngkir) begitu
 ongkir perlu berbeda per tujuan/berat.
 """
 
-from typing import Dict, Optional, Tuple
 
 # id -> (kurir, layanan, tarif)
-SHIPPING_OPTIONS: Dict[str, Tuple[str, str, int]] = {
+SHIPPING_OPTIONS: dict[str, tuple[str, str, int]] = {
     "jne-reg": ("JNE", "REG", 20000),
     "jnt-ez": ("J&T Express", "EZ", 18000),
     "sicepat-reg": ("SiCepat", "REG", 17000),
@@ -21,7 +20,7 @@ SHIPPING_OPTIONS: Dict[str, Tuple[str, str, int]] = {
 }
 
 
-def resolve(option_id: Optional[str]) -> Tuple[str, str, float]:
+def resolve(option_id: str | None) -> tuple[str, str, float]:
     """Kembalikan (courier, courier_service, fee) untuk id layanan yang sah."""
     option = SHIPPING_OPTIONS.get(option_id or "")
     if option is None:

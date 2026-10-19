@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -29,7 +29,7 @@ class AIReviewResponse(BaseModel):
     weaknesses: list[str]
     who_should_read: str
     verdict: str
-    plot_analysis: Optional[str] = None
-    character_development: Optional[str] = None
-    ending_analysis: Optional[str] = None
+    plot_analysis: str | None = None
+    character_development: str | None = None
+    ending_analysis: str | None = None
     cached: bool = False

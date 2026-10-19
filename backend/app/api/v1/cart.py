@@ -9,6 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.core.errors import SERVICE_ERRORS
 from app.core.security import UserPayload, require_user
 from app.schemas.cart import (
     CartItemAdd,
@@ -34,10 +35,10 @@ async def get_cart(
     try:
         data = cart_service.get(current_user.id)
         return ApiResponse(sukses=True, pesan="Keranjang berhasil dimuat.", data=data)
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal memuat keranjang: {str(e)}",
+            detail=f"Gagal memuat keranjang: {e!s}",
         )
 
 
@@ -51,10 +52,10 @@ async def add_cart_item(
         return ApiResponse(sukses=True, pesan="Buku ditambahkan ke keranjang.", data=data)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal menambahkan ke keranjang: {str(e)}",
+            detail=f"Gagal menambahkan ke keranjang: {e!s}",
         )
 
 
@@ -71,10 +72,10 @@ async def update_cart_item(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal memperbarui keranjang: {str(e)}",
+            detail=f"Gagal memperbarui keranjang: {e!s}",
         )
 
 
@@ -88,10 +89,10 @@ async def remove_cart_item(
         return ApiResponse(sukses=True, pesan="Buku dihapus dari keranjang.", data=data)
     except CartItemNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal menghapus dari keranjang: {str(e)}",
+            detail=f"Gagal menghapus dari keranjang: {e!s}",
         )
 
 
@@ -103,10 +104,10 @@ async def clear_cart(
     try:
         data = cart_service.clear(current_user.id)
         return ApiResponse(sukses=True, pesan="Keranjang dikosongkan.", data=data)
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal mengosongkan keranjang: {str(e)}",
+            detail=f"Gagal mengosongkan keranjang: {e!s}",
         )
 
 
@@ -122,8 +123,8 @@ async def merge_cart(
     try:
         data = cart_service.merge(current_user.id, payload.items)
         return ApiResponse(sukses=True, pesan="Keranjang digabungkan.", data=data)
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal menggabungkan keranjang: {str(e)}",
+            detail=f"Gagal menggabungkan keranjang: {e!s}",
         )
