@@ -20,12 +20,12 @@ import time
 from typing import Any
 
 import httpx
+from pydantic import ValidationError
 
 from app.core.config import settings
 from app.schemas.price_validation import (
     AICandidateAssessment,
     AIValidationResult,
-    AIValidationStatus,
     PriceStatistics,
 )
 
@@ -92,7 +92,7 @@ class AIPriceValidator:
         target_title: str,
         target_author: str | None = None,
         target_isbn: str | None = None,
-        target_store_price: float | int | None = None,
+        target_store_price: float | None = None,
         candidate_quotes: list[dict[str, Any]],
         statistics: PriceStatistics | None = None,
         client: httpx.AsyncClient | None = None,
@@ -229,12 +229,9 @@ class AIPriceValidator:
             raw_text = data["choices"][0]["message"]["content"].strip()
 
             # Bersihkan wrapping markdown jika ada
-            if raw_text.startswith("```json"):
-                raw_text = raw_text[7:]
-            if raw_text.startswith("```"):
-                raw_text = raw_text[3:]
-            if raw_text.endswith("```"):
-                raw_text = raw_text[:-3]
+            raw_text = raw_text.removeprefix("```json")
+            raw_text = raw_text.removeprefix("```")
+            raw_text = raw_text.removesuffix("```")
 
             parsed_json = json.loads(raw_text.strip())
             assessments_list = parsed_json.get("assessments", [])
@@ -244,8 +241,8 @@ class AIPriceValidator:
                 try:
                     assessment = AICandidateAssessment.model_validate(item)
                     assessments[assessment.offer_id] = assessment
-                except Exception as val_err:
-                    logger.warning(f"Gagal memvalidasi output item AI: {val_err}")
+                except ValidationError as val_err:
+                    logger.warning("Gagal memvalidasi output item AI: %s", val_err)
 
             result = AIValidationResult(
                 status="completed",
@@ -265,8 +262,8 @@ class AIPriceValidator:
                 model_name=self._model,
                 warning=f"Analisis AI melebihi batas waktu ({self._timeout:.1f} detik).",
             )
-        except Exception as exc:
-            logger.warning(f"AI Validator gagal dengan exception: {type(exc).__name__}: {exc}")
+        except (httpx.HTTPError, KeyError, ValueError) as exc:
+            logger.warning("AI Validator gagal (%s): %s", type(exc).__name__, exc)
             return AIValidationResult(
                 status="error",
                 model_name=self._model,

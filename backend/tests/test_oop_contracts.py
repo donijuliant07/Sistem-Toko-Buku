@@ -8,11 +8,12 @@ dispatch polimorfik benar-benar memilih implementasi per subclass.
 `supabase_admin` di-mock di sini, jadi tidak ada tes yang menyentuh database.
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.core.clock import store_today
 from app.schemas.promo import PromoUpdate
 from app.services.base import BookRepository, ReportService, SupabaseTableService
 from app.services.book_service import OrmBookRepository, RestBookRepository
@@ -25,7 +26,7 @@ from app.services.promo_service import (
     _serialize,
 )
 
-TODAY = date.today()
+TODAY = store_today()
 PROMO_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 
 

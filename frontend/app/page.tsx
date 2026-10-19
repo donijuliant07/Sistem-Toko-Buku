@@ -258,7 +258,7 @@ export default function Home() {
                 )}
                 {query && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-[#0052cc]">
-                    Pencarian: "{query}"
+                    Pencarian: &quot;{query}&quot;
                   </span>
                 )}
               </div>

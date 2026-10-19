@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     if (!session?.access_token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- logout: role harus langsung dikosongkan agar UI tidak menampilkan akses lama
       setRole(null);
       setRoleLoading(false);
       return () => {

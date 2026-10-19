@@ -10,15 +10,19 @@ Alur `generate_ai_book_review`:
 Cache bersifat per-proses dan tidak dibatasi ukuran; cukup untuk demo lokal.
 """
 
-import os
-import httpx
 import json
-from typing import Optional, Dict
+import logging
+import os
+
+import httpx
+
 from app.core.config import settings
-from app.schemas.ai_review import SpoilerLevel, AIReviewResponse
+from app.schemas.ai_review import AIReviewResponse, SpoilerLevel
+
+logger = logging.getLogger(__name__)
 
 # In-memory cache for generated reviews: key = f"{book_id}:{spoiler_level}"
-_review_cache: Dict[str, AIReviewResponse] = {}
+_review_cache: dict[str, AIReviewResponse] = {}
 
 
 def _generate_rule_based_review(
@@ -185,7 +189,7 @@ async def _call_openrouter_qwen(
     isbn: str,
     spoiler_level: SpoilerLevel,
     api_key: str,
-) -> Optional[AIReviewResponse]:
+) -> AIReviewResponse | None:
     """
     Memanggil API OpenRouter menggunakan model Qwen (Gratis)
     Model: nvidia/nemotron-3-ultra-550b-a55b:free atau qwen/qwen-2-7b-instruct:free
@@ -246,12 +250,9 @@ async def _call_openrouter_qwen(
             if res.status_code == 200:
                 data = res.json()
                 content = data["choices"][0]["message"]["content"].strip()
-                if content.startswith("```json"):
-                    content = content[7:]
-                if content.startswith("```"):
-                    content = content[3:]
-                if content.endswith("```"):
-                    content = content[:-3]
+                content = content.removeprefix("```json")
+                content = content.removeprefix("```")
+                content = content.removesuffix("```")
                 parsed = json.loads(content.strip())
 
                 return AIReviewResponse(
@@ -271,8 +272,10 @@ async def _call_openrouter_qwen(
                     ending_analysis=parsed.get("ending_analysis"),
                     cached=False,
                 )
-    except Exception:
-        pass
+    except (httpx.HTTPError, KeyError, ValueError) as exc:
+        # Model eksternal bisa membalas non-JSON atau field tak terduga; pemanggil
+        # lalu memakai ulasan berbasis aturan sebagai fallback.
+        logger.warning("Ulasan AI gagal diurai (%s): %s", type(exc).__name__, exc)
 
     return None
 

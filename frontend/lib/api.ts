@@ -6,6 +6,7 @@ import type {
   CartItemAddInput,
   CartMergeInput,
   CartPayload,
+  ChatMessage,
   CurrentUser,
   MarketplaceComparison,
   MarketplaceInfo,
@@ -24,10 +25,30 @@ import type {
   AdvisorChatResponse,
   AdvisorFeedbackRequest,
   AdvisorSessionRead,
+  CommunityListParams,
+  GroupCreateInput,
+  GroupDetail,
+  GroupMember,
+  GroupPage,
+  GroupUpdateInput,
+  MemberRole,
+  MessageCreateInput,
+  MessagePage,
+  UserSearchResult,
 } from "./types";
 import { supabase } from "./supabase";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+
+/** Host API untuk pesan error: banyak runtime Windows me-resolve `localhost`
+ * ke IPv6 (`::1`), sedangkan uvicorn sering hanya listen di `0.0.0.0` (IPv4). */
+function apiHostLabel(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
 
 type RequestOptions = RequestInit & { accessToken?: string };
 
@@ -45,7 +66,20 @@ const DEFAULT_TIMEOUT_MS = 45_000;
 
 /** `Error` dengan nama `AbortError` — dibedakan pemanggil untuk pesan "dibatalkan". */
 function timeoutSignal(ms: number): AbortSignal {
-  return AbortSignal.timeout(ms);
+  // Beberapa runtime Windows (< Chrome 103, WebView lama) tidak punya
+  // `AbortSignal.timeout`/`any`; tanpa guard ini kegagalan jaringan lain
+  // tertutup `TypeError: ... is not a function` dan pesan diagnosis CORS
+  // di bawah tidak pernah tampil.
+  return typeof AbortSignal.timeout === "function"
+    ? AbortSignal.timeout(ms)
+    : new AbortController().signal;
+}
+
+/** Gabungkan beberapa signal; fallback ke signal pemanggil bila `any` tak ada. */
+function mergeSignals(signals: AbortSignal[]): AbortSignal {
+  const [first, ...rest] = signals;
+  if (rest.length === 0 || typeof AbortSignal.any !== "function") return first;
+  return AbortSignal.any(signals);
 }
 
 async function request<T>(path: string, init?: RequestOptions): Promise<T> {
@@ -63,7 +97,7 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...headers,
       },
-      signal: AbortSignal.any(signals),
+      signal: mergeSignals(signals),
     });
   } catch (cause) {
     // Abort dari pemanggil diteruskan apa adanya; timeout diubah menjadi pesan
@@ -71,7 +105,20 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
     if (cause instanceof DOMException && cause.name === "TimeoutError") {
       throw new Error("Server tidak merespons dalam batas waktu. Coba lagi.");
     }
-    throw cause;
+    // Abort dari pemanggil (navigasi/unmount) diteruskan apa adanya.
+    if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+    // `TypeError: Failed to fetch` / "NetworkError when attempting to fetch
+    // resource" tidak menjelaskan apa pun. Browser menangkap kegagalan jaringan
+    // dan CORS sebagai error yang sama, jadi pesannya menyebut kedua sebab dan
+    // origin halaman supaya mudah dicocokkan dengan FRONTEND_ORIGINS backend.
+    const origin = typeof window === "undefined" ? "(server)" : window.location.origin;
+    throw new Error(
+      `Tidak dapat terhubung ke server API (${apiUrl}). ` +
+        `Pastikan backend berjalan di http://${apiHostLabel(apiUrl)} dan menerima origin ${origin} ` +
+        `(atur lewat FRONTEND_ORIGINS di backend/.env). Untuk memastikan mana yang gagal, buka ` +
+        `http://${apiHostLabel(apiUrl)}/health di tab baru: bila terbuka, masalahnya CORS; ` +
+        `bila tidak, backend tidak terjangkau dari browser ini.`,
+    );
   }
 
   if (!response.ok) {
@@ -416,3 +463,170 @@ export async function sendAdvisorFeedback(
   });
 }
 
+/** Endpoint komunitas membalas `ApiEnvelope<T>`; payload ada di `.data`. */
+async function communityRequest<T>(path: string, init?: RequestOptions): Promise<T> {
+  const res = await request<ApiEnvelope<T>>(path, init);
+  // 204 (hapus) tidak punya body, jadi tidak ada envelope untuk dibuka.
+  if (res === undefined) return undefined as T;
+  return res.data as T;
+}
+
+// --- Book Community (selalu butuh token; izin diverifikasi backend) ---
+
+function communityPath(groupId: string, suffix = ""): string {
+  return `/community/groups/${encodeURIComponent(groupId)}${suffix}`;
+}
+
+export function listCommunityGroups(
+  params: CommunityListParams,
+  accessToken: string
+): Promise<GroupPage> {
+  const query = new URLSearchParams();
+  if (params.q?.trim()) query.set("q", params.q.trim());
+  if (params.category) query.set("category", params.category);
+  if (params.mine) query.set("mine", "true");
+  if (params.page) query.set("page", String(params.page));
+  if (params.page_size) query.set("page_size", String(params.page_size));
+  const suffix = query.toString();
+  return communityRequest<GroupPage>(`/community/groups${suffix ? `?${suffix}` : ""}`, { accessToken });
+}
+
+export function getCommunityGroup(groupId: string, accessToken: string): Promise<GroupDetail> {
+  return communityRequest<GroupDetail>(communityPath(groupId), { accessToken });
+}
+
+export function createCommunityGroup(
+  data: GroupCreateInput,
+  accessToken: string
+): Promise<GroupDetail> {
+  return communityRequest<GroupDetail>(`/community/groups`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    accessToken,
+  });
+}
+
+export function updateCommunityGroup(
+  groupId: string,
+  data: GroupUpdateInput,
+  accessToken: string
+): Promise<GroupDetail> {
+  return communityRequest<GroupDetail>(communityPath(groupId), {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    accessToken,
+  });
+}
+
+export function deleteCommunityGroup(groupId: string, accessToken: string): Promise<void> {
+  return communityRequest<void>(communityPath(groupId), { method: "DELETE", accessToken });
+}
+
+export function joinCommunityGroup(groupId: string, accessToken: string): Promise<GroupDetail> {
+  return communityRequest<GroupDetail>(communityPath(groupId, "/join"), { method: "POST", accessToken });
+}
+
+export function leaveCommunityGroup(groupId: string, accessToken: string): Promise<void> {
+  return communityRequest<void>(communityPath(groupId, "/leave"), { method: "POST", accessToken });
+}
+
+export function listGroupMembers(groupId: string, accessToken: string): Promise<GroupMember[]> {
+  return communityRequest<GroupMember[]>(communityPath(groupId, "/members"), { accessToken });
+}
+
+export function searchMemberCandidates(
+  groupId: string,
+  q: string,
+  accessToken: string
+): Promise<UserSearchResult[]> {
+  const params = new URLSearchParams({ q });
+  return communityRequest<UserSearchResult[]>(
+    communityPath(groupId, `/member-candidates?${params.toString()}`),
+    { accessToken }
+  );
+}
+
+export function addGroupMember(
+  groupId: string,
+  userId: string,
+  accessToken: string
+): Promise<GroupMember> {
+  return communityRequest<GroupMember>(communityPath(groupId, "/members"), {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+    accessToken,
+  });
+}
+
+export function removeGroupMember(
+  groupId: string,
+  userId: string,
+  accessToken: string
+): Promise<void> {
+  return communityRequest<void>(communityPath(groupId, `/members/${encodeURIComponent(userId)}`), {
+    method: "DELETE",
+    accessToken,
+  });
+}
+
+export function updateGroupMemberRole(
+  groupId: string,
+  userId: string,
+  role: MemberRole,
+  accessToken: string
+): Promise<GroupMember> {
+  return communityRequest<GroupMember>(communityPath(groupId, `/members/${encodeURIComponent(userId)}`), {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+    accessToken,
+  });
+}
+
+export function transferGroupOwnership(
+  groupId: string,
+  userId: string,
+  accessToken: string
+): Promise<GroupDetail> {
+  return communityRequest<GroupDetail>(communityPath(groupId, "/transfer-owner"), {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+    accessToken,
+  });
+}
+
+export function listGroupMessages(
+  groupId: string,
+  params: { cursor?: string | null; limit?: number },
+  accessToken: string
+): Promise<MessagePage> {
+  const query = new URLSearchParams();
+  if (params.cursor) query.set("cursor", params.cursor);
+  if (params.limit) query.set("limit", String(params.limit));
+  const suffix = query.toString();
+  return communityRequest<MessagePage>(communityPath(groupId, `/messages${suffix ? `?${suffix}` : ""}`), {
+    accessToken,
+  });
+}
+
+export function sendGroupMessage(
+  groupId: string,
+  data: MessageCreateInput,
+  accessToken: string
+): Promise<ChatMessage> {
+  return communityRequest<ChatMessage>(communityPath(groupId, "/messages"), {
+    method: "POST",
+    body: JSON.stringify(data),
+    accessToken,
+  });
+}
+
+export function deleteGroupMessage(
+  groupId: string,
+  messageId: string,
+  accessToken: string
+): Promise<void> {
+  return communityRequest<void>(
+    communityPath(groupId, `/messages/${encodeURIComponent(messageId)}`),
+    { method: "DELETE", accessToken }
+  );
+}

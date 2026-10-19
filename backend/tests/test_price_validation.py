@@ -34,9 +34,8 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
+
 from app.schemas.price_validation import (
-    AICandidateAssessment,
-    AIValidationResult,
     PriceStatistics,
 )
 from app.services.marketplace.ai_price_validator import (
@@ -46,10 +45,7 @@ from app.services.marketplace.ai_price_validator import (
 from app.services.marketplace.decision_engine import PriceValidationEngine
 from app.services.marketplace.deterministic_validator import (
     calculate_price_statistics,
-    compute_match,
-    detect_attributes,
     evaluate_candidate_deterministically,
-    validate_basic_data,
 )
 
 TARGET_BOOK = {
@@ -75,7 +71,7 @@ def test_1_valid_price_and_matching_product():
         "product_url": "https://tokopedia.com/book/123",
         "seller_name": "Toko Buku Resmi",
     }
-    stats = PriceStatistics(sample_size=3, median_price=Decimal("95000"), is_reliable=True)
+    stats = PriceStatistics(sample_size=3, median_price=Decimal(95000), is_reliable=True)
     res = evaluate_candidate_deterministically(
         quote,
         target_title=TARGET_BOOK["title"],
@@ -298,7 +294,7 @@ def test_12_used_versus_new_book():
 
 def test_13_extreme_price_still_potentially_valid():
     """13. Diskon wajar (-30% s/d -50%) tetap valid jika penawaran normal."""
-    stats = PriceStatistics(sample_size=4, median_price=Decimal("100000"), is_reliable=True)
+    stats = PriceStatistics(sample_size=4, median_price=Decimal(100000), is_reliable=True)
     quote = {
         "marketplace": "tokopedia",
         "title": "Bumi Manusia Original Diskon",
@@ -316,7 +312,7 @@ def test_13_extreme_price_still_potentially_valid():
 
 def test_14_extreme_price_requiring_review():
     """14. Harga ekstrem (-80% atau +200%) ditandai sebagai outlier review."""
-    stats = PriceStatistics(sample_size=4, median_price=Decimal("100000"), is_reliable=True)
+    stats = PriceStatistics(sample_size=4, median_price=Decimal(100000), is_reliable=True)
     outliers = ["15000", "350000"]
     for price in outliers:
         quote = {
@@ -336,7 +332,7 @@ def test_14_extreme_price_requiring_review():
 
 def test_15_insufficient_sample_size_for_confident_statistics():
     """15. Jumlah sampel terlalu sedikit tidak menghasilkan kesimpulan outlier agresif."""
-    stats = calculate_price_statistics([Decimal("95000")])
+    stats = calculate_price_statistics([Decimal(95000)])
     assert stats.sample_size == 1
     assert stats.is_reliable is False
 
@@ -372,7 +368,7 @@ async def test_16_single_marketplace_succeeds():
     ]
     res = await engine.validate_comparison(book=TARGET_BOOK, raw_quotes=quotes)
     assert len(res["valid_offers"]) == 1
-    assert res["lowest_price"] == Decimal("98000")
+    assert res["lowest_price"] == Decimal(98000)
     assert res["valid_offers"][0].marketplace == "gramedia"
 
 
@@ -641,7 +637,7 @@ async def test_25_ui_and_system_works_when_ai_is_unavailable():
         {
             "marketplace": "tokopedia",
             "label": "Tokopedia",
-            "price": Decimal("95000"),
+            "price": Decimal(95000),
             "product_title": "Bumi Manusia - Pramoedya Ananta Toer",
             "product_url": "https://tokopedia.com/book/1",
             "in_stock": True,
@@ -651,7 +647,7 @@ async def test_25_ui_and_system_works_when_ai_is_unavailable():
         {
             "marketplace": "shopee",
             "label": "Shopee",
-            "price": Decimal("250000"),  # Outlier tinggi
+            "price": Decimal(250000),  # Outlier tinggi
             "product_title": "Bumi Manusia Edisi Langka",
             "product_url": "https://shopee.co.id/book/2",
             "in_stock": True,
@@ -661,7 +657,7 @@ async def test_25_ui_and_system_works_when_ai_is_unavailable():
         {
             "marketplace": "lazada",
             "label": "Lazada",
-            "price": Decimal("10000"),
+            "price": Decimal(10000),
             "product_title": "Ebook Bumi Manusia PDF",  # Ebook / Non-buku
             "product_url": "https://lazada.co.id/book/3",
             "in_stock": True,
@@ -678,7 +674,7 @@ async def test_25_ui_and_system_works_when_ai_is_unavailable():
     # 2. Penawaran valid hanya yang lolos aturan
     assert len(outcome["valid_offers"]) == 1
     assert outcome["valid_offers"][0].marketplace == "tokopedia"
-    assert outcome["valid_offers"][0].price == Decimal("95000")
+    assert outcome["valid_offers"][0].price == Decimal(95000)
 
     # 3. Penawaran outlier tinggi masuk review_offers
     assert len(outcome["review_offers"]) == 1
@@ -689,9 +685,9 @@ async def test_25_ui_and_system_works_when_ai_is_unavailable():
     assert outcome["rejected_offers"][0].marketplace == "lazada"
 
     # 5. lowest_price dihitung dari valid_offers
-    assert outcome["lowest_price"] == Decimal("95000")
-    assert outcome["savings"] == TARGET_BOOK["price"] - Decimal("95000")
+    assert outcome["lowest_price"] == Decimal(95000)
+    assert outcome["savings"] == TARGET_BOOK["price"] - Decimal(95000)
 
     # 6. Harga dan URL asli tidak boleh berubah sama sekali
     assert outcome["valid_offers"][0].product_url == "https://tokopedia.com/book/1"
-    assert outcome["rejected_offers"][0].price == Decimal("10000")
+    assert outcome["rejected_offers"][0].price == Decimal(10000)

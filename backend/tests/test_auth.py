@@ -1,13 +1,13 @@
-import jwt
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-from app.core import security
-from app.core.security import require_admin, UserPayload
+import jwt
+import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from app.core import security
+from app.core.security import UserPayload, require_admin
 from app.main import app
 
 TEST_SECRET = "test-secret-with-at-least-32-bytes-long"
@@ -23,7 +23,7 @@ def make_token(role: str = "user") -> str:
             "email": "user@example.com",
             "aud": "authenticated",
             "app_metadata": {"role": role},
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
         },
         TEST_SECRET,
         algorithm="HS256",

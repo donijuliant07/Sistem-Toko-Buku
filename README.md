@@ -76,6 +76,7 @@
 | `/checkout`    | `app/checkout/page.tsx`    | Form pengiriman, kurir, metode bayar, ringkasan, konfirmasi pesanan (perlu login)             |
 | `/orders`      | `app/orders/page.tsx`      | Daftar pesanan milik user yang sedang login                                                   |
 | `/orders/[id]` | `app/orders/[id]/page.tsx` | Detail pesanan, status pesanan & status pembayaran                                            |
+| `/komunitas`   | `app/komunitas/page.tsx`   | Book Community — daftar grup diskusi & chat real-time (perlu login)                           |
 
 ---
 
@@ -102,6 +103,8 @@
 | `GET`  | `/api/v1/books`       | Mengambil katalog buku publik            | Publik               |
 | `GET`  | `/api/v1/me`          | Mengambil profil user aktif              | Bearer Token         |
 | `GET`  | `/api/v1/admin/check` | Validasi apakah user memiliki role admin | Bearer Token (Admin) |
+
+Endpoint komunitas (`/api/v1/community/*`: grup, anggota, pesan): lihat [backend/COMMUNITY.md](backend/COMMUNITY.md).
 
 ## 🧪 Testing & Build Verification
 

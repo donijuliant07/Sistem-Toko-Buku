@@ -30,3 +30,20 @@ dev = [
     "pytest-asyncio>=1.2.0",
     "ruff>=0.13.0",
 ]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# FastAPI memakai `Depends(...)`/`Query(...)` sebagai default dependency; itu
+# pola resmi framework sehingga B008 tidak relevan di layer API.
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Boundary layer: kegagalan klien Supabase/HTTP apa pun diteruskan sebagai 4xx.
+"app/api/v1/*.py" = ["BLE001"]
+"app/core/security.py" = ["BLE001"]
+# Klien AI eksternal: balasan bebas dari model tidak bisa diandalkan bentuknya,
+# jadi kegagalan apa pun diperlakukan sebagai "validasi AI tidak tersedia".
+"app/services/ai_review_service.py" = ["BLE001"]
+"app/services/marketplace/ai_price_validator.py" = ["BLE001"]

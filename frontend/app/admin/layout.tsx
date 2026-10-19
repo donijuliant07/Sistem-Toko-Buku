@@ -6,7 +6,6 @@ import { Loader2 } from "lucide-react"
 import { AppSidebar } from "@/components/admin/AppSidebar"
 import { SiteHeader } from "@/components/admin/SiteHeader"
 import AccessDenied from "@/components/AccessDenied"
-import FloatingCS from "@/components/FloatingCS"
 import { useAuth } from "@/components/AuthProvider"
 import { Toaster } from "sonner"
 

@@ -10,10 +10,17 @@ disimpan di `profiles` (kolomnya tidak ada di skema live).
 """
 
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.security import get_current_user, UserPayload
-from app.core.supabase import supabase_anon, supabase_admin
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserProfileResponse
+
+from app.core.security import UserPayload, get_current_user
+from app.core.supabase import supabase_admin, supabase_anon
+from app.schemas.auth import (
+    LoginRequest,
+    RegisterRequest,
+    TokenResponse,
+    UserProfileResponse,
+)
 from app.schemas.common import ApiResponse
 
 router = APIRouter(prefix="/auth", tags=["Autentikasi"])
@@ -57,10 +64,10 @@ async def login(payload: LoginRequest):
         )
     except Exception as e:
         if isinstance(e, HTTPException):
-            raise e
+            raise
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal melakukan login: {str(e)}",
+            detail=f"Gagal melakukan login: {e!s}",
         )
 
 
@@ -100,10 +107,10 @@ async def register(payload: RegisterRequest):
         )
     except Exception as e:
         if isinstance(e, HTTPException):
-            raise e
+            raise
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal registrasi: {str(e)}",
+            detail=f"Gagal registrasi: {e!s}",
         )
 
 

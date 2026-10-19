@@ -1,12 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { Search, Mail, Phone, MapPin, ShoppingBag, ArrowUpDown, UserCheck } from "lucide-react"
+import { Search, Phone, MapPin, ShoppingBag, ArrowUpDown, UserCheck } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"

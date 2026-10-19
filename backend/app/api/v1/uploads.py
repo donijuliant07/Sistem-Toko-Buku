@@ -2,9 +2,12 @@
 
 import uuid
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+
 from app.core.config import settings
-from app.core.security import require_admin, UserPayload
+from app.core.errors import SERVICE_ERRORS
+from app.core.security import UserPayload, require_admin
 from app.core.supabase import supabase_admin
 from app.schemas.common import ApiResponse
 
@@ -16,7 +19,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 @router.post("/product-image", response_model=ApiResponse[dict])
 async def upload_product_cover(
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
     current_user: Annotated[UserPayload, Depends(require_admin)] = None,
 ):
     if file.content_type not in ALLOWED_IMAGE_TYPES:
@@ -51,8 +54,8 @@ async def upload_product_cover(
                 "url": public_url,
             },
         )
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal mengunggah gambar ke Supabase Storage: {str(e)}",
+            detail=f"Gagal mengunggah gambar ke Supabase Storage: {e!s}",
         )

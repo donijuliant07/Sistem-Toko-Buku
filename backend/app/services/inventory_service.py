@@ -11,7 +11,7 @@ Penyesuaian manual menulis ke `books.stock`; pemotongan karena penjualan dan
 pengembaliannya dikelola `OrderService`.
 """
 
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Any
 
 from app.core.supabase import supabase_admin
 from app.schemas.inventory import StockAdjustmentRequest
@@ -23,8 +23,8 @@ class InventoryService:
     def get_movements(
         page: int = 1,
         limit: int = 10,
-        product_id: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        product_id: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
         # Tabel `stock_movements` tidak ada di database live; jejak pergerakan
         # diturunkan dari `order_items` buku (setiap item memotong stok saat
         # pesanan dibuat, lihat `OrderService.create`).
@@ -62,7 +62,7 @@ class InventoryService:
         return movements, total
 
     @staticmethod
-    def adjust_stock(payload: StockAdjustmentRequest) -> Dict[str, Any]:
+    def adjust_stock(payload: StockAdjustmentRequest) -> dict[str, Any]:
         """Sesuaikan stok langsung di tabel `books` (RPC `adjust_stock` tidak ada
         di database live). Penyesuaian manual lewat jalur ini; pemotongan karena
         penjualan dilakukan `OrderService.create`, dan pengembaliannya dilakukan
@@ -95,7 +95,7 @@ class InventoryService:
         }
 
     @staticmethod
-    def get_low_stock_products() -> List[Dict[str, Any]]:
+    def get_low_stock_products() -> list[dict[str, Any]]:
         # View `low_stock_products` tidak ada di database live.
         res = supabase_admin.table("books").select("id, title, author, stock, cover_url").lte("stock", 5).execute()
         return res.data or []

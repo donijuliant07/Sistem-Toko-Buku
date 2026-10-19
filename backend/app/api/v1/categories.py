@@ -1,16 +1,19 @@
 """Kategori produk. Baca bersifat publik, tulis khusus admin."""
 
-from typing import Annotated, List
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.security import require_admin, UserPayload
+
+from app.core.errors import SERVICE_ERRORS
+from app.core.security import UserPayload, require_admin
+from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
 from app.schemas.common import ApiResponse
-from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from app.services.category_service import category_service
 
 router = APIRouter(prefix="/categories", tags=["Kategori"])
 
 
-@router.get("", response_model=ApiResponse[List[CategoryResponse]])
+@router.get("", response_model=ApiResponse[list[CategoryResponse]])
 async def list_categories():
     categories = category_service.get_all()
     return ApiResponse(
@@ -47,10 +50,10 @@ async def create_category(
             pesan=f"Kategori '{payload.name}' berhasil dibuat.",
             data=new_cat,
         )
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal menambahkan kategori: {str(e)}",
+            detail=f"Gagal menambahkan kategori: {e!s}",
         )
 
 
@@ -74,10 +77,10 @@ async def update_category(
             pesan="Kategori berhasil diperbarui.",
             data=updated,
         )
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal memperbarui kategori: {str(e)}",
+            detail=f"Gagal memperbarui kategori: {e!s}",
         )
 
 
@@ -100,8 +103,8 @@ async def delete_category(
             pesan=f"Kategori '{existing.get('name')}' berhasil dihapus.",
             data={"id": category_id},
         )
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal menghapus kategori (mungkin masih digunakan pada produk): {str(e)}",
+            detail=f"Gagal menghapus kategori (mungkin masih digunakan pada produk): {e!s}",
         )

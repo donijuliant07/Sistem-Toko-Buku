@@ -13,7 +13,8 @@ Semua keputusan akses "gagal tertutup" (fail closed): profil hilang atau role
 di luar `VALID_ROLES` ditolak, bukan diberi default yang permisif.
 """
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
+
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -34,7 +35,7 @@ security = HTTPBearer(auto_error=False)
 _JWKS_URL = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
 _ASYMMETRIC_ALGORITHMS = ["ES256", "RS256"]
 
-_jwks_client: Optional[jwt.PyJWKClient] = None
+_jwks_client: jwt.PyJWKClient | None = None
 
 
 def _get_jwks_client() -> jwt.PyJWKClient:
@@ -74,7 +75,7 @@ class UserPayload(BaseModel):
     """Identitas pemanggil hasil verifikasi token, sudah dilengkapi role tepercaya."""
 
     id: str
-    email: Optional[str] = None
+    email: str | None = None
     role: str = "user"
     app_metadata: dict = {}
     user_metadata: dict = {}
@@ -105,11 +106,11 @@ async def resolve_user_role(user_id: str) -> str:
             .maybe_single()
             .execute()
         )
-    except Exception:
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Gagal memverifikasi peran pengguna. Coba lagi beberapa saat lagi.",
-        )
+        ) from exc
 
     role = (row.data or {}).get("role") if row else None
     if role not in VALID_ROLES:
@@ -121,7 +122,7 @@ async def resolve_user_role(user_id: str) -> str:
 
 
 async def get_current_user(
-    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(security)]
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
 ) -> UserPayload:
     """Validasi Bearer token dan kembalikan identitas pemanggil.
 
@@ -166,7 +167,7 @@ async def get_current_user(
     except jwt.InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token otentikasi tidak valid: {str(e)}",
+            detail=f"Token otentikasi tidak valid: {e!s}",
         )
 
 

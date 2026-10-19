@@ -3,13 +3,15 @@
 `supabase_admin` is mocked, so these never touch the live database.
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from postgrest.exceptions import APIError
 
-from app.core.security import get_current_user, require_admin, UserPayload
+from app.core.clock import store_today
+from app.core.security import UserPayload, get_current_user, require_admin
 from app.main import app
 from app.schemas.promo import PromoCreate, PromoUpdate
 from app.services.promo_service import _serialize
@@ -18,7 +20,7 @@ client = TestClient(app)
 
 STAFF_ID = "33333333-3333-3333-3333-333333333333"
 PROMO_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-TODAY = date.today()
+TODAY = store_today()
 
 
 def as_staff() -> None:
@@ -164,9 +166,16 @@ def test_duplicate_promo_code_returns_400():
         "end_date": TODAY.isoformat(),
     }
     with patch("app.services.promo_service.supabase_admin") as sb:
-        sb.table.return_value.insert.return_value.execute.side_effect = Exception(
-            "duplicate key value violates unique constraint \"uq_promos_code\""
+        # Klien PostgREST melempar APIError untuk pelanggaran UNIQUE.
+        error = APIError(
+            {
+                "message": "duplicate key value violates unique constraint \"uq_promos_code\"",
+                "code": "23505",
+                "details": None,
+                "hint": None,
+            }
         )
+        sb.table.return_value.insert.return_value.execute.side_effect = error
         res = client.post("/api/v1/promos", json=payload)
 
     assert res.status_code == 400

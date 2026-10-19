@@ -8,7 +8,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.security import require_admin, UserPayload
+from app.core.errors import SERVICE_ERRORS
+from app.core.security import UserPayload, require_admin
 from app.schemas.common import ApiResponse
 from app.schemas.promo import PromoCreate, PromoResponse, PromoUpdate
 from app.services.promo_service import PromoNotFound, promo_service
@@ -35,7 +36,7 @@ async def create_promo(
 ):
     try:
         promo = promo_service.create(payload)
-    except Exception as exc:
+    except SERVICE_ERRORS as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Gagal membuat promo: {exc}",
@@ -56,7 +57,7 @@ async def update_promo(
     except ValueError as exc:
         # Rentang tanggal tidak valid setelah patch.
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except Exception as exc:
+    except SERVICE_ERRORS as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Gagal memperbarui promo: {exc}",
@@ -73,7 +74,7 @@ async def delete_promo(
         promo_service.delete(promo_id)
     except PromoNotFound as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    except Exception as exc:
+    except SERVICE_ERRORS as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Gagal menghapus promo: {exc}",

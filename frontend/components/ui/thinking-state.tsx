@@ -67,10 +67,14 @@ export function ThinkingState({
   const userInteractedRef = useRef(false);
 
   const isDone = controlledIsDone !== undefined ? controlledIsDone : isInternalDone;
+  // Induk bisa menyatakan selesai sebelum timer internal habis; turunkan saat
+  // render, bukan lewat effect, agar tidak ada render berantai.
+  const shownStepCount = controlledIsDone === true ? steps.length : visibleStepCount;
 
   // Step scheduling timer
   useEffect(() => {
     startTimeRef.current = Date.now();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset timer saat langkah berubah; nilai awal harus 0 sebelum timeout pertama
     setVisibleStepCount(0);
     setIsInternalDone(false);
     setElapsedSeconds(0);
@@ -114,14 +118,6 @@ export function ThinkingState({
       timers.forEach(clearTimeout);
     };
   }, [loopCount, steps, stepMs, loop, onDone]);
-
-  // When controlledIsDone becomes true from outside, immediately show all steps as done
-  useEffect(() => {
-    if (controlledIsDone === true) {
-      setVisibleStepCount(steps.length);
-      setIsInternalDone(true);
-    }
-  }, [controlledIsDone, steps.length]);
 
   // Live timer tick
   useEffect(() => {
@@ -185,7 +181,7 @@ export function ThinkingState({
       {/* Body: Collapsible timeline */}
       <div className="ui-think__body" data-open={isOpen}>
         <ol className="ui-think__list" aria-live="polite">
-          {steps.slice(0, visibleStepCount).map((step, index) => {
+          {steps.slice(0, shownStepCount).map((step, index) => {
             const isActive = index === activeStepIndex;
             const currentLabel =
               step.kind === "search" && isActive

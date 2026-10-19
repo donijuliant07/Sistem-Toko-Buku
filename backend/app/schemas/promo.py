@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -16,7 +16,7 @@ class PromoBase(BaseModel):
     discount_type: DiscountType
     discount_value: float = Field(..., gt=0, description="Persen bila 'Persentase', nominal rupiah bila lainnya")
     min_purchase: float = Field(default=0, ge=0)
-    max_discount: Optional[float] = Field(default=None, gt=0)
+    max_discount: float | None = Field(default=None, gt=0)
     quota: int = Field(default=100, gt=0)
     is_active: bool = True
     start_date: date
@@ -45,15 +45,15 @@ class PromoCreate(PromoBase):
 class PromoUpdate(BaseModel):
     """Patch parsial; hanya field yang dikirim yang diubah."""
 
-    name: Optional[str] = Field(default=None, min_length=3, max_length=255)
-    discount_type: Optional[DiscountType] = None
-    discount_value: Optional[float] = Field(default=None, gt=0)
-    min_purchase: Optional[float] = Field(default=None, ge=0)
-    max_discount: Optional[float] = Field(default=None, gt=0)
-    quota: Optional[int] = Field(default=None, gt=0)
-    is_active: Optional[bool] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    name: str | None = Field(default=None, min_length=3, max_length=255)
+    discount_type: DiscountType | None = None
+    discount_value: float | None = Field(default=None, gt=0)
+    min_purchase: float | None = Field(default=None, ge=0)
+    max_discount: float | None = Field(default=None, gt=0)
+    quota: int | None = Field(default=None, gt=0)
+    is_active: bool | None = None
+    start_date: date | None = None
+    end_date: date | None = None
 
 
 class PromoResponse(BaseModel):
@@ -63,7 +63,7 @@ class PromoResponse(BaseModel):
     discount_type: DiscountType
     discount_value: float
     min_purchase: float
-    max_discount: Optional[float] = None
+    max_discount: float | None = None
     quota: int
     used_count: int
     is_active: bool
@@ -71,5 +71,5 @@ class PromoResponse(BaseModel):
     status: PromoStatus
     start_date: date
     end_date: date
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None

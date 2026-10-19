@@ -98,7 +98,7 @@ def clean_tokens(text: str) -> list[str]:
 
 def extract_isbns(text: str) -> list[str]:
     """Temukan kemungkinan nomor ISBN-10 atau ISBN-13 dalam teks."""
-    candidates = re.findall(r"\b(?:97[89][-\s]?)?[0-9]{1,5}[-\s]?[0-9]+[-\s]?[0-9]+[-\s]?[0-9X]\b", text, re.I)
+    candidates = re.findall(r"\b(?:97[89][-\s]?)?[0-9]{1,5}[-\s]?[0-9]+[-\s]?[0-9]+[-\s]?[0-9X]\b", text, re.IGNORECASE)
     valid_isbns = []
     for raw in candidates:
         digits = re.sub(r"[-\s]", "", raw).upper()
@@ -114,7 +114,7 @@ def is_valid_http_url(url: str | None) -> bool:
     try:
         parsed = urlparse(str(url))
         return parsed.scheme in ("http", "https") and bool(parsed.netloc)
-    except Exception:
+    except ValueError:
         return False
 
 
@@ -231,7 +231,8 @@ def compute_match(
             # Jika ada ISBN tapi beda, potensi beda edisi/buku
             notes.append(f"Nomor ISBN berbeda (target: {norm_target}, kandidat: {norm_cand}).")
             return "uncertain", 0.4, notes
-        except Exception:
+        except ValueError:
+            # ISBN kosong/tidak valid: lanjut ke pencocokan judul.
             pass
 
     # 4. Pencocokan berbasis token judul & difflib
@@ -242,7 +243,6 @@ def compute_match(
         notes.append("Informasi judul tidak memadai untuk mencocokkan produk.")
         return "uncertain", 0.0, notes
 
-    wanted_set = set(wanted_tokens)
     cand_set = set(cand_tokens)
 
     # Rasio kemunculan kata target di judul kandidat

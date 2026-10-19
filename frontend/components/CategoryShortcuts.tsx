@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CATEGORIES } from "@/data/mockData";
 import FreepikCategoryIcon from "./FreepikCategoryIcon";
-import { Play, Pause, Compass, ArrowRight } from "lucide-react";
+import { Play, Pause, Compass } from "lucide-react";
 
 interface CategoryShortcutsProps {
   onSelectCategory?: (id: string) => void;

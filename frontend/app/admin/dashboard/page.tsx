@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  TrendingUp,
   ShoppingBag,
   BookOpen,
   Users,
@@ -12,7 +11,6 @@ import {
   Plus,
   ArrowUpRight,
   ChevronRight,
-  Package,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +52,7 @@ export default function DashboardPage() {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- muat data awal saat mount; `loading` sudah true sejak awal
     loadAllData();
   }, [loadAllData]);
 

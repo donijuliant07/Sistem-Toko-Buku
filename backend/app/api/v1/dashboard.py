@@ -3,11 +3,18 @@
 Seluruh nilai berasal dari agregasi data nyata lewat `DashboardService`.
 """
 
-from typing import Annotated, List
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
-from app.core.security import require_admin, UserPayload
+
+from app.core.security import UserPayload, require_admin
 from app.schemas.common import ApiResponse
-from app.schemas.dashboard import DashboardKpi, SalesTimeseriesItem, CategorySalesSummary, MonthlyReportItem
+from app.schemas.dashboard import (
+    CategorySalesSummary,
+    DashboardKpi,
+    MonthlyReportItem,
+    SalesTimeseriesItem,
+)
 from app.services.dashboard_service import dashboard_service
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard & Laporan"])
@@ -25,7 +32,7 @@ async def get_dashboard_summary(
     )
 
 
-@router.get("/sales-chart", response_model=ApiResponse[List[SalesTimeseriesItem]])
+@router.get("/sales-chart", response_model=ApiResponse[list[SalesTimeseriesItem]])
 async def get_sales_chart(
     days: int = Query(30, ge=7, le=90, description="Rentang hari tren penjualan"),
     current_user: Annotated[UserPayload, Depends(require_admin)] = None,
@@ -38,7 +45,7 @@ async def get_sales_chart(
     )
 
 
-@router.get("/categories-chart", response_model=ApiResponse[List[CategorySalesSummary]])
+@router.get("/categories-chart", response_model=ApiResponse[list[CategorySalesSummary]])
 async def get_category_chart(
     current_user: Annotated[UserPayload, Depends(require_admin)],
 ):
@@ -50,7 +57,7 @@ async def get_category_chart(
     )
 
 
-@router.get("/reports/monthly", response_model=ApiResponse[List[MonthlyReportItem]])
+@router.get("/reports/monthly", response_model=ApiResponse[list[MonthlyReportItem]])
 async def get_monthly_reports(
     months: int = Query(4, ge=1, le=24, description="Jumlah bulan terakhir yang direkap"),
     current_user: Annotated[UserPayload, Depends(require_admin)] = None,

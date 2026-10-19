@@ -15,6 +15,7 @@ bukan state.
 from datetime import date, timedelta
 from typing import Any
 
+from app.core.clock import store_today
 from app.core.supabase import supabase_admin
 from app.services.base import ReportService
 
@@ -59,7 +60,7 @@ class DashboardService(ReportService):
     @staticmethod
     def get_sales_timeseries(days: int = 30) -> list[dict[str, Any]]:
         # RPC `sales_timeseries` tidak ada di database live.
-        since = (date.today() - timedelta(days=days - 1)).isoformat()
+        since = (store_today() - timedelta(days=days - 1)).isoformat()
         orders = (
             supabase_admin.table("orders")
             .select("created_at, status, items:order_items(quantity, price)")
@@ -82,7 +83,7 @@ class DashboardService(ReportService):
 
         series = []
         for offset in range(days):
-            day = date.today() - timedelta(days=days - 1 - offset)
+            day = store_today() - timedelta(days=days - 1 - offset)
             amount = per_day.get(day.isoformat(), 0.0)
             series.append({
                 "date_label": day.strftime("%d %b"),
@@ -143,7 +144,7 @@ class DashboardService(ReportService):
         pembandingnya tidak ada atau nol, `growth` dikosongkan ("-") alih-alih
         mengarang angka.
         """
-        today = date.today()
+        today = store_today()
 
         def month_start(offset: int) -> date:
             """Awal bulan `offset` bulan sebelum bulan berjalan (0 = bulan ini)."""

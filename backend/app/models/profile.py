@@ -23,7 +23,7 @@ class Profile(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("auth.users.id", ondelete="CASCADE"),
+        ForeignKey("auth.users.id", ondelete="CASCADE", use_alter=True),
         primary_key=True,
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'user'"))

@@ -1,11 +1,18 @@
 """Inventori dan penyesuaian stok. Seluruh endpoint khusus admin."""
 
 import math
-from typing import Annotated, Optional
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from app.core.security import require_admin, UserPayload
+
+from app.core.errors import SERVICE_ERRORS
+from app.core.security import UserPayload, require_admin
 from app.schemas.common import ApiResponse, PaginatedResponse, PaginationMeta
-from app.schemas.inventory import LowStockBookResponse, StockAdjustmentRequest, StockMovementResponse
+from app.schemas.inventory import (
+    LowStockBookResponse,
+    StockAdjustmentRequest,
+    StockMovementResponse,
+)
 from app.services.inventory_service import inventory_service
 
 router = APIRouter(prefix="/inventory", tags=["Inventori & Stok"])
@@ -15,7 +22,7 @@ router = APIRouter(prefix="/inventory", tags=["Inventori & Stok"])
 async def list_stock_movements(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    product_id: Optional[str] = Query(None, description="Filter riwayat per ID produk"),
+    product_id: str | None = Query(None, description="Filter riwayat per ID produk"),
     current_user: Annotated[UserPayload, Depends(require_admin)] = None,
 ):
     items, total = inventory_service.get_movements(
@@ -62,8 +69,8 @@ async def adjust_stock(
             pesan="Stok produk berhasil diperbarui.",
             data=res,
         )
-    except Exception as e:
+    except SERVICE_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal melakukan penyesuaian stok: {str(e)}",
+            detail=f"Gagal melakukan penyesuaian stok: {e!s}",
         )

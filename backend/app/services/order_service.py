@@ -15,10 +15,11 @@ Lihat komentar pada `_adjust_stock` untuk batasannya.
 """
 
 import random
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any, Tuple, List
-from app.core.supabase import supabase_admin
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 from app.core import shipping
+from app.core.supabase import supabase_admin
 from app.schemas.order import OrderCreate, OrderStatusUpdate
 
 # Berapa kali nomor pesanan diacak ulang bila bentrok dengan UNIQUE constraint.
@@ -26,7 +27,7 @@ _ORDER_NUMBER_ATTEMPTS = 5
 
 
 def _generate_order_number() -> str:
-    return f"INV/{datetime.now().strftime('%Y%m%d')}/{random.randint(1000, 9999)}"
+    return f"INV/{datetime.now(UTC).strftime('%Y%m%d')}/{random.randint(1000, 9999)}"
 
 
 def _is_unique_violation(error: Exception) -> bool:
@@ -38,21 +39,21 @@ def _is_unique_violation(error: Exception) -> bool:
     return "23505" in text or "duplicate key" in text.lower()
 
 
-def _dedupe_items(items: List[Any]) -> Dict[str, int]:
+def _dedupe_items(items: list[Any]) -> dict[str, int]:
     """Gabungkan kuantitas per `book_id`.
 
     Payload boleh menyebut buku yang sama lebih dari sekali; kalau tidak
     digabung, tiap baris lolos cek stok sendiri dan stok bisa tembus.
     """
-    totals: Dict[str, int] = {}
+    totals: dict[str, int] = {}
     for item in items:
         totals[item.book_id] = totals.get(item.book_id, 0) + item.quantity
     return totals
 
 
-def _adjust_stock(items: List[Dict[str, Any]], sign: int) -> List[Tuple[str, int]]:
+def _adjust_stock(items: list[dict[str, Any]], sign: int) -> list[tuple[str, int]]:
     """Ubah `books.stock` per item; kembalikan perubahan yang berhasil (`book_id`, delta)."""
-    applied: List[Tuple[str, int]] = []
+    applied: list[tuple[str, int]] = []
     for item in items:
         book_id = item.get("book_id")
         if not book_id:
@@ -71,7 +72,7 @@ def _adjust_stock(items: List[Dict[str, Any]], sign: int) -> List[Tuple[str, int
     return applied
 
 
-def _undo_stock(applied: List[Tuple[str, int]]) -> None:
+def _undo_stock(applied: list[tuple[str, int]]) -> None:
     """Balikkan perubahan stok yang sudah terjadi (kompensasi saat insert gagal)."""
     for book_id, delta in applied:
         res = supabase_admin.table("books").select("stock").eq("id", book_id).single().execute()
@@ -81,10 +82,10 @@ def _undo_stock(applied: List[Tuple[str, int]]) -> None:
         supabase_admin.table("books").update({"stock": stock}).eq("id", book_id).execute()
 
 
-def _shipping_address_json(payload: OrderCreate) -> Dict[str, Any]:
+def _shipping_address_json(payload: OrderCreate) -> dict[str, Any]:
     """Bentuk `orders.shipping_address` (JSONB) dari payload lama maupun kanonik."""
     addr = payload.address
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "recipient_name": (addr.recipient_name if addr else payload.customer_name) or "",
         "phone": (addr.phone if addr else payload.customer_phone) or "",
         "full_address": (addr.full_address if addr else payload.shipping_address) or "",
@@ -107,7 +108,7 @@ def _shipping_address_json(payload: OrderCreate) -> Dict[str, Any]:
     return data
 
 
-def _decode_shipping_address(raw: Any) -> Tuple[Dict[str, Any], str]:
+def _decode_shipping_address(raw: Any) -> tuple[dict[str, Any], str]:
     """Kembalikan (jsonb, teks alamat) dari nilai JSONB yang mungkin berbentuk apa saja."""
     if isinstance(raw, dict):
         return raw, str(raw.get("full_address") or "")
@@ -116,7 +117,7 @@ def _decode_shipping_address(raw: Any) -> Tuple[Dict[str, Any], str]:
     return {}, ""
 
 
-def _serialize_items(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _serialize_items(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Petakan baris `order_items` (skema live) ke `OrderItemResponse`.
 
     Skema live hanya menyimpan `book_id`, `title_snapshot`, `quantity`, `price`,
@@ -126,7 +127,7 @@ def _serialize_items(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return []
 
     book_ids = list({row["book_id"] for row in rows if row.get("book_id")})
-    books: Dict[str, Dict[str, Any]] = {}
+    books: dict[str, dict[str, Any]] = {}
     if book_ids:
         res = supabase_admin.table("books").select("id, author, cover_url").in_("id", book_ids).execute()
         books = {row["id"]: row for row in (res.data or [])}
@@ -150,8 +151,8 @@ def _serialize_items(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return items
 
 
-def _serialize_order(row: Dict[str, Any], items: List[Dict[str, Any]] | None = None,
-                     payment: Dict[str, Any] | None = None) -> Dict[str, Any]:
+def _serialize_order(row: dict[str, Any], items: list[dict[str, Any]] | None = None,
+                     payment: dict[str, Any] | None = None) -> dict[str, Any]:
     """Petakan satu baris `orders` (skema live) ke bentuk respons API."""
     address, address_text = _decode_shipping_address(row.get("shipping_address"))
     customer = address.get("customer") or {}
@@ -190,7 +191,7 @@ def _serialize_order(row: Dict[str, Any], items: List[Dict[str, Any]] | None = N
 
 class OrderService:
     @staticmethod
-    def expire_overdue_orders() -> List[str]:
+    def expire_overdue_orders() -> list[str]:
         """Batalkan pesanan `pending` yang melewati `expires_at` dan kembalikan stoknya.
 
         Tanpa ini, stok yang sudah dipotong saat pesanan dibuat tertahan selamanya
@@ -201,13 +202,13 @@ class OrderService:
             supabase_admin.table("orders")
             .select("id")
             .eq("status", "pending")
-            .lt("expires_at", datetime.now(timezone.utc).isoformat())
+            .lt("expires_at", datetime.now(UTC).isoformat())
             .execute()
             .data
             or []
         )
 
-        expired: List[str] = []
+        expired: list[str] = []
         for row in overdue:
             items_res = (
                 supabase_admin.table("order_items")
@@ -227,10 +228,10 @@ class OrderService:
     def get_list(
         page: int = 1,
         limit: int = 10,
-        search: Optional[str] = None,
-        status: Optional[str] = None,
-        user_id: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        search: str | None = None,
+        status: str | None = None,
+        user_id: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
         offset = (page - 1) * limit
         query = supabase_admin.table("orders").select(
             "*, items:order_items(*), payments(*)", count="exact"
@@ -255,7 +256,7 @@ class OrderService:
         return orders, total
 
     @staticmethod
-    def get_by_id(order_id: str) -> Optional[Dict[str, Any]]:
+    def get_by_id(order_id: str) -> dict[str, Any] | None:
         res = (
             supabase_admin.table("orders")
             .select("*, items:order_items(*), payments(*)")
@@ -269,7 +270,7 @@ class OrderService:
         return _serialize_order(row, row.get("items") or [], (row.get("payments") or [None])[0])
 
     @staticmethod
-    def create(payload: OrderCreate, user_id: Optional[str] = None) -> Dict[str, Any]:
+    def create(payload: OrderCreate, user_id: str | None = None) -> dict[str, Any]:
         """Buat pesanan. Harga, judul, dan berat diambil dari `books`, bukan dari client.
 
         Stok dipotong di sini — satu-satunya jalur yang memotong — dan hanya
@@ -325,7 +326,7 @@ class OrderService:
             "shipping_address": _shipping_address_json(payload),
             "courier": courier,
             "courier_service": courier_service,
-            "expires_at": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+            "expires_at": (datetime.now(UTC) + timedelta(days=1)).isoformat(),
         }
 
         # `orders.order_number` punya UNIQUE constraint di database live. Nomor
@@ -344,7 +345,7 @@ class OrderService:
 
         order_id = new_order["id"]
 
-        applied: List[Tuple[str, int]] = []
+        applied: list[tuple[str, int]] = []
         try:
             for row in items_data:
                 row["order_id"] = order_id
@@ -371,7 +372,7 @@ class OrderService:
         return OrderService.get_by_id(order_id) or _serialize_order(new_order, items_data)
 
     @staticmethod
-    def _current_payment(order_id: str) -> Optional[Dict[str, Any]]:
+    def _current_payment(order_id: str) -> dict[str, Any] | None:
         res = (
             supabase_admin.table("payments")
             .select("*")
@@ -383,7 +384,7 @@ class OrderService:
         return (res.data or [None])[0]
 
     @staticmethod
-    def update_status(order_id: str, payload: OrderStatusUpdate) -> Dict[str, Any]:
+    def update_status(order_id: str, payload: OrderStatusUpdate) -> dict[str, Any]:
         # RPC `update_order_status` tidak ada di database live, jadi transisi
         # dilakukan langsung.
         current = OrderService.get_by_id(order_id)
@@ -393,7 +394,7 @@ class OrderService:
         old_status = current["status"]
         new_status = payload.status
 
-        update_data: Dict[str, Any] = {"status": new_status}
+        update_data: dict[str, Any] = {"status": new_status}
         if payload.tracking_number:
             update_data["tracking_number"] = payload.tracking_number
         supabase_admin.table("orders").update(update_data).eq("id", order_id).execute()
@@ -413,16 +414,16 @@ class OrderService:
         }
 
     @staticmethod
-    def update_payment_status(order_id: str, status: str) -> Dict[str, Any]:
+    def update_payment_status(order_id: str, status: str) -> dict[str, Any]:
         """Pisahkan dari `update_status`: perubahan status pesanan tidak boleh
         otomatis menandai pembayaran berhasil."""
         payment = OrderService._current_payment(order_id)
         if not payment:
             raise ValueError(f"Pembayaran untuk pesanan {order_id} tidak ditemukan.")
 
-        data: Dict[str, Any] = {"status": status}
+        data: dict[str, Any] = {"status": status}
         if status == "success":
-            data["paid_at"] = datetime.now(timezone.utc).isoformat()
+            data["paid_at"] = datetime.now(UTC).isoformat()
         supabase_admin.table("payments").update(data).eq("id", payment["id"]).execute()
 
         return {"order_id": order_id, "payment_id": payment["id"], "payment_status": status, "sukses": True}

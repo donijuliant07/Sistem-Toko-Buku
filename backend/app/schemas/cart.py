@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,15 +25,15 @@ class CartMergeItem(BaseModel):
 
 
 class CartMergeInput(BaseModel):
-    items: List[CartMergeItem] = Field(default_factory=list, max_length=100)
+    items: list[CartMergeItem] = Field(default_factory=list, max_length=100)
 
 
 class CartItemResponse(BaseModel):
     id: str
     book_id: str
     title: str
-    author: Optional[str] = None
-    cover_url: Optional[str] = None
+    author: str | None = None
+    cover_url: str | None = None
     # `price` dan `stock` berasal dari `books`, bukan dari client maupun dari
     # baris `cart_items` — skema live sengaja tidak menyimpan keduanya.
     unit_price: float
@@ -48,6 +47,6 @@ class CartItemResponse(BaseModel):
 
 class CartResponse(BaseModel):
     cart_id: str
-    items: List[CartItemResponse]
+    items: list[CartItemResponse]
     total_items: int
     total_price: float
