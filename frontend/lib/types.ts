@@ -214,6 +214,16 @@ export type AIReviewResponse = {
   cached?: boolean;
 };
 
+// --- Book Rewards: generasi AI review (berbayar) ---
+// `AIReviewResponse` di atas adalah bentuk hasil mentah untuk jalur lama (gratis).
+// Jalur `/ai/...` membungkus metadanya supaya UI bisa menunjukkan berapa poin
+// yang dipotong dan apakah hasil ini dibuka ulang tanpa biaya.
+export type AIReviewOutcome = {
+  review: AIReviewResponse;
+  access_method: RewardAccessMethod;
+  points_spent: number;
+};
+
 // --- Perbandingan harga marketplace ---
 /** Cocok dengan CHECK `ck_marketplace_*_slug` di database. */
 export type MarketplaceSlug =
@@ -404,16 +414,32 @@ export interface Recommendation {
 export interface AdvisorChatRequest {
   message: string;
   session_id?: string | null;
+  /** Dibuat sekali per pesan; dikirim ulang saat retry agar poin tidak terpotong dua kali. */
+  message_id?: string | null;
 }
 
 export interface AdvisorChatResponse {
   session_id: string;
+  message_id: string | null;
   assistant_message: string;
   conversation_state: ConversationState;
   preferences: BookPreferences;
   missing_preferences: string[];
   recommendations: Recommendation[];
   follow_up_question: string | null;
+  /** `provider_failed` = balasan dari aturan, bukan AI; poin dikembalikan. */
+  outcome: "answered" | "provider_failed" | "unconfigured";
+  model_source: "model" | "rule_based";
+  points_cost: number;
+  points_charged: number;
+  points_refunded: number;
+  points_balance: number | null;
+}
+
+/** Biaya per pesan dan saldo, dibaca dari backend sebelum mengirim. */
+export interface AdvisorPricing {
+  points_cost: number;
+  points_balance: number | null;
 }
 
 export interface AdvisorMessage {
@@ -546,3 +572,106 @@ export interface CommunityListParams {
   page?: number;
   page_size?: number;
 }
+
+// --- Book Rewards (poin) ---
+
+/** Metode akses satu tingkat spoiler: gratis, karena sudah membeli, atau poin. */
+export type RewardAccessMethod = "free" | "purchase_eligibility" | "points";
+
+export type SpoilerAccess = {
+  level: SpoilerLevel;
+  method: RewardAccessMethod;
+  /** Poin yang dipotong; 0 untuk `free`/`purchase_eligibility`. */
+  cost: number;
+  units_bought: number;
+  /** Syarat jumlah unit penting untuk `purchase_eligibility`. */
+  min_units: number;
+  /** Tingkat ini sudah pernah dibuka untuk buku ini — tidak dipotong lagi. */
+  unlocked: boolean;
+};
+
+export type RecentReward = {
+  transaction_type: string;
+  points_delta: number;
+  created_at: string;
+};
+
+export type RewardsMe = {
+  points: number;
+  total_books_bought: number;
+  spoiler_access: Record<SpoilerLevel, SpoilerAccess>;
+  recent_rewards: RecentReward[];
+};
+
+export type PointTransaction = {
+  id: string;
+  points_delta: number;
+  balance_after: number;
+  transaction_type: string;
+  source_type: string;
+  source_id: string;
+  book_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type PointTransactionPage = {
+  items: PointTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+};
+
+export type AIReviewGenerationStatus = "pending" | "success" | "failed";
+
+export type AIReviewSummary = {
+  id: string;
+  book_id: string;
+  spoiler_level: SpoilerLevel;
+  access_method: RewardAccessMethod;
+  points_spent: number;
+  status: AIReviewGenerationStatus;
+  provider: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type AIReviewGeneration = AIReviewSummary & {
+  result: AIReviewResponse | null;
+  failure_reason: string | null;
+};
+
+// --- Book Rewards (admin) ---
+
+export type RewardRule = {
+  key: string;
+  value: number;
+  default: number;
+  max_value: number;
+};
+
+export type RewardRules = { rules: RewardRule[] };
+
+export type RewardActivity = {
+  id: string;
+  user_id: string;
+  activity_type: "review" | "community_contribution" | "helpful_answer";
+  source_type: "review" | "chat_message";
+  source_id: string;
+  status: "pending" | "approved" | "rejected" | "rewarded";
+  points_awarded: number | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+};
+
+export type RewardActivityPage = {
+  items: RewardActivity[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+};

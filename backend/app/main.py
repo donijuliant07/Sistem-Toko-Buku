@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import (
+    admin_rewards,
+    ai,
     auth,
     book_advisor,
     books,
@@ -21,6 +23,8 @@ from app.api.v1 import (
     marketplaces,
     orders,
     promos,
+    reviews,
+    rewards,
     uploads,
 )
 from app.core.config import settings
@@ -75,6 +79,10 @@ app.include_router(promos.router, prefix=settings.API_V1_PREFIX)
 app.include_router(uploads.router, prefix=settings.API_V1_PREFIX)
 app.include_router(book_advisor.router, prefix=settings.API_V1_PREFIX)
 app.include_router(community.router, prefix=settings.API_V1_PREFIX)
+app.include_router(reviews.router, prefix=settings.API_V1_PREFIX)
+app.include_router(rewards.router, prefix=settings.API_V1_PREFIX)
+app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_rewards.router, prefix=settings.API_V1_PREFIX)
 
 # Klien Gemini dibuat malas pada pemanggilan pertama dan ditutup lewat
 # lifespan di atas; tanpa API key tidak ada koneksi yang dibuka.

@@ -23,6 +23,7 @@ import {
   BookOpen,
   Compass,
   User,
+  Coins,
 } from "lucide-react";
 
 export default function UserDropdown() {
@@ -252,6 +253,28 @@ export default function UserDropdown() {
                     </span>
                     <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
                       Riwayat & status pesanan
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shrink-0" />
+              </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem asChild>
+              <Link
+                href="/poin"
+                className="group flex items-center justify-between px-2.5 py-2 text-xs rounded-lg transition-all duration-150 hover:bg-slate-100/80 focus:bg-slate-100/80 cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-100/90 group-hover:scale-105 transition-all duration-150 shrink-0">
+                    <Coins className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-slate-800 group-hover:text-slate-950 transition-colors">
+                      Poin Saya
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-500 transition-colors">
+                      Saldo & riwayat poin
                     </span>
                   </div>
                 </div>

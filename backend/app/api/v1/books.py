@@ -20,6 +20,7 @@ modul ini hanya menyusun jalur baca/tulis, menerjemahkan error menjadi status
 HTTP, dan memilih jalur cadangan.
 """
 
+import asyncio
 import logging
 import uuid
 from typing import Annotated, Any
@@ -29,15 +30,23 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import require_admin
+from app.core.security import (
+    UserPayload,
+    get_optional_user,
+    require_admin,
+)
 from app.db.session import get_db
 from app.models import Book
-from app.schemas.ai_review import AIReviewRequest, AIReviewResponse
+from app.schemas.ai_review import AIReviewRequest, AIReviewResponse, SpoilerLevel
 from app.schemas.book import BookCreate, BookPage, BookRead, BookUpdate
+from app.schemas.rewards import AIReviewGenerationRead
 from app.services.ai_review_service import generate_ai_book_review
 from app.services.book_service import OrmBookRepository, RestBookRepository
 from app.services.marketplace.seeding import build_default_source_rows
 from app.services.marketplace_repository import OrmMarketplaceSourceRepository
+from app.services.rewards.access import FREE_LEVELS as FREE_SPOILER_LEVELS
+from app.services.rewards.errors import RewardsError
+from app.services.rewards.service import rewards_service
 
 logger = logging.getLogger(__name__)
 
@@ -220,20 +229,69 @@ async def delete_book(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/{book_id}/ai-review", response_model=AIReviewResponse)
+@router.post("/{book_id}/ai-review", response_model=AIReviewResponse, deprecated=True)
 async def get_ai_book_review(
     book_id: UUID,
     payload: AIReviewRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[UserPayload | None, Depends(get_optional_user)],
 ) -> AIReviewResponse:
-    """Buat atau ambil ulasan AI untuk sebuah buku pada tingkat spoiler tertentu."""
-    book = await load_book_for_read(book_id, db)
+    """Alias lama untuk `POST /ai/books/{book_id}/review`.
 
-    return await generate_ai_book_review(
-        book_id=str(book["id"]),
-        title=book.get("title") or "Buku",
-        author=book.get("author") or "Penulis",
-        description=book.get("description") or "",
-        isbn=book.get("isbn") or "",
-        spoiler_level=payload.spoiler_level,
+    Kompatibilitas: pemanggil tanpa token tetap mendapat level gratis
+    (`no_spoiler`/`low`) seperti sebelumnya. Level `medium`/`heavy` butuh token
+    dan melewati Book Rewards (syarat pembelian atau potong poin) — tanpa itu,
+    konten berbayar akan terbuka gratis lewat endpoint lama.
+    """
+    book = await load_book_for_read(book_id, db)
+    level = payload.spoiler_level
+
+    if level in FREE_SPOILER_LEVELS:
+        return await generate_ai_book_review(
+            book_id=str(book["id"]),
+            title=book.get("title") or "Buku",
+            author=book.get("author") or "Penulis",
+            description=book.get("description") or "",
+            isbn=book.get("isbn") or "",
+            spoiler_level=level,
+        )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tingkat spoiler ini membutuhkan login dan poin.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if user.role != "user":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Akses ditolak. Fitur ini hanya untuk akun pelanggan.",
+        )
+    try:
+        generation, _reused = await asyncio.to_thread(
+            _ai_alias_run, user, book_id, book, level
+        )
+    except RewardsError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    if generation.status != "success" or not generation.result:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Ulasan AI gagal dibuat. Poin yang terpotong sudah dikembalikan.",
+        )
+    return AIReviewResponse.model_validate({**generation.result, "cached": False})
+
+
+def _ai_alias_run(
+    user: UserPayload, book_id: UUID, book: dict[str, Any], level: SpoilerLevel
+) -> tuple[AIReviewGenerationRead, bool]:
+    # Impor lokal: `app.api.v1.ai` sendiri mengimpor `load_book_for_read` dari
+    # modul ini, jadi impor di level modul akan melingkar.
+    from app.api.v1.ai import _generator
+
+    return rewards_service.generate_ai_review(
+        user,
+        book_id=book_id,
+        spoiler_level=level,
+        book=book,
+        generator=_generator,
     )

@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Sparkles, Loader2, AlertCircle, Scale } from "lucide-react";
-import { getBook, getAIReview } from "@/lib/api";
-import type { Book, AIReviewResponse, SpoilerLevel } from "@/lib/types";
+import { getBook, getAIReview, getSpoilerAccess, getMyRewards } from "@/lib/api";
+import type { Book, AIReviewResponse, SpoilerLevel, SpoilerAccess } from "@/lib/types";
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -38,6 +38,14 @@ export default function BookDetailPage() {
   const [aiReview, setAiReview] = useState<AIReviewResponse | null>(null);
   const [aiError, setAiError] = useState("");
 
+  // Syarat akses spoiler & saldo poin (Book Rewards). Tamu tidak memuatnya:
+  // modal menampilkan tingkat gratis saja.
+  const [spoilerAccess, setSpoilerAccess] = useState<Partial<
+    Record<SpoilerLevel, SpoilerAccess>
+  > | null>(null);
+  const [points, setPoints] = useState<number | null>(null);
+  const accessToken = session?.access_token;
+
   useEffect(() => {
     if (!id) return;
     let active = true;
@@ -54,6 +62,26 @@ export default function BookDetailPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!id || !accessToken) return;
+    let active = true;
+    // Kegagalan dimuat bukan alasan memblokir: modal jatuh ke tampilan tanpa
+    // syarat, dan keputusan final tetap diambil backend.
+    Promise.all([
+      getSpoilerAccess(id, accessToken),
+      getMyRewards(accessToken),
+    ])
+      .then(([access, me]) => {
+        if (!active) return;
+        setSpoilerAccess(access);
+        setPoints(me.points);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [id, accessToken]);
+
   const handleGenerateAIReview = async (spoilerLevel: SpoilerLevel) => {
     if (!book) return;
     setAiState("generating");
@@ -61,9 +89,18 @@ export default function BookDetailPage() {
     setIsModalOpen(false);
 
     try {
-      const result = await getAIReview(book.id, spoilerLevel);
-      setAiReview(result);
+      const outcome = await getAIReview(book.id, spoilerLevel, accessToken);
+      setAiReview(outcome.review);
       setAiState("success");
+      // Poin bisa terpotong: muat ulang saldo supaya modal berikutnya akurat.
+      if (accessToken) {
+        getMyRewards(accessToken, book.id)
+          .then((me) => {
+            setPoints(me.points);
+            setSpoilerAccess(me.spoiler_access);
+          })
+          .catch(() => {});
+      }
     } catch (err: unknown) {
       setAiError(err instanceof Error ? err.message : "Gagal membuat AI Review. Silakan coba lagi.");
       setAiState("error");
@@ -364,6 +401,9 @@ export default function BookDetailPage() {
         bookTitle={book.title}
         bookAuthor={book.author}
         isGenerating={aiState === "generating"}
+        access={spoilerAccess}
+        points={points}
+        signedIn={!!session}
       />
 
       {/* Modal Bandingkan Harga */}
