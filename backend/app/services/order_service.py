@@ -14,6 +14,7 @@ PostgREST berurutan dengan kompensasi manual, bukan satu transaksi database.
 Lihat komentar pada `_adjust_stock` untuk batasannya.
 """
 
+import logging
 import random
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -21,9 +22,40 @@ from typing import Any
 from app.core import shipping
 from app.core.supabase import supabase_admin
 from app.schemas.order import OrderCreate, OrderStatusUpdate
+from app.services.rewards.service import rewards_service
+
+logger = logging.getLogger(__name__)
 
 # Berapa kali nomor pesanan diacak ulang bila bentrok dengan UNIQUE constraint.
 _ORDER_NUMBER_ATTEMPTS = 5
+
+#: Status akhir: pesanan yang sudah batal/kedaluwarsa tidak boleh dihidupkan
+#: lagi — kalau boleh, pesanan batal bisa "diselesaikan" dan poin pembelian
+#: diberikan untuk transaksi yang uangnya sudah dikembalikan.
+_TERMINAL_STATUSES = frozenset({"cancelled", "expired"})
+
+
+class OrderTransitionError(ValueError):
+    """Transisi status yang ditolak aturan bisnis (bukan pesanan tidak ditemukan)."""
+
+
+def _assert_transition(old_status: str, new_status: str, payment_status: str) -> None:
+    """Tolak transisi yang memberi hak pembeli tanpa pembayaran terkonfirmasi.
+
+    `completed` adalah satu-satunya status yang memberi poin pembelian dan
+    membuka akses ulasan AI, jadi status itu hanya boleh dicapai setelah admin
+    mengonfirmasi pembayaran (`payments.status = 'success'`).
+    """
+    if old_status == new_status:
+        return
+    if old_status in _TERMINAL_STATUSES:
+        raise OrderTransitionError(
+            f"Pesanan berstatus '{old_status}' tidak dapat diubah lagi."
+        )
+    if new_status == "completed" and payment_status != "success":
+        raise OrderTransitionError(
+            "Pesanan hanya dapat diselesaikan setelah pembayaran dikonfirmasi."
+        )
 
 
 def _generate_order_number() -> str:
@@ -394,6 +426,8 @@ class OrderService:
         old_status = current["status"]
         new_status = payload.status
 
+        _assert_transition(old_status, new_status, current.get("payment_status") or "pending")
+
         update_data: dict[str, Any] = {"status": new_status}
         if payload.tracking_number:
             update_data["tracking_number"] = payload.tracking_number
@@ -406,11 +440,29 @@ class OrderService:
             items_res = supabase_admin.table("order_items").select("book_id, quantity").eq("order_id", order_id).execute()
             _adjust_stock(items_res.data or [], 1)
 
+        # Book Rewards: poin pembelian hanya untuk status `completed`. Kegagalan
+        # reward tidak membatalkan perubahan status pesanan; setiap panggilan
+        # ledger idempoten (`order:<id>:purchase`), sehingga transisi yang sama
+        # diulang tidak menggandakan poin, dan backfill dapat menyusulkan poin.
+        rewards: dict[str, Any] = {}
+        try:
+            if new_status == "completed" and old_status != "completed":
+                granted = rewards_service.reward_order(str(order_id))
+                if granted is not None:
+                    rewards["points_awarded"] = granted.points_delta
+            elif new_status == "cancelled":
+                revoked = rewards_service.reverse_order(str(order_id))
+                if revoked is not None:
+                    rewards["points_reversed"] = -revoked.points_delta
+        except Exception:
+            logger.exception("Reward poin untuk pesanan %s gagal", order_id)
+
         return {
             "order_id": order_id,
             "old_status": old_status,
             "new_status": new_status,
             "sukses": True,
+            **({"rewards": rewards} if rewards else {}),
         }
 
     @staticmethod

@@ -6,8 +6,8 @@ import { Product } from "@/data/mockData";
 import { formatRupiah } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/components/AuthProvider";
-import { getAIReview, getBook } from "@/lib/api";
-import type { AIReviewResponse, SpoilerLevel } from "@/lib/types";
+import { getAIReview, getBook, getMyRewards, getSpoilerAccess } from "@/lib/api";
+import type { AIReviewResponse, SpoilerAccess, SpoilerLevel } from "@/lib/types";
 import SpoilerSelectorModal from "@/components/books/SpoilerSelectorModal";
 import AIReviewResult from "@/components/books/AIReviewResult";
 import ComparePriceModal from "@/components/books/ComparePriceModal";
@@ -44,9 +44,12 @@ export default function BookDetailModal({
   >("idle");
   const [aiReview, setAiReview] = useState<AIReviewResponse | null>(null);
   const [aiError, setAiError] = useState("");
+  const [spoilerAccess, setSpoilerAccess] = useState<Partial<
+    Record<SpoilerLevel, SpoilerAccess>
+  > | null>(null);
+  const [points, setPoints] = useState<number | null>(null);
 
   const productId = product?.id;
-
   useEffect(() => {
     if (!isOpen || !productId) return;
     let active = true;
@@ -67,6 +70,24 @@ export default function BookDetailModal({
       active = false;
     };
   }, [isOpen, productId]);
+
+  // Syarat akses spoiler + saldo hanya untuk pengguna masuk; kegagalan dimuat
+  // tidak memblokir modal (keputusan akhir tetap di backend).
+  const accessToken = session?.access_token;
+  useEffect(() => {
+    if (!isOpen || !productId || !accessToken) return;
+    let active = true;
+    Promise.all([getSpoilerAccess(productId, accessToken), getMyRewards(accessToken)])
+      .then(([access, me]) => {
+        if (!active) return;
+        setSpoilerAccess(access);
+        setPoints(me.points);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isOpen, productId, accessToken]);
 
   if (!isOpen || !product) return null;
 
@@ -133,8 +154,8 @@ export default function BookDetailModal({
 
     try {
       const bookId = String(product.id || "1");
-      const res = await getAIReview(bookId, level);
-      setAiReview(res);
+      const outcome = await getAIReview(bookId, level, session?.access_token);
+      setAiReview(outcome.review);
       setAiState("success");
     } catch (err: unknown) {
       setAiError(
@@ -448,6 +469,9 @@ export default function BookDetailModal({
         bookTitle={product.title}
         bookAuthor={product.authorOrBrand}
         isGenerating={aiState === "generating"}
+        signedIn={!!session}
+        access={spoilerAccess}
+        points={points}
       />
 
       {/* Modal Bandingkan Harga */}

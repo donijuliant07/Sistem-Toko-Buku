@@ -23,6 +23,7 @@ import {
   PanelLeftOpen,
   Library,
   Link2,
+  Coins,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { siteConfig } from "@/config/site"
@@ -85,6 +86,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Sistem",
     items: [
+      { title: "Poin & Reward", href: "/admin/rewards", icon: Coins },
       { title: "Pengaturan", href: "/admin/pengaturan", icon: Settings },
       { title: "Bantuan & CS", href: "/admin/pengaturan#bantuan", icon: HelpCircle },
     ],

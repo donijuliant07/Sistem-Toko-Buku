@@ -554,6 +554,23 @@ def clean_overrides():
     yield
     app.dependency_overrides.clear()
 
+class _FreeRewards:
+    """Tagihan palsu: biaya 0, sehingga endpoint tidak menyentuh ledger asli.
+
+    Aturan biaya diuji tersendiri di `test_advisor_billing.py`; di sini yang
+    diuji alur percakapan.
+    """
+
+    def advisor_message_cost(self) -> int:
+        return 0
+
+    def get_balance(self, _user) -> int:
+        return 0
+
+    def charge_advisor_message(self, *_args, **_kwargs):  # pragma: no cover
+        raise AssertionError("biaya 0 tidak boleh memotong poin")
+
+
 @pytest.fixture
 def fake_service(monkeypatch):
     """Ganti service di router dengan katalog + model palsu, store baru."""
@@ -568,6 +585,7 @@ def fake_service(monkeypatch):
     )
     monkeypatch.setattr(advisor_api, "session_store", store)
     monkeypatch.setattr(advisor_api, "build_service", lambda *_args, **_kwargs: service)
+    monkeypatch.setattr(advisor_api, "rewards_service", _FreeRewards())
     app.dependency_overrides[require_user] = lambda: UserPayload(id=USER_ID, role="user")
     return service, catalog, store
 

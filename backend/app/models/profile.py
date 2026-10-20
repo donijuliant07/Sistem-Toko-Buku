@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, text
+from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,6 +33,11 @@ class Profile(Base):
     username: Mapped[str | None] = mapped_column(String(50), nullable=True)
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(nullable=True)
+    #: Cache saldo poin; sumber kebenaran tetap `point_transactions`.
+    #: Hanya RPC `apply_point_transaction` yang boleh mengubahnya.
+    points: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default=text("0")
+    )
     created_at: Mapped[datetime] = mapped_column(
         nullable=False,
         server_default=text("now()"),

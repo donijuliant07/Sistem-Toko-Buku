@@ -20,7 +20,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.models.community import GROUP_CATEGORIES, GROUP_VISIBILITIES, MEMBER_ROLES
+from app.models.community import (
+    GROUP_CATEGORIES,
+    GROUP_VISIBILITIES,
+    MEMBER_ROLES,
+)
 
 MAX_GROUP_NAME = 80
 MAX_GROUP_DESCRIPTION = 1000
@@ -199,6 +203,8 @@ class MessageCreate(BaseModel):
     message_type: MessageType = MessageType.TEXT
     content: str = Field(default="", max_length=MAX_MESSAGE_LENGTH)
     book_id: UUID | None = None
+    #: Balasan: pesan teks yang menunjuk pesan lain di grup yang sama.
+    parent_message_id: UUID | None = None
     client_message_id: UUID | None = None
 
     @model_validator(mode="after")
@@ -212,6 +218,8 @@ class MessageCreate(BaseModel):
         else:
             if self.book_id is None:
                 raise ValueError("Pesan buku wajib menyertakan book_id")
+            if self.parent_message_id is not None:
+                raise ValueError("Pesan buku tidak boleh menjadi balasan")
             if self.content.strip():
                 raise ValueError("Pesan buku tidak boleh berisi teks")
             self.content = ""
@@ -246,8 +254,32 @@ class MessageRead(BaseModel):
     content: str
     sender: MessageSender
     book: SharedBook | None = None
+    parent_message_id: UUID | None = None
     client_message_id: UUID | None = None
     created_at: datetime
+    #: `none` = tidak diajukan untuk reward kontribusi (perilaku lama).
+    moderation_status: str = "none"
+    #: Jumlah anggota lain yang menandai pesan ini "membantu".
+    helpful_count: int = 0
+    #: Apakah pemanggil sudah menandainya "membantu".
+    helpful_by_me: bool = False
+
+
+class MessageModeration(BaseModel):
+    """Keputusan moderator atas usulan reward kontribusi sebuah pesan."""
+
+    status: str = Field(..., pattern="^(approved|rejected)$")
+    reason: str | None = Field(default=None, max_length=255)
+
+
+class HelpfulResult(BaseModel):
+    """Hasil tanda "membantu" (idempoten: menekan ulang hitungannya tetap)."""
+
+    message_id: UUID
+    helpful_count: int
+    helpful_by_me: bool
+    created: bool
+
 
 
 class MessagePage(BaseModel):

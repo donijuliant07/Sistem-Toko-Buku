@@ -192,8 +192,27 @@ async def require_user(
     akunnya; kalau ingin membeli, ia memakai akun pelanggan terpisah.
     """
     if current_user.role != "user":
+        # Keluhan nyata: admin yang menyiapkan konten dari akunnya sendiri selalu
+        # bertemu 403 di fitur poin/AI dan tidak tahu sebabnya. Pesan menyebut
+        # jalan keluarnya, bukan hanya menolak.
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Akses ditolak. Fitur ini hanya untuk akun pelanggan.",
+            detail=(
+                "Akses ditolak. Fitur ini hanya untuk akun pelanggan — akun admin "
+                "tidak memiliki poin. Gunakan akun pelanggan terpisah untuk mencoba."
+            ),
         )
     return current_user
+
+async def get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
+) -> UserPayload | None:
+    """Identitas pemanggil bila token ada dan valid; `None` bila tanpa token.
+
+    Dipakai endpoint kompatibilitas yang masih boleh diakses anonim untuk
+    konten gratis, tetapi wajib identitas untuk konten berbayar. Token yang
+    **ada** tetapi tidak valid tetap ditolak — bukan diperlakukan sebagai anonim.
+    """
+    if not credentials:
+        return None
+    return await get_current_user(credentials)

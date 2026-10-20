@@ -17,6 +17,7 @@ import type {
   OrderInput,
   OrderPage,
   OrderStatus,
+  PaymentStatus,
   Promo,
   PromoInput,
   PromoUpdate,
@@ -24,6 +25,7 @@ import type {
   AIReviewResponse,
   AdvisorChatResponse,
   AdvisorFeedbackRequest,
+  AdvisorPricing,
   AdvisorSessionRead,
   CommunityListParams,
   GroupCreateInput,
@@ -35,6 +37,13 @@ import type {
   MessageCreateInput,
   MessagePage,
   UserSearchResult,
+  AIReviewGeneration,
+  AIReviewOutcome,
+  AIReviewSummary,
+  PointTransactionPage,
+  RewardActivityPage,
+  RewardsMe,
+  SpoilerAccess,
 } from "./types";
 import { supabase } from "./supabase";
 
@@ -82,8 +91,26 @@ function mergeSignals(signals: AbortSignal[]): AbortSignal {
   return AbortSignal.any(signals);
 }
 
-async function request<T>(path: string, init?: RequestOptions): Promise<T> {
-  const { accessToken, headers, signal, ...requestInit } = init ?? {};
+/**
+ * Error HTTP dari backend.
+ *
+ * `code` diambil dari prefix `KODE: pesan` pada `detail` (format `RewardsError`),
+ * mis. `INSUFFICIENT_POINTS` atau `DAILY_CAP_REACHED`. `null` bila detail biasa.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(detail: string, status: number) {
+    super(detail);
+    this.name = "ApiError";
+    this.status = status;
+    const match = /^([A-Z][A-Z0-9_]+):\s/.exec(detail);
+    this.code = match ? match[1] : null;
+  }
+}
+
+async function request<T>(path: string, init?: RequestOptions): Promise<T> {  const { accessToken, headers, signal, ...requestInit } = init ?? {};
   const signals: AbortSignal[] = [timeoutSignal(DEFAULT_TIMEOUT_MS)];
   if (signal) signals.push(signal);
 
@@ -130,7 +157,9 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
     } catch {
       // Keep status fallback when backend returns an empty response.
     }
-    throw new Error(detail);
+    // Reward memakai format detail "KODE: pesan"; kodenya dipakai UI untuk
+    // memilih tindakan (mis. buka halaman poin), pesannya tetap apa adanya.
+    throw new ApiError(detail, response.status);
   }
 
   if (response.status === 204) return undefined as T;
@@ -182,16 +211,193 @@ export function deleteBook(id: string, accessToken: string): Promise<void> {
   return request<void>(`/books/${encodeURIComponent(id)}`, { method: "DELETE", accessToken });
 }
 
+/**
+ * Ulasan AI + metadata penagihan.
+ *
+ * - Tanpa token → alias lama (`/books/{id}/ai-review`): hanya level gratis
+ *   yang berhasil; `medium`/`heavy` dijawab 401 oleh backend.
+ * - Dengan token → `/ai/...`: syarat pembelian/poin berlaku, hasil disimpan
+ *   (buka ulang tidak menagih lagi) dan `points_spent` memungkinkan UI
+ *   memberi tahu pengguna kapan poin benar-benar terpotong.
+ */
 export function getAIReview(
   bookId: string,
   spoilerLevel: SpoilerLevel,
   accessToken?: string
-): Promise<AIReviewResponse> {
-  return request<AIReviewResponse>(`/books/${encodeURIComponent(bookId)}/ai-review`, {
-    method: "POST",
-    body: JSON.stringify({ spoiler_level: spoilerLevel }),
-    accessToken,
+): Promise<AIReviewOutcome> {
+  if (!accessToken) {
+    return request<AIReviewResponse>(`/books/${encodeURIComponent(bookId)}/ai-review`, {
+      method: "POST",
+      body: JSON.stringify({ spoiler_level: spoilerLevel }),
+    }).then((review) => ({ review, access_method: "free", points_spent: 0 }));
+  }
+  return request<ApiEnvelope<AIReviewGeneration>>(
+    `/ai/books/${encodeURIComponent(bookId)}/review`,
+    {
+      method: "POST",
+      body: JSON.stringify({ spoiler_level: spoilerLevel }),
+      accessToken,
+    }
+  ).then((res) => {
+    if (!res.data.result) {
+      throw new Error(
+        res.data.failure_reason
+          ? `Ulasan AI gagal dibuat. ${res.data.failure_reason}`
+          : "Ulasan AI gagal dibuat. Poin yang terpotong sudah dikembalikan."
+      );
+    }
+    return {
+      review: res.data.result,
+      access_method: res.data.access_method,
+      points_spent: res.data.points_spent,
+    };
   });
+}
+
+// --- Book Rewards (pelanggan) ---
+
+export function getMyRewards(accessToken: string, bookId?: string): Promise<RewardsMe> {
+  const suffix = bookId ? `?book_id=${encodeURIComponent(bookId)}` : "";
+  return request<ApiEnvelope<RewardsMe>>(`/rewards/me${suffix}`, { accessToken }).then((r) => r.data);
+}
+
+/** Syarat tiap tingkat spoiler untuk satu buku (dipakai modal pemilih spoiler). */
+export function getSpoilerAccess(
+  bookId: string,
+  accessToken: string
+): Promise<Record<SpoilerLevel, SpoilerAccess>> {
+  return request<ApiEnvelope<Record<SpoilerLevel, SpoilerAccess>>>(
+    `/rewards/spoiler-access?book_id=${encodeURIComponent(bookId)}`,
+    { accessToken }
+  ).then((r) => r.data);
+}
+
+export function getMyPointTransactions(
+  accessToken: string,
+  page = 1,
+  limit = 20
+): Promise<PointTransactionPage> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return request<ApiEnvelope<PointTransactionPage>>(`/rewards/transactions?${params}`, {
+    accessToken,
+  }).then((r) => r.data);
+}
+
+// --- Book Rewards (admin) ---
+
+export type RewardRule = {
+  key: string;
+  value: number;
+  default: number;
+  max_value: number;
+};
+
+export function getRewardRules(accessToken: string): Promise<RewardRule[]> {
+  return request<ApiEnvelope<{ rules: RewardRule[] }>>("/admin/rewards/rules", {
+    accessToken,
+  }).then((r) => r.data.rules);
+}
+
+export function updateRewardRules(
+  values: Record<string, number>,
+  accessToken: string
+): Promise<RewardRule[]> {
+  return request<ApiEnvelope<{ rules: RewardRule[] }>>("/admin/rewards/rules", {
+    method: "PATCH",
+    body: JSON.stringify({ values }),
+    accessToken,
+  }).then((r) => r.data.rules);
+}
+
+export function adjustUserPoints(
+  payload: { user_id: string; delta: number; reason: string; reference?: string },
+  accessToken: string
+): Promise<{ transaction_id: string; points_delta: number; balance_after: number }> {
+  return request<ApiEnvelope<{ transaction_id: string; points_delta: number; balance_after: number }>>(
+    "/admin/rewards/adjustments",
+    { method: "POST", body: JSON.stringify(payload), accessToken }
+  ).then((r) => r.data);
+}
+
+export function getRewardActivities(
+  accessToken: string,
+  params: { status?: string; page?: number; limit?: number } = {}
+): Promise<RewardActivityPage> {
+  const query = new URLSearchParams();
+  if (params.status) query.set("status", params.status);
+  query.set("page", String(params.page ?? 1));
+  query.set("limit", String(params.limit ?? 20));
+  return request<ApiEnvelope<RewardActivityPage>>(
+    `/admin/rewards/activities?${query}`,
+    { accessToken }
+  ).then((r) => r.data);
+}
+
+export function runRewardBackfill(accessToken: string): Promise<Record<string, number>> {
+  return request<ApiEnvelope<Record<string, number>>>("/admin/rewards/backfill", {
+    method: "POST",
+    accessToken,
+  }).then((r) => r.data);
+}
+
+export function getRewardReconcile(
+  accessToken: string
+): Promise<{ users_checked: number; mismatched: unknown[] }> {
+  return request<ApiEnvelope<{ users_checked: number; mismatched: unknown[] }>>(
+    "/admin/rewards/reconcile",
+    { accessToken }
+  ).then((r) => r.data);
+}
+
+/**
+ * Membuat ulasan AI lewat jalur berbayar.
+ *
+ * `idempotency_key` wajib dan harus stabil untuk satu percobaan: mengirim ulang
+ * key yang sama (mis. pengguna menekan tombol dua kali karena jaringan lambat)
+ * mengembalikan hasil yang sama tanpa memotong poin lagi.
+ */
+export function generateAIReview(
+  bookId: string,
+  spoilerLevel: SpoilerLevel,
+  idempotencyKey: string,
+  accessToken: string
+): Promise<AIReviewGeneration> {
+  return request<ApiEnvelope<AIReviewGeneration>>(
+    `/ai/books/${encodeURIComponent(bookId)}/review`,
+    {
+      method: "POST",
+      body: JSON.stringify({ spoiler_level: spoilerLevel, idempotency_key: idempotencyKey }),
+      accessToken,
+    }
+  ).then((r) => r.data);
+}
+
+export function getAIReviewGeneration(
+  generationId: string,
+  accessToken: string
+): Promise<AIReviewGeneration> {
+  return request<ApiEnvelope<AIReviewGeneration>>(
+    `/ai/reviews/${encodeURIComponent(generationId)}`,
+    { accessToken }
+  ).then((r) => r.data);
+}
+
+export function listAIReviewGenerations(
+  accessToken: string,
+  page = 1,
+  limit = 20
+): Promise<AIReviewSummary[]> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) }).toString();
+  return request<ApiEnvelope<AIReviewSummary[]>>(`/ai/reviews?${query}`, { accessToken }).then(
+    (r) => r.data
+  );
+}
+
+export function recoverStaleAIReviews(accessToken: string): Promise<{ recovered: number }> {
+  return request<ApiEnvelope<{ recovered: number }>>("/admin/rewards/ai/recover", {
+    method: "POST",
+    accessToken,
+  }).then((r) => r.data);
 }
 
 export function createOrder(data: OrderInput, accessToken: string): Promise<ApiEnvelope<Order>> {
@@ -216,6 +422,11 @@ export function getOrderDetail(id: string, accessToken: string): Promise<ApiEnve
   return getOrder(id, accessToken);
 }
 
+/**
+ * Ubah status pesanan. `status` harus nilai API (`completed`, `cancelled`, …)
+ * mengikuti CHECK `orders_status_check` — bukan label admin ("Selesai").
+ * Pemetaan label → nilai API dilakukan `orderService.updateStatus`.
+ */
 export function updateOrderStatus(
   id: string,
   status: OrderStatus,
@@ -229,8 +440,27 @@ export function updateOrderStatus(
   });
 }
 
-// --- Keranjang (server; selalu butuh token user) ---
-// Harga dan stok tidak pernah dikirim dari sini: server membacanya dari `books`
+/**
+ * Konfirmasi pembayaran manual (khusus admin). Nilai `status` mengikuti CHECK
+ * `payments_status_check`: `pending`, `success`, `failed`, `expired`, `refunded`.
+ *
+ * Memisahkan dari `updateOrderStatus`: menandai pesanan `completed` tidak
+ * mengonfirmasi pembayaran, dan sebaliknya. Backend menolak `completed` selama
+ * pembayaran belum `success`.
+ */
+export function updatePaymentStatus(
+  id: string,
+  status: PaymentStatus,
+  accessToken: string
+): Promise<ApiEnvelope<Record<string, unknown>>> {
+  return request<ApiEnvelope<Record<string, unknown>>>(`/orders/${encodeURIComponent(id)}/payment`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+    accessToken,
+  });
+}
+
+// --- Keranjang (server; selalu butuh token user) ---// Harga dan stok tidak pernah dikirim dari sini: server membacanya dari `books`
 // pada setiap permintaan, jadi angka yang ditampilkan tidak bisa basi.
 
 export function getCart(accessToken: string): Promise<ApiEnvelope<CartPayload>> {
@@ -425,15 +655,36 @@ export async function deleteMarketplaceSource(id: string): Promise<void> {
 }
 
 // --- AI Book Advisor ---
+/**
+ * Kirim satu pesan ke AI Book Advisor.
+ *
+ * `messageId` dibuat **sekali per pesan** oleh pemanggil dan dikirim ulang apa
+ * adanya saat retry — backend memakainya sebagai kunci idempotensi tagihan,
+ * sehingga tidak ada potongan poin ganda. Tanpa ID, backend membuatnya sendiri.
+ */
 export async function sendAdvisorChat(
   message: string,
   sessionId?: string | null,
-  token?: string
+  token?: string,
+  messageId?: string | null
 ): Promise<AdvisorChatResponse> {
   const accessToken = token || (await getAccessToken());
   const res = await request<ApiEnvelope<AdvisorChatResponse>>("/book-advisor/chat", {
     method: "POST",
-    body: JSON.stringify({ message, session_id: sessionId || null }),
+    body: JSON.stringify({
+      message,
+      session_id: sessionId || null,
+      message_id: messageId || null,
+    }),
+    accessToken,
+  });
+  return res.data;
+}
+
+/** Biaya per pesan dan saldo pengguna — sumber kebenaran, bukan hitungan klien. */
+export async function getAdvisorPricing(token?: string): Promise<AdvisorPricing> {
+  const accessToken = token || (await getAccessToken());
+  const res = await request<ApiEnvelope<AdvisorPricing>>("/book-advisor/pricing", {
     accessToken,
   });
   return res.data;

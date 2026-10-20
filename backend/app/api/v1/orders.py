@@ -25,7 +25,7 @@ from app.schemas.order import (
     OrderStatusUpdate,
     PaymentStatusUpdate,
 )
-from app.services.order_service import order_service
+from app.services.order_service import OrderTransitionError, order_service
 
 router = APIRouter(prefix="/orders", tags=["Pesanan"])
 
@@ -170,6 +170,9 @@ async def update_order_status(
             pesan=f"Status pesanan berhasil diubah menjadi '{payload.status}'.",
             data=res,
         )
+    except OrderTransitionError as e:
+        # Aturan bisnis (mis. selesaikan sebelum pembayaran dikonfirmasi) bukan 404.
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from None
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except SERVICE_ERRORS as e:

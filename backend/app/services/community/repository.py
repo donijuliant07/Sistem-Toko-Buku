@@ -26,7 +26,12 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.book import Book
-from app.models.community import ChatGroup, ChatGroupMember, ChatMessage
+from app.models.community import (
+    ChatGroup,
+    ChatGroupMember,
+    ChatMessage,
+    ChatMessageHelpfulMark,
+)
 from app.models.profile import Profile
 
 
@@ -457,3 +462,156 @@ class OrmMessageRepository:
             .values(deleted_at=func.now())
         )
         await self._db.flush()
+
+
+@dataclass
+class MessageInteraction:
+    """Hitungan interaksi untuk satu pesan (tanda "membantu")."""
+
+    helpful_count: int
+    helpful_by_me: bool
+
+
+class OrmMessageInteractionRepository:
+    """Pesan lanjutan, balasan, dan tanda "membantu".
+
+    Dipisah dari `OrmMessageRepository` supaya jalur baca/ kirim yang sudah
+    stabil tidak ikut berubah; tabelnya (`chat_message_helpful_marks`) dan
+    kolom `parent_message_id`/`moderation_status` berasal dari migrasi
+    `20261019_11`.
+    """
+
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def get(self, message_id: UUID) -> ChatMessage | None:
+        return await self._db.get(ChatMessage, message_id)
+
+    async def insert_reply(
+        self,
+        *,
+        group_id: UUID,
+        sender_id: UUID,
+        content: str,
+        parent_message_id: UUID,
+        client_message_id: UUID | None,
+    ) -> tuple[UUID, bool]:
+        """Sisipkan balasan teks; idempoten lewat `client_message_id`."""
+        stmt = (
+            pg_insert(ChatMessage)
+            .values(
+                group_id=group_id,
+                sender_id=sender_id,
+                message_type="text",
+                content=content,
+                parent_message_id=parent_message_id,
+                client_message_id=client_message_id,
+            )
+            .on_conflict_do_nothing()
+            .returning(ChatMessage.id)
+        )
+        inserted = (await self._db.execute(stmt)).scalar_one_or_none()
+        if inserted is not None:
+            await self._db.flush()
+            return inserted, True
+
+        if client_message_id is None:  # pragma: no cover - tidak mungkin tanpa konflik
+            raise RuntimeError("Balasan gagal disimpan tanpa client_message_id.")
+        existing = (
+            await self._db.execute(
+                select(ChatMessage.id).where(
+                    ChatMessage.group_id == group_id,
+                    ChatMessage.sender_id == sender_id,
+                    ChatMessage.client_message_id == client_message_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is None:  # pragma: no cover - konflik selain idempotensi
+            raise RuntimeError("Balasan gagal disimpan.")
+        return existing, False
+
+    async def set_moderation_status(self, message_id: UUID, *, status: str) -> None:
+        await self._db.execute(
+            update(ChatMessage)
+            .where(ChatMessage.id == message_id)
+            .values(moderation_status=status)
+        )
+        await self._db.flush()
+
+    async def add_helpful(self, message_id: UUID, user_id: UUID) -> bool:
+        """Tandai "membantu"; `False` bila pengguna sudah menandainya."""
+        stmt = (
+            pg_insert(ChatMessageHelpfulMark)
+            .values(message_id=message_id, user_id=user_id)
+            .on_conflict_do_nothing(
+                index_elements=["message_id", "user_id"]
+            )
+            .returning(ChatMessageHelpfulMark.message_id)
+        )
+        inserted = (await self._db.execute(stmt)).scalar_one_or_none()
+        await self._db.flush()
+        return inserted is not None
+
+    async def count_helpful(self, message_id: UUID) -> int:
+        return (
+            await self._db.execute(
+                select(func.count())
+                .select_from(ChatMessageHelpfulMark)
+                .where(ChatMessageHelpfulMark.message_id == message_id)
+            )
+        ).scalar_one()
+
+    async def is_helpful(self, message_id: UUID, user_id: UUID) -> bool:
+        return (
+            await self._db.execute(
+                select(ChatMessageHelpfulMark.message_id).where(
+                    ChatMessageHelpfulMark.message_id == message_id,
+                    ChatMessageHelpfulMark.user_id == user_id,
+                )
+            )
+        ).scalar_one_or_none() is not None
+
+    async def lock_message(self, message_id: UUID) -> ChatMessage | None:
+        """Kunci baris pesan: dua tanda bersamaan diproses berurutan.
+
+        Tanpa kunci, dua penanda terakhir bisa sama-sama melihat hitungan di
+        bawah ambang dan reward terpicu dua kali; ledger tetap idempoten, tapi
+        kunci ini membuat hasilnya deterministik.
+        """
+        stmt = (
+            select(ChatMessage)
+            .where(ChatMessage.id == message_id)
+            .with_for_update()
+        )
+        return (await self._db.execute(stmt)).scalar_one_or_none()
+
+    async def commit(self) -> None:
+        await self._db.commit()
+
+    async def helpful_map(
+        self, message_ids: list[UUID], *, user_id: UUID
+    ) -> dict[UUID, MessageInteraction]:
+        """Hitungan "membantu" untuk sekumpulan pesan, dalam satu kueri.
+
+        Dipakai saat menyajikan satu halaman; tanpa ini setiap pesan menambah
+        satu kueri.
+        """
+        if not message_ids:
+            return {}
+        rows = (
+            await self._db.execute(
+                select(
+                    ChatMessageHelpfulMark.message_id,
+                    func.count().label("total"),
+                    func.bool_or(ChatMessageHelpfulMark.user_id == user_id).label(
+                        "mine"
+                    ),
+                )
+                .where(ChatMessageHelpfulMark.message_id.in_(message_ids))
+                .group_by(ChatMessageHelpfulMark.message_id)
+            )
+        ).all()
+        return {
+            row[0]: MessageInteraction(helpful_count=row[1], helpful_by_me=bool(row[2]))
+            for row in rows
+        }

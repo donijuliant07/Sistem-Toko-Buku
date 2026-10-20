@@ -52,6 +52,30 @@ class ConversationState(str, Enum):
     READY_TO_RECOMMEND = "ready_to_recommend"
     SHOWING_RECOMMENDATIONS = "showing_recommendations"
 
+class AdvisorOutcome(str, Enum):
+    """Bagaimana satu pesan dilayani — dasar keputusan tagihan poin.
+
+    - `answered`: AI memproses dan menjawab (ditagih).
+    - `provider_failed`: API key ada tetapi provider gagal; balasan jatuh ke
+      aturan. Router me-refund bila sebelumnya sudah ditagih.
+    - `unconfigured`: provider AI tidak dikonfigurasi sama sekali; tidak
+      pernah ditagih, karena bukan layanan AI yang dipakai.
+
+    Provider mengembalikan JSON yang tidak sesuai bentuk juga dihitung
+    `provider_failed`: panggilan sudah dibayar ke provider tetapi balasan
+    tidak dapat disajikan, sehingga pengguna tidak boleh ikut menanggungnya.
+    """
+
+    ANSWERED = "answered"
+    PROVIDER_FAILED = "provider_failed"
+    UNCONFIGURED = "unconfigured"
+
+class ModelSource(str, Enum):
+    """Dari mana teks balasan berasal."""
+
+    MODEL = "model"
+    RULE_BASED = "rule_based"
+
 def _clean_items(values: list[str] | None) -> list[str] | None:
     """Rapikan daftar teks dari model: buang kosong/duplikat, batasi jumlah.
 
@@ -201,10 +225,18 @@ class Recommendation(BaseModel):
     score: float = Field(ge=0, le=1)
 
 class AdvisorChatRequest(BaseModel):
-    """Payload `POST /book-advisor/chat`."""
+    """Payload `POST /book-advisor/chat`.
+
+    `message_id` dibuat **frontend sekali per pesan** dan dikirim ulang apa
+    adanya saat retry. Backend memakainya sebagai kunci idempotensi tagihan
+    (`advisor:<message_id>:charge`), sehingga kirim ulang tidak memotong poin
+    dua kali. Bila tidak dikirim, backend membuat ID sendiri — aman, tetapi
+    retry dari klien lama tidak terlindungi.
+    """
 
     message: str = Field(min_length=1, max_length=2000)
     session_id: UUID | None = None
+    message_id: UUID | None = None
 
     @field_validator("message")
     @classmethod
@@ -220,15 +252,32 @@ class AdvisorChatResponse(BaseModel):
 
     `recommendations` kosong berarti sistem masih mengumpulkan preferensi;
     `follow_up_question` boleh `None` bila rekomendasi sudah diberikan.
+
+    Field `points_*` diisi router dari ledger — **bukan** dari klien. Frontend
+    hanya menampilkan angka ini; nilai yang dikirim browser tidak pernah
+    dipakai untuk menghitung biaya atau saldo.
     """
 
     session_id: UUID
+    #: ID pesan dari klien; dipakai sebagai kunci idempotensi tagihan.
+    message_id: UUID | None = None
     assistant_message: str
     conversation_state: ConversationState
     preferences: BookPreferences
     missing_preferences: list[str] = Field(default_factory=list)
     recommendations: list[Recommendation] = Field(default_factory=list)
     follow_up_question: str | None = None
+    #: Bagaimana pesan ini dilayani; `provider_failed` berarti poin dikembalikan.
+    outcome: AdvisorOutcome = AdvisorOutcome.UNCONFIGURED
+    model_source: ModelSource = ModelSource.RULE_BASED
+    #: Biaya aturan saat ini (0 bila AI tidak dikonfigurasi).
+    points_cost: int = 0
+    #: Poin yang benar-benar dipotong untuk pesan ini.
+    points_charged: int = 0
+    #: Poin yang dikembalikan karena kegagalan provider.
+    points_refunded: int = 0
+    #: Saldo setelah operasi; `None` bila tidak dapat dibaca.
+    points_balance: int | None = None
 
 class AdvisorMessage(BaseModel):
     """Satu pesan tersimpan dalam riwayat sesi."""
