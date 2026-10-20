@@ -17,7 +17,7 @@ Keputusan penting:
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, Text, text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -41,10 +41,15 @@ MEMBER_ROLES = ("owner", "moderator", "member")
 
 MESSAGE_TYPES = ("text", "book")
 
+#: Status moderasi pesan (migrasi `20261019_11`). `none` = tidak diajukan,
+#: sehingga pesan lama dan pesan biasa tetap tampil seperti sebelumnya.
+MODERATION_STATUSES = ("none", "pending", "approved", "rejected")
+
 _CATEGORY_CHECK = ", ".join(f"'{value}'" for value in GROUP_CATEGORIES)
 _VISIBILITY_CHECK = ", ".join(f"'{value}'" for value in GROUP_VISIBILITIES)
 _ROLE_CHECK = ", ".join(f"'{value}'" for value in MEMBER_ROLES)
 _TYPE_CHECK = ", ".join(f"'{value}'" for value in MESSAGE_TYPES)
+_MODERATION_CHECK = ", ".join(f"'{value}'" for value in MODERATION_STATUSES)
 
 
 class ChatGroup(Base):
@@ -119,7 +124,12 @@ class ChatGroupMember(Base):
 
 
 class ChatMessage(Base):
-    """Pesan di sebuah grup. Append-only; hapus dilakukan lewat `deleted_at`."""
+    """Pesan di sebuah grup. Append-only; hapus dilakukan lewat `deleted_at`.
+
+    `parent_message_id` menjadikan pesan sebuah **balasan**; hanya balasan
+    yang dapat ditandai "membantu" (`ChatMessageHelpfulMark`) dan berpotensi
+    menghasilkan reward komunitas.
+    """
 
     __tablename__ = "chat_messages"
     __table_args__ = (
@@ -130,6 +140,15 @@ class ChatMessage(Base):
             "OR (message_type = 'book' AND book_id IS NOT NULL AND content = '')",
             name="ck_chat_messages_shape",
         ),
+        CheckConstraint(
+            f"moderation_status IN ({_MODERATION_CHECK})",
+            name="ck_chat_messages_moderation_status",
+        ),
+        CheckConstraint(
+            "parent_message_id IS NULL OR parent_message_id <> id",
+            name="ck_chat_messages_parent_not_self",
+        ),
+        Index("ix_chat_messages_parent", "parent_message_id"),
         {"schema": "public"},
     )
 
@@ -164,6 +183,39 @@ class ChatMessage(Base):
         nullable=False, server_default=text("now()")
     )
     deleted_at: Mapped[datetime | None] = mapped_column()
+    moderation_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default=text("'none'")
+    )
+    parent_message_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("public.chat_messages.id", ondelete="SET NULL"),
+    )
+
+
+class ChatMessageHelpfulMark(Base):
+    """Satu pengguna menandai satu balasan sebagai "membantu".
+
+    PK gabungan `(message_id, user_id)` membuat tanda berulang idempoten di
+    level database — satu pengguna tidak bisa menambah hitungan lebih dari
+    sekali, berapa pun kali tombolnya ditekan.
+    """
+
+    __tablename__ = "chat_message_helpful_marks"
+    __table_args__ = ({"schema": "public"},)
+
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("public.chat_messages.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("public.profiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        nullable=False, server_default=text("now()")
+    )
 
 
 __all__ = [
@@ -171,7 +223,9 @@ __all__ = [
     "GROUP_VISIBILITIES",
     "MEMBER_ROLES",
     "MESSAGE_TYPES",
+    "MODERATION_STATUSES",
     "ChatGroup",
     "ChatGroupMember",
     "ChatMessage",
+    "ChatMessageHelpfulMark",
 ]

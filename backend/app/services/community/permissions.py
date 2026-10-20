@@ -109,3 +109,22 @@ def can_delete_message(
         or is_admin
         or my_role in (ROLE_OWNER, ROLE_MODERATOR)
     )
+
+
+def can_moderate_prompt(
+    my_role: str | None, is_admin: bool, is_sender: bool
+) -> bool:
+    """Menyetujui/menolak usulan reward kontribusi.
+
+    Moderator dan owner menilai kontribusi anggota lain; pengirim tidak boleh
+    menilai dirinya sendiri (self-approval = poin gratis). Admin global boleh,
+    kecuali terhadap pesannya sendiri.
+    """
+    if is_sender:
+        return False
+    return is_admin or my_role in (ROLE_OWNER, ROLE_MODERATOR)
+
+
+def can_mark_helpful(my_role: str | None, is_sender: bool) -> bool:
+    """Menandai balasan "membantu": anggota lain, bukan pengirim balasan."""
+    return my_role is not None and not is_sender
