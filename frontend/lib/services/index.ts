@@ -13,9 +13,19 @@ import {
   getPromos,
   updateBook,
   updateOrderStatus,
+  updatePaymentStatus,
   updatePromo,
 } from "@/lib/api"
-import type { Book, BookUpdate, Order as ApiOrder, Promo, PromoInput, PromoUpdate } from "@/lib/types"
+import type {
+  Book,
+  BookUpdate,
+  Order as ApiOrder,
+  OrderStatus as ApiOrderStatus,
+  PaymentStatus as ApiPaymentStatus,
+  Promo,
+  PromoInput,
+  PromoUpdate,
+} from "@/lib/types"
 import { createClient } from "@/lib/supabase"
 
 const supabase = createClient()
@@ -51,7 +61,7 @@ const API_TO_ADMIN_STATUS: Record<string, OrderStatus> = {
   expired: "Kedaluwarsa",
 }
 
-const ADMIN_TO_API_STATUS: Record<OrderStatus, string> = {
+const ADMIN_TO_API_STATUS: Record<OrderStatus, ApiOrderStatus> = {
   "Menunggu Pembayaran": "pending",
   Dibayar: "paid",
   Diproses: "processing",
@@ -59,6 +69,17 @@ const ADMIN_TO_API_STATUS: Record<OrderStatus, string> = {
   Selesai: "completed",
   Batal: "cancelled",
   Kedaluwarsa: "expired",
+}
+
+// `payments.status` -> label admin. Backend hanya memberi poin pembelian dan
+// membuka ulasan AI untuk pesanan `completed`, jadi label "Lunas" di sini
+// berarti admin sudah mengonfirmasi uang masuk.
+const API_TO_ADMIN_PAYMENT: Record<ApiPaymentStatus, Order["paymentStatus"]> = {
+  pending: "Belum Dibayar",
+  success: "Lunas",
+  failed: "Gagal",
+  expired: "Kedaluwarsa",
+  refunded: "Dikembalikan",
 }
 
 function toAdminOrder(order: ApiOrder): Order {
@@ -73,6 +94,7 @@ function toAdminOrder(order: ApiOrder): Order {
     courier: [order.courier, order.courier_service].filter(Boolean).join(" - "),
     trackingNumber: order.tracking_number ?? undefined,
     paymentMethod: (order.payment_method ?? "-") as Order["paymentMethod"],
+    paymentStatus: API_TO_ADMIN_PAYMENT[order.payment_status] ?? "Belum Dibayar",
     items: order.items.map((item) => ({
       productId: item.book_id,
       productTitle: item.title ?? "-",
@@ -292,7 +314,20 @@ export const orderService = {
     void note
     const token = await getAccessToken()
     if (!token) throw new Error("Sesi login tidak ditemukan.")
-    await updateOrderStatus(id, ADMIN_TO_API_STATUS[status] as never, token)
+    await updateOrderStatus(id, ADMIN_TO_API_STATUS[status], token)
+    const refreshed = await orderService.getById(id)
+    if (!refreshed) throw new Error("Pesanan tidak ditemukan")
+    return refreshed
+  },
+  /**
+   * Konfirmasi / tolak pembayaran manual. Tanpa ini admin tidak bisa mengubah
+   * pesanan menjadi "Selesai" — backend menolaknya (409) selama pembayaran
+   * belum `success`.
+   */
+  updatePaymentStatus: async (id: string, status: ApiPaymentStatus): Promise<Order> => {
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
+    await updatePaymentStatus(id, status, token)
     const refreshed = await orderService.getById(id)
     if (!refreshed) throw new Error("Pesanan tidak ditemukan")
     return refreshed

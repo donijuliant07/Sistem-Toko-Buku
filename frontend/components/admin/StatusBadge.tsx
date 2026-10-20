@@ -1,6 +1,25 @@
 import React from "react"
-import { OrderStatus, ProductStatus } from "@/types"
+import { OrderPaymentStatus, OrderStatus, ProductStatus } from "@/types"
 import type { PromoStatus } from "@/lib/types"
+
+/** Status baris `payments`, terpisah dari status pesanan. */
+export function PaymentStatusBadge({ status }: { status: OrderPaymentStatus }) {
+  const styles: Record<OrderPaymentStatus, string> = {
+    "Belum Dibayar": "bg-amber-50 text-amber-800 border-amber-300/80",
+    Lunas: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+    Gagal: "bg-rose-50 text-rose-700 border-rose-200/60",
+    Kedaluwarsa: "bg-zinc-100 text-zinc-600 border-zinc-200/60",
+    Dikembalikan: "bg-sky-50 text-sky-700 border-sky-200/60",
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status] ?? styles["Belum Dibayar"]}`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70 shrink-0" />
+      {status}
+    </span>
+  )
+}
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   switch (status) {

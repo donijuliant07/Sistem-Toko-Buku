@@ -66,8 +66,10 @@ export function RecentOrdersTable() {
       await orderService.updateStatus(orderId, newStatus)
       toast.success(`Status pesanan berhasil diubah menjadi ${newStatus}`)
       loadOrders()
-    } catch {
-      toast.error("Gagal mengubah status")
+    } catch (e) {
+      // Backend menolak (409) transisi yang melanggar aturan, mis. "Selesai"
+      // sebelum pembayaran dikonfirmasi; pesannya lebih berguna daripada teks umum.
+      toast.error(e instanceof Error ? e.message : "Gagal mengubah status")
     }
   }
 
@@ -140,10 +142,12 @@ export function RecentOrdersTable() {
             <TabsList className="bg-zinc-100 p-1 h-8 rounded-xl">
               <TabsTrigger value="semua" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Semua</TabsTrigger>
               <TabsTrigger value="Menunggu Pembayaran" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Menunggu Bayar</TabsTrigger>
+              <TabsTrigger value="Dibayar" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Dibayar</TabsTrigger>
               <TabsTrigger value="Diproses" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Diproses</TabsTrigger>
               <TabsTrigger value="Dikirim" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Dikirim</TabsTrigger>
               <TabsTrigger value="Selesai" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Selesai</TabsTrigger>
               <TabsTrigger value="Batal" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Batal</TabsTrigger>
+              <TabsTrigger value="Kedaluwarsa" className="text-xs rounded-lg data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-2xs font-medium">Kedaluwarsa</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -268,7 +272,12 @@ export function RecentOrdersTable() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleStatusChange(order.id, "Selesai")}
-                              disabled={order.status === "Selesai"}
+                              disabled={order.status === "Selesai" || order.paymentStatus !== "Lunas"}
+                              title={
+                                order.paymentStatus === "Lunas"
+                                  ? undefined
+                                  : "Konfirmasi pembayaran di halaman Pesanan terlebih dahulu"
+                              }
                               className="text-xs flex items-center gap-2"
                             >
                               <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />

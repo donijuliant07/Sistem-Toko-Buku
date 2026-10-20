@@ -54,6 +54,8 @@ export type PaymentMethod =
   | "Kartu Kredit"
   | "Transfer Bank"
 
+export type OrderPaymentStatus = "Belum Dibayar" | "Lunas" | "Gagal" | "Kedaluwarsa" | "Dikembalikan"
+
 export interface OrderItem {
   productId: string
   productTitle: string
@@ -80,6 +82,8 @@ export interface Order {
   courier: string
   trackingNumber?: string
   paymentMethod: PaymentMethod
+  /** Status baris `payments` (dikonfirmasi admin), terpisah dari `status` pesanan. */
+  paymentStatus: OrderPaymentStatus
   items: OrderItem[]
   subtotal: number
   shippingFee: number

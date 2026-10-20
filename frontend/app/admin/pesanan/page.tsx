@@ -13,6 +13,7 @@ import {
   XCircle,
   ArrowUpDown,
   Download,
+  CreditCard,
 } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
@@ -29,9 +30,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { OrderStatusBadge } from "@/components/admin/StatusBadge"
+import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/StatusBadge"
 import { OrderDetailDialog } from "@/components/admin/orders/OrderDetailDialog"
 import { Order, OrderStatus } from "@/types"
+import type { PaymentStatus as ApiPaymentStatus } from "@/lib/types"
 import { orderService } from "@/lib/services"
 import { formatRupiah, formatTanggalJam } from "@/lib/utils"
 import { toast } from "sonner"
@@ -103,13 +105,31 @@ function AdminOrdersContent() {
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder(updated)
       }
-    } catch {
-      toast.error("Gagal mengubah status")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengubah status")
     }
   }
 
   const handlePrint = (order: Order) => {
     toast.info(`Mencetak invoice untuk ${order.orderNumber}...`)
+  }
+
+  /**
+   * Konfirmasi pembayaran manual. Pesan error backend ditampilkan apa adanya:
+   * backend menolak (409) transisi yang melanggar aturan, mis. menyelesaikan
+   * pesanan yang pembayarannya belum `success`.
+   */
+  const handlePaymentUpdate = async (orderId: string, status: ApiPaymentStatus) => {
+    try {
+      const updated = await orderService.updatePaymentStatus(orderId, status)
+      toast.success(`Pembayaran ${updated.orderNumber} ditandai ${updated.paymentStatus}`)
+      loadData()
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(updated)
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengubah status pembayaran")
+    }
   }
 
   const handleExportCSV = () => {
@@ -176,10 +196,12 @@ function AdminOrdersContent() {
               <TabsList className="bg-zinc-100 p-1 h-9 rounded-xl inline-flex gap-1 border border-zinc-200/60">
                 <TabsTrigger value="semua" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Semua ({orders.length})</TabsTrigger>
                 <TabsTrigger value="Menunggu Pembayaran" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Menunggu Bayar</TabsTrigger>
+                <TabsTrigger value="Dibayar" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Dibayar</TabsTrigger>
                 <TabsTrigger value="Diproses" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Diproses</TabsTrigger>
                 <TabsTrigger value="Dikirim" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Dikirim</TabsTrigger>
                 <TabsTrigger value="Selesai" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Selesai</TabsTrigger>
                 <TabsTrigger value="Batal" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Batal</TabsTrigger>
+                <TabsTrigger value="Kedaluwarsa" className="text-xs rounded-lg font-medium text-zinc-600 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-xs hover:text-zinc-900 transition-all cursor-pointer">Kedaluwarsa</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -294,7 +316,10 @@ function AdminOrdersContent() {
                         {formatRupiah(order.totalAmount)}
                       </TableCell>
                       <TableCell>
-                        <OrderStatusBadge status={order.status} />
+                        <div className="flex flex-col gap-1">
+                          <OrderStatusBadge status={order.status} />
+                          <PaymentStatusBadge status={order.paymentStatus} />
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -323,6 +348,28 @@ function AdminOrdersContent() {
                               <span>Cetak Invoice</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-zinc-100" />
+                            <DropdownMenuLabel className="text-[10px] text-zinc-400 font-semibold">Pembayaran</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() => handlePaymentUpdate(order.id, "success")}
+                              disabled={
+                                order.paymentStatus === "Lunas" ||
+                                order.status === "Batal" ||
+                                order.status === "Kedaluwarsa"
+                              }
+                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
+                            >
+                              <CreditCard className="h-3.5 w-3.5 text-emerald-500" />
+                              <span>Konfirmasi Pembayaran</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handlePaymentUpdate(order.id, "failed")}
+                              disabled={order.paymentStatus === "Gagal"}
+                              className="text-xs flex items-center gap-2 text-rose-600 focus:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                            >
+                              <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                              <span>Tandai Pembayaran Gagal</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-zinc-100" />
                             <DropdownMenuLabel className="text-[10px] text-zinc-400 font-semibold">Ubah Status</DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(order.id, "Diproses")}
@@ -342,7 +389,12 @@ function AdminOrdersContent() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(order.id, "Selesai")}
-                              disabled={order.status === "Selesai"}
+                              disabled={order.status === "Selesai" || order.paymentStatus !== "Lunas"}
+                              title={
+                                order.paymentStatus === "Lunas"
+                                  ? undefined
+                                  : "Konfirmasi pembayaran terlebih dahulu"
+                              }
                               className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
                             >
                               <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
@@ -405,6 +457,7 @@ function AdminOrdersContent() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onStatusUpdate={handleStatusUpdate}
+        onPaymentUpdate={handlePaymentUpdate}
       />
     </div>
   )

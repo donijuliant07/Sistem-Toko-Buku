@@ -572,6 +572,71 @@ def test_update_status_returns_stock_once_when_cancelled():
     books_table.update.assert_not_called()
 
 
+# --- Transisi status: `completed` hanya setelah pembayaran dikonfirmasi ---
+
+
+def _patch_transition(current_status: str, new_status: str, payment_status: str = "pending"):
+    """Jalankan PATCH status dengan `get_by_id` dipalsukan.
+
+    Kembalikan (response, mock tabel `supabase_admin`) supaya test bisa memastikan
+    tidak ada UPDATE yang terkirim ketika transisi ditolak.
+    """
+    current = serialized_order(status=current_status)
+    current["payment_status"] = payment_status
+    admin = MagicMock()
+    with patch("app.services.order_service.supabase_admin", admin), patch(
+        "app.services.order_service.OrderService.get_by_id",
+        return_value=current,
+    ):
+        response = client.patch(
+            f"/api/v1/orders/{ORDER_ID}/status",
+            json={"status": new_status},
+        )
+    return response, admin
+
+
+def test_completed_is_rejected_while_payment_is_pending():
+    as_admin()
+    response, admin = _patch_transition("pending", "completed", "pending")
+
+    assert response.status_code == 409
+    assert "pembayaran" in response.json()["detail"].lower()
+    # Tidak ada yang berubah di database.
+    admin.table.assert_not_called()
+
+
+def test_completed_is_rejected_when_payment_failed():
+    as_admin()
+    response, admin = _patch_transition("processing", "completed", "failed")
+
+    assert response.status_code == 409
+    admin.table.assert_not_called()
+
+
+def test_completed_is_allowed_after_payment_success():
+    as_admin()
+    response, admin = _patch_transition("shipped", "completed", "success")
+
+    assert response.status_code == 200
+    assert admin.table("orders").update.call_args.args[0] == {"status": "completed"}
+
+
+@pytest.mark.parametrize("terminal", ["cancelled", "expired"])
+def test_terminal_order_cannot_be_revived(terminal):
+    as_admin()
+    response, admin = _patch_transition(terminal, "completed", "success")
+
+    assert response.status_code == 409
+    admin.table.assert_not_called()
+
+
+def test_repeating_the_same_status_is_a_no_op_not_an_error():
+    as_admin()
+    response, _ = _patch_transition("cancelled", "cancelled")
+
+    assert response.status_code == 200
+
+
 # --- Pemisahan hak akses admin/user (RBAC) ---
 
 

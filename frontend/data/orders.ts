@@ -35,6 +35,7 @@ export const initialOrders: Order[] = [
     discountAmount: 15000,
     totalAmount: 191950,
     status: "Diproses",
+    paymentStatus: "Lunas",
     createdAt: "2026-10-05T08:30:00Z",
     timeline: [
       { status: "Menunggu Pembayaran", timestamp: "2026-10-05T08:30:00Z", description: "Pesanan dibuat" },
@@ -75,6 +76,7 @@ export const initialOrders: Order[] = [
     discountAmount: 20000,
     totalAmount: 273250,
     status: "Dikirim",
+    paymentStatus: "Lunas",
     createdAt: "2026-10-05T07:15:00Z",
     timeline: [
       { status: "Menunggu Pembayaran", timestamp: "2026-10-05T07:15:00Z", description: "Pesanan dibuat" },
@@ -108,6 +110,7 @@ export const initialOrders: Order[] = [
     discountAmount: 10000,
     totalAmount: 117400,
     status: "Selesai",
+    paymentStatus: "Lunas",
     createdAt: "2026-10-04T14:20:00Z",
     timeline: [
       { status: "Menunggu Pembayaran", timestamp: "2026-10-04T14:20:00Z", description: "Pesanan dibuat" },
@@ -142,6 +145,7 @@ export const initialOrders: Order[] = [
     discountAmount: 0,
     totalAmount: 284500,
     status: "Menunggu Pembayaran",
+    paymentStatus: "Belum Dibayar",
     createdAt: "2026-10-04T22:10:00Z",
     timeline: [
       { status: "Menunggu Pembayaran", timestamp: "2026-10-04T22:10:00Z", description: "Pesanan dibuat, menantikan pembayaran" },
@@ -173,6 +177,7 @@ export const initialOrders: Order[] = [
     discountAmount: 0,
     totalAmount: 99150,
     status: "Batal",
+    paymentStatus: "Kedaluwarsa",
     createdAt: "2026-10-04T10:00:00Z",
     timeline: [
       { status: "Menunggu Pembayaran", timestamp: "2026-10-04T10:00:00Z", description: "Pesanan dibuat" },
@@ -180,7 +185,7 @@ export const initialOrders: Order[] = [
     ],
   },
   // Generate 45 pesanan tambahan variatif untuk statistik chart & pagination
-  ...Array.from({ length: 45 }).map((_, idx) => {
+  ...Array.from({ length: 45 }).map((_, idx): Order => {
     const num = idx + 6
     const dateStr = new Date(2026, 8, (idx % 30) + 1).toISOString()
     const statuses: OrderStatus[] = ["Selesai", "Dikirim", "Diproses", "Menunggu Pembayaran", "Selesai"]
@@ -212,6 +217,7 @@ export const initialOrders: Order[] = [
       discountAmount: idx % 2 === 0 ? 10000 : 0,
       totalAmount: (85000 + (idx * 2000)) * ((idx % 3) + 1) + 15000 - (idx % 2 === 0 ? 10000 : 0),
       status,
+      paymentStatus: status === "Menunggu Pembayaran" ? "Belum Dibayar" : "Lunas",
       createdAt: dateStr,
       timeline: [
         { status: "Menunggu Pembayaran" as OrderStatus, timestamp: dateStr, description: "Pesanan dibuat" },
