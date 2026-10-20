@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from app.schemas.book_advisor import (
@@ -33,9 +34,11 @@ from app.schemas.book_advisor import (
     AdvisorFeedbackRequest,
     AdvisorFeedbackResponse,
     AdvisorMessage,
+    AdvisorOutcome,
     AdvisorSessionRead,
     BookPreferences,
     ConversationState,
+    ModelSource,
     ReadingLevel,
     Recommendation,
 )
@@ -60,6 +63,28 @@ MAX_RECOMMENDATIONS = 5
 #: Kandidat teratas yang dikirim ke model untuk diberi penjelasan. Sisanya
 #: hanya dipakai ranking — mengirim seluruh kandidat menambah biaya token.
 MAX_CONTEXT_CANDIDATES = 10
+
+#: Catatan yang ditambahkan ke balasan bila provider AI gagal; pengguna harus
+#: tahu balasan itu berasal dari aturan, bukan AI.
+PROVIDER_FAILED_NOTICE = (
+    "\n\n_(Catatan: layanan AI sedang gangguan, jadi balasan di atas berasal dari "
+    "panduan berbasis aturan. Poin untuk pesan ini dikembalikan — silakan coba lagi nanti.)_"
+)
+
+
+@dataclass
+class _TurnTracker:
+    """Hasil panggilan model dalam satu giliran, untuk menentukan tagihan.
+
+    Satu giliran bisa memanggil model dua kali (ekstraksi lalu penjelasan).
+    Giliran dianggap dilayani AI bila **setidaknya satu** panggilan berhasil;
+    `provider_failed` hanya bila provider dikonfigurasi tetapi semua panggilan
+    gagal, sehingga balasan yang dilihat pengguna seluruhnya buatan aturan.
+    """
+
+    model_calls: int = 0
+    model_succeeded: bool = False
+    provider_failed: bool = False
 
 class ModelClient(Protocol):
     """Kontrak klien model yang dipakai service."""
@@ -89,22 +114,37 @@ class BookAdvisorService:
         self._model = model
         self._weights = weights
 
+    @property
+    def ai_enabled(self) -> bool:
+        """Apakah provider AI dikonfigurasi (API key tersedia).
+
+        Router memakai ini untuk memutuskan apakah pesan perlu ditagih. Tanpa
+        provider, advisor berbasis aturan dan tidak pernah memotong poin.
+        """
+        return bool(self._model.is_configured)
+
     async def chat(self, user_id: str, payload: AdvisorChatRequest) -> AdvisorChatResponse:
         """Proses satu pesan pengguna dan kembalikan giliran percakapan."""
         session = self._load_or_create(user_id, payload.session_id)
+
+        # `turn` dikumpulkan selama satu giliran; `_call` mencatat kegagalan
+        # provider agar tagihan poin di router tahu apakah fallback terjadi.
+        turn = _TurnTracker()
+        configured = self._model.is_configured
+
         session.append("user", payload.message)
 
         # Ekstraksi selalu dijalankan, termasuk saat preferensi sudah cukup:
         # "cari yang lebih murah" atau "aku pemula" adalah perubahan preferensi
         # yang harus tertangkap, bukan sekadar permintaan ulang.
-        if not self._model.is_configured:
+        if not configured:
             delta = heuristic_delta(payload.message, session.preferences)
             chat = small_talk_reply(payload.message)
             reply = chat or self._fallback_reply(delta)
             question = None
             intent = "chit_chat" if chat else None
         else:
-            delta, reply, question, intent = await self._extract(session, payload.message)
+            delta, reply, question, intent = await self._extract(session, payload.message, turn)
 
         if delta is not None:
             session.preferences = pref_rules.merge_preferences(session.preferences, delta)
@@ -119,7 +159,7 @@ class BookAdvisorService:
             )
             answer = self._join_reply(reply, question)
             session.append("assistant", answer)
-            return self._response(session, answer, question, [])
+            return self._response(session, turn, configured, answer, question, [])
 
         if not pref_rules.is_ready(session.preferences):
             session.conversation_state = ConversationState.COLLECTING_PREFERENCES
@@ -130,10 +170,14 @@ class BookAdvisorService:
             if len(session.messages) >= 2 and session.messages[-2]["content"] == answer:
                 answer = self._ask_question(session.preferences)
             session.append("assistant", answer)
-            return self._response(session, answer, self._extra_question(answer, question), [])
+            return self._response(
+                session, turn, configured, answer, self._extra_question(answer, question), []
+            )
 
         scored = await self._search_and_rank(session.preferences)
-        reply, question, recommendations = await self._explain(session, payload.message, scored)
+        reply, question, recommendations = await self._explain(
+            session, payload.message, scored, turn
+        )
 
         session.conversation_state = (
             ConversationState.SHOWING_RECOMMENDATIONS
@@ -142,7 +186,14 @@ class BookAdvisorService:
         )
         answer = self._join_reply(reply, question) or self._no_result_message(recommendations)
         session.append("assistant", answer)
-        return self._response(session, answer, self._extra_question(answer, question), recommendations)
+        return self._response(
+            session,
+            turn,
+            configured,
+            answer,
+            self._extra_question(answer, question),
+            recommendations,
+        )
 
     def get_session(self, user_id: str, session_id: uuid.UUID) -> AdvisorSessionRead:
         """Riwayat sesi milik `user_id`; `KeyError` bila tidak ada/bukan miliknya."""
@@ -209,7 +260,7 @@ class BookAdvisorService:
         return self._store.create(user_id)
 
     async def _extract(
-        self, session: AdvisorSession, message: str
+        self, session: AdvisorSession, message: str, turn: _TurnTracker
     ) -> tuple[Any, str | None, str | None, str | None]:
         """Minta delta preferensi; gagal → kosong semua (tanpa perubahan)."""
         messages = gemini.build_extraction_messages(
@@ -218,7 +269,7 @@ class BookAdvisorService:
             message,
             pref_rules.missing_preferences(session.preferences),
         )
-        raw = await self._call(messages)
+        raw = await self._call(messages, turn)
         if raw is None:
             return None, None, None, None
         reply, question = parse_extraction(raw)
@@ -231,6 +282,7 @@ class BookAdvisorService:
         session: AdvisorSession,
         message: str,
         scored: list[ScoredCandidate],
+        turn: _TurnTracker,
     ) -> tuple[str | None, str | None, list[Recommendation]]:
         """Minta penjelasan dan validasi hasilnya terhadap kandidat backend.
 
@@ -246,7 +298,8 @@ class BookAdvisorService:
         raw = await self._call(
             gemini.build_explanation_messages(
                 session.history, session.preferences, [item.book for item in top], message
-            )
+            ),
+            turn,
         )
         if raw is None:
             return self._rule_explanation(top, session.preferences)
@@ -256,13 +309,23 @@ class BookAdvisorService:
         ordered = [ranked[str(item.book.id)] for item in top if str(item.book.id) in ranked]
         return reply, question, ordered[:MAX_RECOMMENDATIONS]
 
-    async def _call(self, messages: list[dict[str, str]]) -> dict[str, Any] | None:
-        """Panggil model; kegagalan dicatat dan diterjemahkan menjadi `None`."""
+    async def _call(
+        self, messages: list[dict[str, str]], turn: _TurnTracker
+    ) -> dict[str, Any] | None:
+        """Panggil model; kegagalan dicatat dan diterjemahkan menjadi `None`.
+
+        `turn` menandai bahwa provider gagal — pemanggil layanan tidak dapat
+        menebak ini dari `None`, sehingga tagihan poin bergantung padanya.
+        """
+        turn.model_calls += 1
         try:
-            return await self._model.complete_json(messages)
+            raw = await self._model.complete_json(messages)
         except gemini.AdvisorModelError:
+            turn.provider_failed = True
             logger.warning("Model AI gagal dihubungi; memakai fallback aturan", exc_info=False)
             return None
+        turn.model_succeeded = True
+        return raw
 
     async def _search_and_rank(self, preferences: BookPreferences) -> list[ScoredCandidate]:
         """Kandidat dari katalog, difilter syarat wajib lalu diranking."""
@@ -309,11 +372,24 @@ class BookAdvisorService:
     def _response(
         self,
         session: AdvisorSession,
+        turn: _TurnTracker,
+        configured: bool,
         message: str,
         question: str | None,
         recommendations: list[Recommendation],
     ) -> AdvisorChatResponse:
-        """Bentuk respons; pertanyaan hanya dikirim bila masih ada yang berguna ditanya."""
+        """Bentuk respons; pertanyaan hanya dikirim bila masih ada yang berguna ditanya.
+
+        `outcome` adalah satu-satunya sinyal tagihan: router menagih hanya bila
+        AI benar-benar memproses pesan, dan me-refund bila provider gagal.
+        """
+        if not configured or turn.model_calls == 0:
+            outcome = AdvisorOutcome.UNCONFIGURED
+        elif turn.model_succeeded:
+            outcome = AdvisorOutcome.ANSWERED
+        else:
+            outcome = AdvisorOutcome.PROVIDER_FAILED
+            message = f"{message}{PROVIDER_FAILED_NOTICE}"
         return AdvisorChatResponse(
             session_id=session.id,
             assistant_message=message,
@@ -322,6 +398,12 @@ class BookAdvisorService:
             missing_preferences=pref_rules.missing_preferences(session.preferences),
             recommendations=recommendations,
             follow_up_question=question,
+            outcome=outcome,
+            model_source=(
+                ModelSource.MODEL
+                if turn.model_succeeded
+                else ModelSource.RULE_BASED
+            ),
         )
 
     @staticmethod

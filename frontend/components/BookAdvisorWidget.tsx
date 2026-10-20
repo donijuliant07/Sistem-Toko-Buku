@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/conversation";
 import { SoundToggle } from "@/components/ui/sound";
 import { useAuth } from "@/components/AuthProvider";
-import { sendAdvisorChat, sendAdvisorFeedback } from "@/lib/api";
+import { ApiError, getAdvisorPricing, sendAdvisorChat, sendAdvisorFeedback } from "@/lib/api";
 import type {
+  AdvisorPricing,
   Recommendation,
   BookPreferences,
   ConversationState,
@@ -38,6 +39,19 @@ interface ChatMessage {
   recommendations?: Recommendation[];
   followUpQuestion?: string | null;
   state?: ConversationState;
+  /** Poin yang benar-benar dipotong backend untuk pesan ini (0 bila gratis). */
+  charged?: number;
+  /** Poin yang dikembalikan karena provider AI gagal. */
+  refunded?: number;
+  /** Balasan bukan dari AI (fallback aturan) — pengguna harus tahu. */
+  ruleBased?: boolean;
+}
+
+/** ID pesan klien; dipakai backend sebagai kunci idempotensi tagihan poin. */
+function newMessageId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 const SUGGESTED_PROMPTS = [
@@ -66,11 +80,45 @@ export default function BookAdvisorWidget() {
   const [error, setError] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, "liked" | "not_relevant">>({});
 
+  // Biaya per pesan & saldo: hanya diisi dari respons backend, tidak pernah
+  // dihitung di klien. `null` = belum diketahui.
+  const [pricing, setPricing] = useState<AdvisorPricing | null>(null);
+  // Pesan terakhir yang gagal terkirim; disimpan agar "Coba lagi" mengirim
+  // ulang dengan `message_id` yang sama (tidak memotong poin dua kali).
+  const [pendingRetry, setPendingRetry] = useState<{
+    text: string;
+    messageId: string;
+  } | null>(null);
+
   const { session } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Penghitung id pesan klien; `Date.now()` di badan komponen tidak murni bagi React Compiler.
   const messageSeqRef = useRef(0);
+
+  const accessToken = session?.access_token ?? null;
+
+  // Muat biaya & saldo saat widget dibuka atau akun berganti. Membuka/riwayat
+  // tidak memotong poin — endpoint ini hanya membaca.
+  useEffect(() => {
+    if (!isOpen || !accessToken) return;
+    let cancelled = false;
+    getAdvisorPricing(accessToken)
+      .then((data) => {
+        if (!cancelled) setPricing(data);
+      })
+      .catch(() => {
+        // Biaya tidak tampil (mis. akun admin) — pesan akan ditolak backend
+        // dengan alasan yang jelas, jadi jangan menebak angka di sini.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, accessToken]);
+
+  const cost = pricing?.points_cost ?? 0;
+  const balance = pricing?.points_balance ?? null;
+  const insufficient = balance !== null && cost > 0 && balance < cost;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -85,12 +133,86 @@ export default function BookAdvisorWidget() {
     }
   }, [isOpen, messages, isLoading]);
 
+  const sendMessage = async (text: string, messageId: string) => {
+    if (!accessToken) return;
+    setIsLoading(true);
+
+    try {
+      const response = await sendAdvisorChat(
+        text,
+        sessionId,
+        accessToken,
+        messageId
+      );
+      setSessionId(response.session_id);
+      setPreferences(response.preferences);
+      // Saldo hanya diperbarui dari respons yang sah — bukan dari hitungan klien.
+      setPricing({
+        points_cost: response.points_cost,
+        points_balance: response.points_balance,
+      });
+      setPendingRetry(null);
+
+      const assistantMessage: ChatMessage = {
+        id: `assistant-${++messageSeqRef.current}`,
+        role: "assistant",
+        content: response.assistant_message,
+        sentAt: new Intl.DateTimeFormat("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date()),
+        recommendations: response.recommendations,
+        followUpQuestion: response.follow_up_question,
+        state: response.conversation_state,
+        charged: response.points_charged,
+        refunded: response.points_refunded,
+        ruleBased: response.outcome === "provider_failed",
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      if (!(err instanceof ApiError)) {
+        // Hanya kegagalan jaringan/timeout yang boleh diulang otomatis; tolak
+        // dari backend (422/403/…) tidak, karena tidak akan berubah hasilnya.
+        setPendingRetry({ text, messageId });
+      }
+      if (err instanceof ApiError && err.code === "INSUFFICIENT_POINTS") {
+        setError(
+          "Poinmu tidak cukup untuk mengirim pesan. Kumpulkan poin dulu lewat pembelian, ulasan, atau aktivitas komunitas."
+        );
+        try {
+          setPricing(await getAdvisorPricing(accessToken));
+        } catch {
+          // Biarkan angka lama; backend tetap yang memutuskan.
+        }
+      } else if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Gagal memproses pesan percakapan. Pastikan backend aktif."
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
     if (!text || isLoading) return;
 
     if (!session?.access_token) {
       setError("Silakan masuk (login) akun terlebih dahulu agar dapat berkonsultasi dengan AI Book Advisor.");
+      return;
+    }
+
+    // Saldo kurang: jangan kirim ke backend/provider sama sekali.
+    if (insufficient) {
+      setError(
+        `Poinmu tidak cukup. Biaya ${cost} poin per pesan, saldo ${balance ?? 0} poin. Kumpulkan poin dulu lewat pembelian, ulasan, atau aktivitas komunitas.`
+      );
       return;
     }
 
@@ -109,36 +231,14 @@ export default function BookAdvisorWidget() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setError(null);
-    setIsLoading(true);
+    await sendMessage(text, newMessageId());
+  };
 
-    try {
-      const response = await sendAdvisorChat(text, sessionId, session.access_token);
-      setSessionId(response.session_id);
-      setPreferences(response.preferences);
-
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${++messageSeqRef.current}`,
-        role: "assistant",
-        content: response.assistant_message,
-        sentAt: new Intl.DateTimeFormat("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date()),
-        recommendations: response.recommendations,
-        followUpQuestion: response.follow_up_question,
-        state: response.conversation_state,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err) {
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Gagal memproses pesan percakapan. Pastikan backend aktif.";
-      setError(errMsg);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRetry = async () => {
+    if (!pendingRetry || isLoading) return;
+    setError(null);
+    // `message_id` sama dengan percobaan pertama → idempoten, tidak ditagih ulang.
+    await sendMessage(pendingRetry.text, pendingRetry.messageId);
   };
 
   const handleReset = () => {
@@ -338,6 +438,21 @@ export default function BookAdvisorWidget() {
                           <p className="whitespace-pre-wrap">{msg.content}</p>
 
                           {/* Follow-up question callout */}
+                          {msg.ruleBased && (
+                            <p className="mt-1.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                              Balasan dari panduan aturan, bukan AI. Poin untuk pesan ini dikembalikan.
+                            </p>
+                          )}
+                          {typeof msg.refunded === "number" && msg.refunded > 0 && !msg.ruleBased && (
+                            <p className="mt-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              {msg.refunded} poin dikembalikan.
+                            </p>
+                          )}
+                          {typeof msg.charged === "number" && msg.charged > 0 && (
+                            <p className="mt-1.5 text-[10px] text-gray-500 dark:text-gray-400">
+                              {msg.charged} poin terpotong
+                            </p>
+                          )}
                           {msg.followUpQuestion && (
                             <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
                               <HelpCircle className="h-3.5 w-3.5 shrink-0" />
@@ -496,13 +611,56 @@ export default function BookAdvisorWidget() {
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
                   <span className="truncate">{error}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setError(null)}
-                  className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900 rounded cursor-pointer shrink-0"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {pendingRetry && (
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      disabled={isLoading}
+                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold hover:bg-rose-100 dark:hover:bg-rose-900 disabled:opacity-50 cursor-pointer"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Coba lagi
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900 rounded cursor-pointer shrink-0"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Status poin: biaya per pesan & saldo, hanya dari backend */}
+            {session?.access_token && (pricing || isLoading) && (
+              <div
+                className={`mx-4 mb-1 flex items-center justify-between gap-2 rounded-lg px-2.5 py-1 text-[11px] ${
+                  insufficient
+                    ? "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                    : "bg-gray-50 text-gray-600 dark:bg-[#182620] dark:text-gray-400"
+                }`}
+              >
+                <span>
+                  {isLoading
+                    ? "Memproses pesan..."
+                    : insufficient
+                      ? `Poin kurang — biaya ${cost} poin/pesan, saldo ${balance ?? 0} poin`
+                      : cost > 0
+                        ? `${cost} poin per pesan`
+                        : "Pesan gratis (AI belum aktif)"}
+                </span>
+                {balance !== null && (
+                  <span className="font-semibold shrink-0">
+                    Saldo: {balance} poin
+                    {" · "}
+                    <Link href="/poin" className="underline">
+                      Kumpulkan poin
+                    </Link>
+                  </span>
+                )}
               </div>
             )}
 
@@ -538,9 +696,11 @@ export default function BookAdvisorWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={
-                    session?.access_token
-                      ? "Ketik topik, judul, minat, atau anggaran (Enter)..."
-                      : "Masuk/login dulu untuk berkonsultasi..."
+                    !session?.access_token
+                      ? "Masuk/login dulu untuk berkonsultasi..."
+                      : insufficient
+                        ? "Poinmu tidak cukup untuk mengirim pesan..."
+                        : "Ketik topik, judul, minat, atau anggaran (Enter)..."
                   }
                   rows={1}
                   disabled={isLoading}
@@ -551,7 +711,7 @@ export default function BookAdvisorWidget() {
                   data-slot="button"
                   data-sound="tap"
                   onClick={() => handleSend()}
-                  disabled={isLoading || !input.trim()}
+                  disabled={isLoading || !input.trim() || insufficient}
                   aria-label="Kirim pesan"
                   className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white transition-all duration-150 hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer active:scale-95 shadow-xs"
                 >

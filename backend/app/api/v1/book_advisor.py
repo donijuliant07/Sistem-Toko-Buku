@@ -10,13 +10,33 @@
 Router hanya menerjemahkan HTTP ↔ service; seluruh aturan ada di
 `app.services.advisor`. Katalog dibaca lewat `AsyncSession` milik permintaan
 (`get_db`), bukan koneksi baru.
+
+Tagihan poin (Book Rewards)
+---------------------------
+Kebijakan, seluruhnya diputuskan backend:
+
+1. Validasi input dan auth berjalan lebih dulu — request yang ditolak tidak
+   menyentuh ledger.
+2. Bila chat membutuhkan AI (`_will_use_model`), biaya dibaca dari
+   `reward_rules` (`advisor_message_points`, awal 10) dan **dipotong dulu**
+   lewat RPC atomik sebelum provider dipanggil. Saldo kurang → `400
+   INSUFFICIENT_POINTS`, provider tidak dipanggil, saldo tidak berubah.
+3. Bila provider dikonfigurasi tetapi gagal (timeout/5xx/JSON tidak sesuai),
+   poin dikembalikan (`advisor:<message_id>:refund`) dan respons menandai
+   `outcome=provider_failed` — pengguna tidak membayar balasan yang bukan AI.
+4. Key idempotensi memakai `message_id` dari klien, jadi retry/kirim ulang
+   tidak memotong poin dua kali.
+5. Tidak ada transaksi database yang terbuka selama menunggu provider: RPC
+   ledger adalah panggilan PostgREST terpisah yang selesai sebelum model
+   dipanggil.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
@@ -30,6 +50,7 @@ from app.schemas.book_advisor import (
     AdvisorChatResponse,
     AdvisorFeedbackRequest,
     AdvisorFeedbackResponse,
+    AdvisorOutcome,
     AdvisorSessionRead,
     BookPreferences,
 )
@@ -37,6 +58,8 @@ from app.schemas.common import ApiResponse
 from app.services.advisor.catalog import SqlAdvisorCatalog
 from app.services.advisor.service import BookAdvisorService, build_service
 from app.services.advisor.session import InMemoryAdvisorSessionStore
+from app.services.rewards.errors import RewardsError
+from app.services.rewards.service import RewardsService, rewards_service
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +95,141 @@ def _not_found() -> HTTPException:
         detail="Sesi percakapan tidak ditemukan.",
     )
 
+
+def get_rewards_service() -> RewardsService:
+    """Provider terpisah agar tes dapat menyuntikkan ledger/repository palsu."""
+    return rewards_service
+
+RewardsSvc = Annotated[RewardsService, Depends(get_rewards_service)]
+
+#: Perkiraan backend apakah pesan ini akan memanggil provider AI. Dipakai
+#: hanya untuk memutuskan *perlu menagih*, bukan untuk menghitung biaya.
+#: `False` yang keliru berarti pengguna tidak ditagih (aman baginya); `True`
+#: yang keliru berarti ditagih lalu di-refund karena hasil `unconfigured`.
+def _will_use_model(service: BookAdvisorService) -> bool:
+    return service.ai_enabled
+
+
+def _http(exc: RewardsError) -> HTTPException:
+    return HTTPException(status_code=exc.status_code, detail=exc.detail)
+
+
+def _balance(service: RewardsService, user: UserPayload) -> int | None:
+    """Saldo terbaru; kegagalan baca tidak boleh membatalkan balasan yang sah."""
+    try:
+        return service.get_balance(user)
+    except RewardsError:
+        return None
+
+
+@router.get("/pricing", response_model=ApiResponse[dict])
+async def advisor_pricing(
+    current_user: Annotated[UserPayload, Depends(require_user)],
+    rewards: RewardsSvc,
+) -> ApiResponse[dict]:
+    """Biaya per pesan dan saldo pengguna, untuk ditampilkan sebelum mengirim."""
+    try:
+        cost = await asyncio.to_thread(rewards.advisor_message_cost)
+        balance = await asyncio.to_thread(rewards.get_balance, current_user)
+    except RewardsError as exc:
+        raise _http(exc) from exc
+    return ApiResponse(
+        sukses=True,
+        pesan="Biaya pesan advisor berhasil dimuat.",
+        data={"points_cost": cost, "points_balance": balance},
+    )
+
+
 @router.post("/chat", response_model=ApiResponse[AdvisorChatResponse])
 async def chat(
     payload: AdvisorChatRequest,
     current_user: Annotated[UserPayload, Depends(require_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    rewards: RewardsSvc,
 ) -> ApiResponse[AdvisorChatResponse]:
-    """Kirim satu pesan; balas pertanyaan lanjutan atau rekomendasi dari katalog."""
+    """Kirim satu pesan; balas pertanyaan lanjutan atau rekomendasi dari katalog.
+
+    Validasi Pydantic (pesan kosong) dan auth sudah berjalan di atas — keduanya
+    tidak menyentuh ledger. Urutan selanjutnya: biaya → cek saldo → potong →
+    panggil AI → refund bila provider gagal.
+    """
+    message_id = payload.message_id or uuid4()
     service = _session_service(db)
+
+    cost = 0
+    if _will_use_model(service):
+        try:
+            cost = await asyncio.to_thread(rewards.advisor_message_cost)
+        except RewardsError as exc:
+            raise _http(exc) from exc
+        if cost > 0:
+            try:
+                # Reservasi: dipotong sebelum AI dipanggil. Bila saldo kurang,
+                # RPC menolak dan tidak ada yang berubah — provider tidak
+                # pernah dipanggil.
+                await asyncio.to_thread(
+                    rewards.charge_advisor_message,
+                    current_user,
+                    message_id=message_id,
+                    cost=cost,
+                )
+            except RewardsError as exc:
+                raise _http(exc) from exc
+
     try:
         result = await service.chat(current_user.id, payload)
     except CATALOG_UNREACHABLE:
         logger.exception("Katalog buku tidak dapat dibaca saat memproses book advisor")
+        # Poin sudah dipotong tetapi provider tidak pernah dipanggil: kembalikan.
+        await _refund(rewards, current_user, message_id, cost, "catalog_unreachable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Katalog buku sedang tidak dapat diakses. Coba lagi beberapa saat lagi.",
         ) from None
-    return ApiResponse(sukses=True, pesan="Pesan berhasil diproses.", data=result)
+
+    refunded = 0
+    if result.outcome is AdvisorOutcome.PROVIDER_FAILED and cost > 0:
+        refunded = await _refund(rewards, current_user, message_id, cost, "provider_failed")
+    elif result.outcome is AdvisorOutcome.UNCONFIGURED and cost > 0:
+        # Perkiraan `_will_use_model` salah: tidak ada panggilan AI, tidaklah pantas ditagih.
+        refunded = await _refund(rewards, current_user, message_id, cost, "ai_not_invoked")
+
+    data = result.model_copy(
+        update={
+            "message_id": message_id,
+            "points_cost": cost,
+            "points_charged": max(0, cost - refunded),
+            "points_refunded": refunded,
+            "points_balance": await asyncio.to_thread(_balance, rewards, current_user),
+        }
+    )
+    return ApiResponse(sukses=True, pesan="Pesan berhasil diproses.", data=data)
+
+
+async def _refund(
+    rewards: RewardsService,
+    user: UserPayload,
+    message_id: UUID,
+    charged: int,
+    reason: str,
+) -> int:
+    """Refund idempoten; mengembalikan jumlah poin yang dikembalikan (0 bila gagal)."""
+    if charged <= 0:
+        return 0
+    try:
+        await asyncio.to_thread(
+            rewards.refund_advisor_message,
+            user,
+            message_id=message_id,
+            charged=charged,
+            reason=reason,
+        )
+    except RewardsError:
+        # Refund yang gagal tidak boleh menghapus balasan; ledger tetap
+        # konsisten dan admin dapat menyesuaikan secara manual.
+        logger.exception("Refund pesan advisor %s gagal", message_id)
+        return 0
+    return charged
 
 @router.get("/sessions/{session_id}/messages", response_model=ApiResponse[AdvisorSessionRead])
 async def get_session_messages(
