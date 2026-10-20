@@ -17,6 +17,8 @@ Rate limit pengiriman pesan (`SendRateLimiter`) in-memory per proses; lihat
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -33,9 +35,11 @@ from app.schemas.community import (
     GroupMemberRead,
     GroupPage,
     GroupUpdate,
+    HelpfulResult,
     MemberAddRequest,
     MemberRoleUpdate,
     MessageCreate,
+    MessageModeration,
     MessagePage,
     MessageRead,
     TransferOwnerRequest,
@@ -52,8 +56,12 @@ from app.services.community.rate_limit import SendRateLimiter
 from app.services.community.repository import (
     OrmGroupRepository,
     OrmMemberRepository,
+    OrmMessageInteractionRepository,
     OrmMessageRepository,
 )
+from app.services.rewards.service import rewards_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/community", tags=["community"])
 
@@ -79,13 +87,47 @@ def get_member_service(
 def get_message_service(
     db: Db, groups: Annotated[GroupService, Depends(get_group_service)]
 ) -> MessageService:
-    """Service pesan dengan pembatas laju proses."""
+    """Service pesan dengan pembatas laju proses dan hook Book Rewards."""
     return MessageService(
         groups,
         OrmMemberRepository(db),
         OrmMessageRepository(db),
         send_limiter,
+        OrmMessageInteractionRepository(db),
+        on_contribution_approved=_reward_contribution,
+        on_helpful=_reward_helpful,
     )
+
+
+async def _reward_contribution(
+    moderator: UserPayload,
+    message_id: UUID,
+    author_id: UUID,
+    payload: MessageModeration,
+) -> None:
+    """Hook Book Rewards: poin kontribusi untuk pesan yang disetujui.
+
+    Kegagalan reward (mis. cap harian) tidak menggagalkan moderasi — pesan
+    tetap disetujui, hanya poinnya yang tidak diberikan. Backfill admin dapat
+    menyusulkan reward yang tertinggal.
+    """
+    try:
+        await asyncio.to_thread(
+            rewards_service.reward_contribution,
+            message_id=message_id,
+            author_id=author_id,
+            reviewer=moderator.id,
+        )
+    except Exception:
+        logger.exception("Reward kontribusi %s gagal", message_id)
+
+
+async def _reward_helpful(message_id: UUID) -> None:
+    """Hook Book Rewards: poin penulis jawaban setelah tanda "membantu" cukup."""
+    try:
+        await asyncio.to_thread(rewards_service.reward_helpful_answer, message_id=message_id)
+    except Exception:
+        logger.exception("Reward jawaban membantu %s gagal", message_id)
 
 
 GroupSvc = Annotated[GroupService, Depends(get_group_service)]
@@ -381,3 +423,42 @@ async def delete_message(
     except CommunityError as exc:
         raise _http(exc) from None
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.post(
+    "/groups/{group_id}/messages/{message_id}/moderate",
+    response_model=ApiResponse[MessageRead],
+)
+async def moderate_message(
+    group_id: UUID,
+    message_id: UUID,
+    payload: MessageModeration,
+    current_user: CurrentUser,
+    service: MessageSvc,
+) -> ApiResponse[MessageRead]:
+    """Setujui/tolak usulan reward kontribusi (moderator/owner, bukan pengirim)."""
+    try:
+        data = await service.moderate_message(
+            current_user, group_id, message_id, payload
+        )
+    except CommunityError as exc:
+        raise _http(exc) from None
+    pesan = "Kontribusi disetujui." if payload.status == "approved" else "Kontribusi ditolak."
+    return _ok(data, pesan)
+
+
+@router.post(
+    "/groups/{group_id}/messages/{message_id}/helpful",
+    response_model=ApiResponse[HelpfulResult],
+)
+async def mark_helpful(
+    group_id: UUID,
+    message_id: UUID,
+    current_user: CurrentUser,
+    service: MessageSvc,
+) -> ApiResponse[HelpfulResult]:
+    """Tandai balasan "membantu" (anggota lain; idempoten)."""
+    try:
+        data = await service.mark_helpful(current_user, group_id, message_id)
+    except CommunityError as exc:
+        raise _http(exc) from None
+    return _ok(data, "Tanda membantu tersimpan.")
