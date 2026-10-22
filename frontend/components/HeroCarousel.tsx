@@ -27,7 +27,7 @@ export default function HeroCarousel() {
   return (
     <section className="max-w-7xl mx-auto px-4 pt-4 pb-4">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Main Carousel */}
+        {/* Main Carousel (3 Slide Warna-Warni) */}
         <div
           className="lg:col-span-8 relative rounded-2xl overflow-hidden shadow-sm aspect-[4/3] sm:aspect-[16/10] lg:min-h-[520px] bg-slate-900 flex items-center group"
           onMouseEnter={() => setIsPaused(true)}
@@ -55,7 +55,7 @@ export default function HeroCarousel() {
 
               <div className="relative z-10 max-w-lg">
                 <span className="inline-block self-start px-3 py-1 bg-white/20 backdrop-blur-md rounded-md text-xs font-bold tracking-wider uppercase mb-4 text-white">
-                  PROMO SPESIAL
+                  READR EXCLUSIVE
                 </span>
                 <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-4 text-white drop-shadow-sm">
                   {banner.title}
@@ -109,19 +109,30 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* 2 Side Banners */}
+        {/* 2 Side Banners (Video Atas + Komunitas Bawah) */}
         <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-4">
           {HERO_SIDE_BANNERS.map((side) => (
             <div
               key={side.id}
               className="flex-1 rounded-2xl shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow p-6 text-white min-h-[230px] lg:min-h-[250px]"
             >
-              {side.imageUrl && (
+              {/* Cek tipe media: jika video render tag <video>, jika image render <img> */}
+              {side.type === "video" ? (
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                >
+                  <source src={side.mediaUrl} type="video/mp4" />
+                </video>
+              ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={side.imageUrl}
+                  src={side.mediaUrl}
                   alt={side.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               )}
 
