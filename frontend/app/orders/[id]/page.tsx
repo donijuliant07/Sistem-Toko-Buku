@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Wallet } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -146,12 +146,19 @@ function OrderDetailContent() {
             </div>
           </div>
 
-          <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-100">
-            <p className="text-[11px] font-medium text-amber-800">
-              Pembayaran belum terhubung ke payment gateway. Status pembayaran akan diperbarui setelah
-              dikonfirmasi oleh admin.
-            </p>
-          </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5">
+          <p className="flex-1 text-[11px] font-medium text-amber-800">
+            Pembayaran belum terhubung ke payment gateway. Unggah bukti transfer, lalu admin
+            memverifikasinya secara manual.
+          </p>
+          <Link
+            href={`/orders/${order.id}/payment`}
+            className="inline-flex shrink-0 items-center gap-1.5 px-4 py-2 bg-[#0052cc] hover:bg-[#0041a8] text-white rounded-xl text-[11px] font-extrabold transition-colors"
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            {order.payment_status === "pending" ? "Bayar & unggah bukti" : "Lihat pembayaran"}
+          </Link>
+        </div>
         </div>
 
         <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">

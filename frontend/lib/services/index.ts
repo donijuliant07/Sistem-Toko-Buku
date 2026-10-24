@@ -2,18 +2,21 @@ import { ProductCategory } from "@/types"
 import { initialProducts } from "@/data/products"
 import { Product, Order, Customer, KPICardData, OrderStatus } from "@/types"
 import {
+  approvePayment,
   createBook,
   createPromo,
   deleteBook,
   deletePromo,
   getAccessToken,
+  getAdminPayment,
   getBooks,
   getOrderDetail,
   getOrders,
   getPromos,
+  listAdminPayments,
+  rejectPayment,
   updateBook,
   updateOrderStatus,
-  updatePaymentStatus,
   updatePromo,
 } from "@/lib/api"
 import type {
@@ -21,7 +24,11 @@ import type {
   BookUpdate,
   Order as ApiOrder,
   OrderStatus as ApiOrderStatus,
+  OrderPayment,
+  PaymentDetail,
+  PaymentPage,
   PaymentStatus as ApiPaymentStatus,
+  PaymentStatusView,
   Promo,
   PromoInput,
   PromoUpdate,
@@ -319,18 +326,40 @@ export const orderService = {
     if (!refreshed) throw new Error("Pesanan tidak ditemukan")
     return refreshed
   },
-  /**
-   * Konfirmasi / tolak pembayaran manual. Tanpa ini admin tidak bisa mengubah
-   * pesanan menjadi "Selesai" — backend menolaknya (409) selama pembayaran
-   * belum `success`.
-   */
-  updatePaymentStatus: async (id: string, status: ApiPaymentStatus): Promise<Order> => {
+}
+
+/**
+ * Verifikasi pembayaran manual. Keputusan approve/reject hanya lewat endpoint
+ * admin di backend; di sini tidak ada cara menulis status pembayaran langsung.
+ */
+export const paymentService = {
+  getAll: async (params: {
+    page?: number
+    limit?: number
+    status?: PaymentStatusView
+    search?: string
+  }): Promise<PaymentPage> => {
     const token = await getAccessToken()
     if (!token) throw new Error("Sesi login tidak ditemukan.")
-    await updatePaymentStatus(id, status, token)
-    const refreshed = await orderService.getById(id)
-    if (!refreshed) throw new Error("Pesanan tidak ditemukan")
-    return refreshed
+    return listAdminPayments(params, token)
+  },
+  getById: async (paymentId: string): Promise<PaymentDetail> => {
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
+    const res = await getAdminPayment(paymentId, token)
+    return res.data
+  },
+  approve: async (paymentId: string): Promise<OrderPayment> => {
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
+    const res = await approvePayment(paymentId, token)
+    return res.data
+  },
+  reject: async (paymentId: string, reason: string): Promise<OrderPayment> => {
+    const token = await getAccessToken()
+    if (!token) throw new Error("Sesi login tidak ditemukan.")
+    const res = await rejectPayment(paymentId, reason, token)
+    return res.data
   },
 }
 

@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     #: lewat `127.0.0.1` sementara origin `localhost` saja akan ditolak CORS.
     FRONTEND_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     STORAGE_BUCKET_PRODUCTS: str = "product-images"
+    #: Bucket privat bukti pembayaran. Browser tidak pernah mengaksesnya
+    #: langsung; backend membuat signed URL berumur pendek.
+    STORAGE_BUCKET_PAYMENT_PROOFS: str = "payment-proofs"
+    #: Umur signed URL bukti (detik). Cukup untuk membuka/zoom satu gambar,
+    #: tidak cukup untuk dibagikan ulang.
+    PAYMENT_PROOF_SIGNED_URL_TTL: int = Field(default=300, ge=30)
 
     #: Google AI Studio (Gemini API) untuk Penasihat Buku (`/book-advisor`).
     #: Dibuat gratis di https://aistudio.google.com/apikey . Kosong = Penasihat

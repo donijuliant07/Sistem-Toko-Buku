@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
+from app.core import uploads
 from app.core.config import settings
 from app.core.errors import SERVICE_ERRORS
 from app.core.security import UserPayload, require_admin
@@ -13,36 +14,33 @@ from app.schemas.common import ApiResponse
 
 router = APIRouter(prefix="/uploads", tags=["Unggah Berkas"])
 
-ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-
 
 @router.post("/product-image", response_model=ApiResponse[dict])
 async def upload_product_cover(
     file: Annotated[UploadFile, File()],
     current_user: Annotated[UserPayload, Depends(require_admin)] = None,
 ):
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tipe file tidak didukung. Hanya JPEG, PNG, dan WebP yang diperbolehkan.",
-        )
-
+    # Batas ukuran/format dari `app.core.uploads` — sama dengan bukti pembayaran.
     file_bytes = await file.read()
-    if len(file_bytes) > MAX_FILE_SIZE:
+    try:
+        content_type, extension = uploads.validate_image(file_bytes, file.content_type)
+    except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ukuran berkas terlalu besar. Maksimal 5MB.",
-        )
+            status_code=(
+                status.HTTP_413_CONTENT_TOO_LARGE
+                if "terlalu besar" in str(exc)
+                else status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+            ),
+            detail=str(exc),
+        ) from None
 
-    ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "jpg"
-    unique_name = f"covers/{uuid.uuid4().hex}.{ext}"
+    unique_name = f"covers/{uuid.uuid4().hex}.{extension}"
 
     try:
         supabase_admin.storage.from_(settings.STORAGE_BUCKET_PRODUCTS).upload(
             path=unique_name,
             file=file_bytes,
-            file_options={"content-type": file.content_type},
+            file_options={"content-type": content_type, "upsert": "false"},
         )
         public_url = supabase_admin.storage.from_(settings.STORAGE_BUCKET_PRODUCTS).get_public_url(unique_name)
 

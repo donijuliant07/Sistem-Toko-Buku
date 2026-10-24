@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 # Menulis nilai di luar daftar ini ditolak database (23514).
 OrderStatus = Literal["pending", "paid", "processing", "shipped", "completed", "cancelled", "expired"]
 
-PaymentStatus = Literal["pending", "success", "failed", "expired", "refunded"]
 
 
 class OrderCustomer(BaseModel):
@@ -88,9 +87,6 @@ class OrderStatusUpdate(BaseModel):
     tracking_number: str | None = None
     notes: str | None = None
 
-
-class PaymentStatusUpdate(BaseModel):
-    status: PaymentStatus
 
 
 class OrderResponse(BaseModel):
