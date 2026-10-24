@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
   Search,
@@ -33,7 +34,6 @@ import {
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/StatusBadge"
 import { OrderDetailDialog } from "@/components/admin/orders/OrderDetailDialog"
 import { Order, OrderStatus } from "@/types"
-import type { PaymentStatus as ApiPaymentStatus } from "@/lib/types"
 import { orderService } from "@/lib/services"
 import { formatRupiah, formatTanggalJam } from "@/lib/utils"
 import { toast } from "sonner"
@@ -112,24 +112,6 @@ function AdminOrdersContent() {
 
   const handlePrint = (order: Order) => {
     toast.info(`Mencetak invoice untuk ${order.orderNumber}...`)
-  }
-
-  /**
-   * Konfirmasi pembayaran manual. Pesan error backend ditampilkan apa adanya:
-   * backend menolak (409) transisi yang melanggar aturan, mis. menyelesaikan
-   * pesanan yang pembayarannya belum `success`.
-   */
-  const handlePaymentUpdate = async (orderId: string, status: ApiPaymentStatus) => {
-    try {
-      const updated = await orderService.updatePaymentStatus(orderId, status)
-      toast.success(`Pembayaran ${updated.orderNumber} ditandai ${updated.paymentStatus}`)
-      loadData()
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder(updated)
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Gagal mengubah status pembayaran")
-    }
   }
 
   const handleExportCSV = () => {
@@ -349,25 +331,11 @@ function AdminOrdersContent() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-zinc-100" />
                             <DropdownMenuLabel className="text-[10px] text-zinc-400 font-semibold">Pembayaran</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() => handlePaymentUpdate(order.id, "success")}
-                              disabled={
-                                order.paymentStatus === "Lunas" ||
-                                order.status === "Batal" ||
-                                order.status === "Kedaluwarsa"
-                              }
-                              className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg"
-                            >
-                              <CreditCard className="h-3.5 w-3.5 text-emerald-500" />
-                              <span>Konfirmasi Pembayaran</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handlePaymentUpdate(order.id, "failed")}
-                              disabled={order.paymentStatus === "Gagal"}
-                              className="text-xs flex items-center gap-2 text-rose-600 focus:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
-                            >
-                              <XCircle className="h-3.5 w-3.5 text-rose-500" />
-                              <span>Tandai Pembayaran Gagal</span>
+                            <DropdownMenuItem asChild className="text-xs flex items-center gap-2 cursor-pointer text-zinc-700 hover:bg-zinc-100 rounded-lg">
+                              <Link href="/admin/pembayaran">
+                                <CreditCard className="h-3.5 w-3.5 text-emerald-500" />
+                                <span>Verifikasi Pembayaran</span>
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-zinc-100" />
                             <DropdownMenuLabel className="text-[10px] text-zinc-400 font-semibold">Ubah Status</DropdownMenuLabel>
@@ -457,7 +425,6 @@ function AdminOrdersContent() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onStatusUpdate={handleStatusUpdate}
-        onPaymentUpdate={handlePaymentUpdate}
       />
     </div>
   )

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/StatusBadge"
 import { Order, OrderStatus } from "@/types"
-import type { PaymentStatus as ApiPaymentStatus } from "@/lib/types"
 import { formatRupiah, formatTanggalJam } from "@/lib/utils"
 import { Printer, Truck, MapPin, CreditCard, Clock, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
@@ -22,7 +22,6 @@ interface OrderDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onStatusUpdate: (orderId: string, status: OrderStatus) => void
-  onPaymentUpdate: (orderId: string, status: ApiPaymentStatus) => void
 }
 
 export function OrderDetailDialog({
@@ -30,7 +29,6 @@ export function OrderDetailDialog({
   open,
   onOpenChange,
   onStatusUpdate,
-  onPaymentUpdate,
 }: OrderDetailDialogProps) {
   if (!order) return null
 
@@ -183,33 +181,21 @@ export function OrderDetailDialog({
             </div>
           </div>
 
-          {/* Konfirmasi Pembayaran */}
+          {/* Verifikasi Pembayaran */}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-4 border-t border-zinc-100">
             <span className="text-zinc-500 mr-auto">
-              Konfirmasi pembayaran manual (belum ada payment gateway):
+              Pembayaran diverifikasi lewat bukti transfer di halaman verifikasi:
             </span>
             <Button
               size="sm"
               variant="outline"
-              className="rounded-xl border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 cursor-pointer"
-              onClick={() => onPaymentUpdate(order.id, "success")}
-              disabled={
-                order.paymentStatus === "Lunas" ||
-                order.status === "Batal" ||
-                order.status === "Kedaluwarsa"
-              }
+              className="rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 cursor-pointer"
+              asChild
             >
-              <CheckCircle className="h-3.5 w-3.5 mr-1" />
-              Konfirmasi Lunas
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl border-rose-200 bg-white hover:bg-rose-50 text-rose-600 cursor-pointer"
-              onClick={() => onPaymentUpdate(order.id, "failed")}
-              disabled={order.paymentStatus === "Gagal"}
-            >
-              Tandai Gagal
+              <Link href="/admin/pembayaran">
+                <CreditCard className="h-3.5 w-3.5 mr-1" />
+                Buka Verifikasi Pembayaran
+              </Link>
             </Button>
           </div>
 
