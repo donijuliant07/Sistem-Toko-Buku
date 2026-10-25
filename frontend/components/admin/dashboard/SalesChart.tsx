@@ -12,22 +12,38 @@ import {
   Legend,
 } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { analyticsService, SalesDataItem } from "@/lib/services"
+import { getSalesTimeseries } from "@/lib/api"
 import { formatRupiah } from "@/lib/utils"
+
+type SalesPoint = { date: string; buku: number; nonBuku: number }
+
+const PERIOD_DAYS = { "7d": 7, "30d": 30, "90d": 90 } as const
 
 export function SalesChart() {
   const [period, setPeriod] = React.useState<"7d" | "30d" | "90d">("7d")
-  const [data, setData] = React.useState<SalesDataItem[]>([])
+  const [data, setData] = React.useState<SalesPoint[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     let active = true
-    analyticsService.getSalesChartData(period).then((res) => {
-      if (active) {
-        setData(res)
-        setLoading(false)
-      }
-    })
+    getSalesTimeseries(PERIOD_DAYS[period])
+      .then((rows) => {
+        if (!active) return
+        // Backend hanya membedakan buku/non-buku; kolom non-buku saat ini selalu 0
+        // karena skema live tidak menandai jenis produk per item.
+        setData(rows.map((row) => ({
+          date: row.date_label,
+          buku: row.buku_amount,
+          nonBuku: row.non_buku_amount,
+        })))
+      })
+      .catch((error: unknown) => {
+        console.error("Gagal memuat tren penjualan", error)
+        if (active) setData([])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
     return () => {
       active = false
     }
@@ -58,8 +74,8 @@ export function SalesChart() {
             <button
               key={btn.value}
               onClick={() => {
-                setLoading(true)
                 setPeriod(btn.value)
+                setLoading(true)
               }}
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
                 period === btn.value
