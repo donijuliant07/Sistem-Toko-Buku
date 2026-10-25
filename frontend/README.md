@@ -1,4 +1,4 @@
-# rak buku. frontend
+# Readr frontend
 
 Next.js frontend for Bookstore API.
 

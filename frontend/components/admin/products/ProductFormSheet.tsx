@@ -170,7 +170,7 @@ export function ProductFormSheet({
             {isEdit ? "Edit Informasi Produk" : "Tambah Produk Baru"}
           </SheetTitle>
           <SheetDescription className="text-xs text-zinc-500">
-            Isi detail katalog produk InforBook di bawah ini.
+            Isi detail katalog produk Readr di bawah ini.
           </SheetDescription>
         </SheetHeader>
 
