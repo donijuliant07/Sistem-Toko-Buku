@@ -12,7 +12,7 @@ const display = Fraunces({ variable: "--font-display", subsets: ["latin"], style
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "rak buku. — Toko buku pilihan",
+  title: "Readr — Toko buku pilihan",
   description: "Temukan buku yang ingin kamu bawa pulang.",
 };
 

@@ -12,7 +12,7 @@ export const siteConfig = {
     role: "Super Admin",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
   },
-  brandName: "InforBook",
+  brandName: "Readr",
   tagline: "Toko Buku Online Terbesar, Terlengkap dan Terpercaya di Indonesia",
   promoTags: [
     { label: "Buku Pilihan", href: "#katalog" },
