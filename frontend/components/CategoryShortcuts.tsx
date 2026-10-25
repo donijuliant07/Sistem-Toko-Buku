@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CATEGORIES } from "@/data/mockData";
 import FreepikCategoryIcon from "./FreepikCategoryIcon";
+import { Play, Pause } from "lucide-react";
 
 interface CategoryShortcutsProps {
   onSelectCategory?: (id: string) => void;
@@ -23,8 +24,42 @@ export default function CategoryShortcuts({
     onSelectCategory?.(categoryId);
   };
 
+  const togglePause = () => {
+    setIsPaused((prev) => !prev);
+  };
+
   return (
-    <section className="max-w-7xl mx-auto px-4 py-3">
+    <section className="max-w-[1240px] mx-auto px-4 py-6">
+      {/* Header section - Teks dihilangkan, hanya menyisakan tombol Play/Pause di kanan */}
+      <div className="flex items-center justify-end mb-4">
+        {/* Marquee Play / Pause Control Button */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={togglePause}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              isPaused
+                ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 shadow-2xs"
+                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+            }`}
+            title={isPaused ? "Lanjutkan putaran marquee" : "Jeda putaran marquee"}
+          >
+            {isPaused ? (
+              <>
+                <Play className="w-3 h-3 fill-amber-700" />
+                <span className="text-[11px]">Marquee Dijeda (Klik Putar)</span>
+              </>
+            ) : (
+              <>
+                <Pause className="w-3 h-3" />
+                <span className="text-[11px] hidden sm:inline">Marquee Berjalan</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Marquee Track Container with Gradient Edge Fades */}
       <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-gray-50/80 to-slate-50/40 p-2 sm:p-3 border border-gray-100/80 shadow-2xs">
         {/* Left Fading Edge Mask */}

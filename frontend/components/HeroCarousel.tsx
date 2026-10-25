@@ -25,18 +25,20 @@ export default function HeroCarousel() {
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-4 pt-4 pb-4">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Main Carousel (3 Slide Warna-Warni) */}
+    <section className="max-w-7xl mx-auto px-4 pt-4 pb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        
+        {/* Main Banner Carousel (Lebar 8 Kolom) */}
         <div
-          className="lg:col-span-8 relative rounded-2xl overflow-hidden shadow-sm aspect-[4/3] sm:aspect-[16/10] lg:min-h-[520px] bg-slate-900 flex items-center group"
+          className="lg:col-span-8 relative rounded-2xl overflow-hidden shadow-xs aspect-[2/1] bg-slate-900 group"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
           {HERO_BANNERS.map((banner, index) => (
-            <div
+            <a
               key={banner.id}
-              className={`absolute inset-0 transition-opacity duration-700 p-8 sm:p-12 lg:p-16 flex flex-col justify-center text-white ${
+              href={banner.href || "#"}
+              className={`absolute inset-0 transition-opacity duration-700 ${
                 index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
               }`}
             >
@@ -44,86 +46,64 @@ export default function HeroCarousel() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={banner.imageUrl}
-                  alt={banner.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  alt="Main Banner"
+                  className="w-full h-full object-cover object-center"
                 />
               )}
-
-              <div
-                className={`absolute inset-0 bg-gradient-to-r ${banner.imageBg} z-1`}
-              />
-
-              <div className="relative z-10 max-w-lg">
-                <span className="inline-block self-start px-3 py-1 bg-white/20 backdrop-blur-md rounded-md text-xs font-bold tracking-wider uppercase mb-4 text-white">
-                  READR EXCLUSIVE
-                </span>
-                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-4 text-white drop-shadow-sm">
-                  {banner.title}
-                </h2>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-100/95 max-w-md line-clamp-3 mb-8 drop-shadow-sm">
-                  {banner.subtitle}
-                </p>
-                <a
-                  href={banner.href}
-                  className="self-start inline-flex items-center gap-2 px-7 py-3.5 bg-white hover:bg-slate-100 rounded-xl text-sm sm:text-base font-extrabold shadow-md transition-all hover:scale-105 active:scale-95"
-                  style={{ color: "#0f172a" }}
-                >
-                  <span style={{ color: "#0f172a" }}>{banner.ctaText}</span>
-                  <span style={{ color: "#0052cc" }} className="font-black">&rarr;</span>
-                </a>
-              </div>
-            </div>
+            </a>
           ))}
 
-          {/* Prev / Next Buttons */}
+          {/* Prev Button */}
           <button
             type="button"
             onClick={handlePrev}
             aria-label="Slide Sebelumnya"
-            className="absolute left-3 z-20 w-11 h-11 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 sm:opacity-75 focus:outline-none cursor-pointer"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 focus:outline-none cursor-pointer"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
+
+          {/* Next Button */}
           <button
             type="button"
             onClick={handleNext}
             aria-label="Slide Selanjutnya"
-            className="absolute right-3 z-20 w-11 h-11 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 sm:opacity-75 focus:outline-none cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 focus:outline-none cursor-pointer"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
 
-          {/* Nav Dots */}
-          <div className="absolute bottom-5 right-6 z-20 flex gap-2 bg-black/40 backdrop-blur-sm px-3.5 py-2 rounded-full">
+          {/* Dots Indicator */}
+          <div className="absolute bottom-4 right-5 z-20 flex gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
             {HERO_BANNERS.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setCurrentIndex(i)}
                 aria-label={`Slide ${i + 1}`}
-                className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                  i === currentIndex ? "bg-white w-7" : "bg-white/50 w-2.5"
+                className={`h-2 rounded-full transition-all cursor-pointer ${
+                  i === currentIndex ? "bg-white w-6" : "bg-white/50 w-2"
                 }`}
               />
             ))}
           </div>
         </div>
 
-        {/* 2 Side Banners (Video Atas + Komunitas Bawah) */}
-        <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-4">
+        {/* Side Banners (Lebar 4 Kolom, Flex Col dengan Spacing yang Seimbang) */}
+        <div className="lg:col-span-4 flex flex-col justify-between gap-4 lg:gap-5">
           {HERO_SIDE_BANNERS.map((side) => (
-            <div
+            <a
               key={side.id}
-              className="flex-1 rounded-2xl shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow p-6 text-white min-h-[230px] lg:min-h-[250px]"
+              href={side.href || "#"}
+              className="relative w-full aspect-[2.15/1] rounded-2xl shadow-xs overflow-hidden group hover:shadow-md transition-shadow bg-slate-900 block shrink-0"
             >
-              {/* Cek tipe media: jika video render tag <video>, jika image render <img> */}
               {side.type === "video" ? (
                 <video
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 block"
                 >
                   <source src={side.mediaUrl} type="video/mp4" />
                 </video>
@@ -131,38 +111,14 @@ export default function HeroCarousel() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={side.mediaUrl}
-                  alt={side.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                  alt="Side Banner"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 block"
                 />
               )}
-
-              <div
-                className={`absolute inset-0 bg-gradient-to-t ${side.bgColor} z-1`}
-              />
-
-              <div className="relative z-10">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black/40 backdrop-blur-xs text-amber-300 uppercase tracking-wider">
-                  {side.tag}
-                </span>
-                <h3 className="font-bold text-lg sm:text-2xl mt-2 leading-snug drop-shadow-sm">
-                  {side.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-white/90 mt-1.5 line-clamp-2 drop-shadow-sm">
-                  {side.desc}
-                </p>
-              </div>
-
-              <div className="relative z-10 mt-3">
-                <a
-                  href={side.href || "#katalog"}
-                  className="text-xs sm:text-sm font-semibold text-white inline-flex items-center gap-1 group-hover:underline"
-                >
-                  {side.ctaText || "Cek Sekarang"} &rarr;
-                </a>
-              </div>
-            </div>
+            </a>
           ))}
         </div>
+
       </div>
     </section>
   );
