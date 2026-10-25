@@ -14,14 +14,15 @@ export const siteConfig = {
   },
   brandName: "Readr",
   tagline: "Toko Buku Online Terbesar, Terlengkap dan Terpercaya di Indonesia",
+  // Anchor harus menunjuk ke `id` yang benar-benar ada di beranda. Tautan tanpa
+  // halaman tujuan ("Tentang Kami", "Voucher Diskon") dihapus: sebelumnya
+  // berakhir di `href="#"` / `#promo` yang tidak membawa ke mana pun.
   promoTags: [
-    { label: "Buku Pilihan", href: "#katalog" },
-    { label: "Buku Terlaris", href: "#buku-terlaris" },
-    { label: "Back to Campus", href: "#back-to-campus" },
-    { label: "Brand Pilihan", href: "#brand-pilihan" },
+    { label: "Buku Pilihan", href: "/#katalog" },
+    { label: "Buku Terlaris", href: "/#buku-terlaris" },
+    { label: "Back to Campus", href: "/#edukasi" },
+    { label: "Brand Pilihan", href: "/#buku-unggulan" },
     { label: "Komunitas", href: "/komunitas" },
-    // Tidak ada tautan ke area admin dari storefront publik.
-    { label: "Voucher Diskon", href: "#promo", isHighlight: true },
   ],
   socials: {
     facebook: "https://facebook.com/inforbook",
@@ -29,9 +30,9 @@ export const siteConfig = {
     instagram: "https://instagram.com/inforbook",
     tiktok: "https://tiktok.com/@inforbook",
   },
+  // Hanya tautan yang punya halaman ("Lacak Pesanan"). "Tentang Kami" dan
+  // "Bantuan & FAQ" belum punya halaman, jadi tidak dipasang sebagai `#`.
   topBarLinks: [
-    { label: "Tentang Kami", href: "#" },
-    { label: "Bantuan & FAQ", href: "#" },
     { label: "Lacak Pesanan", href: "/orders" },
   ],
   links: {

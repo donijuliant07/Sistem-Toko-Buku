@@ -11,11 +11,16 @@ import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
 import FloatingCS from "@/components/FloatingCS";
 import BookDetailModal from "@/components/BookDetailModal";
-import { Product, CATEGORIES } from "@/data/mockData";
+import { Product, CATEGORIES, SEMUA_CATEGORY_ID } from "@/data/mockData";
 import FreepikCategoryIcon from "@/components/FreepikCategoryIcon";
 import { ArrowDownUp, Check, RotateCcw } from "lucide-react";
 
 const initialPage: BookPage = { items: [], total: 0, page: 1, page_size: 12 };
+
+/** `price` dari backend bisa berupa string desimal; `0`/NaN diteruskan apa adanya. */
+function toNumber(value: number | string): number {
+  return typeof value === "number" ? value : parseFloat(value) || 0;
+}
 
 // Dua request pertama (featured + katalog) berjalan bersamaan saat mount, jadi skeleton
 // ditahan sampai keduanya selesai agar tampilan tidak berkedip.
@@ -27,7 +32,7 @@ export default function Home() {
   const [page, setPage] = useState<BookPage>(initialPage);
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeCategory, setActiveCategory] = useState(SEMUA_CATEGORY_ID);
   const [loaded, setLoaded] = useState(0);
   const [error, setError] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -61,7 +66,7 @@ export default function Home() {
     let active = true;
     // When a specific category is chosen, fetch larger catalog set (up to 60 items)
     // so category keyword filtering has full rich dataset.
-    const fetchPageSize = activeCategory !== "all" ? 60 : 12;
+    const fetchPageSize = activeCategory !== SEMUA_CATEGORY_ID ? 60 : 12;
     getBooks(page.page, query, fetchPageSize)
       .then((data) => {
         if (active) {
@@ -93,25 +98,21 @@ export default function Home() {
 
   const handleResetFilters = () => {
     setQuery("");
-    setActiveCategory("all");
+    setActiveCategory(SEMUA_CATEGORY_ID);
     setSortBy("relevance");
     setOnlyInStock(false);
     setPage((curr) => ({ ...curr, page: 1 }));
   };
 
-  const toProduct = (b: Book, category = "buku"): Product => ({
+  // Hanya field yang memang ada di `books`; kolom promo/rating/terjual tidak
+  // dikarang di sini (backend belum menyimpannya).
+  const toProduct = (b: Book): Product => ({
     id: b.id,
     title: b.title,
     authorOrBrand: b.author,
-    price: typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000,
-    originalPrice:
-      (typeof b.price === "number" ? b.price : parseFloat(b.price) || 85000) *
-      1.15,
-    discountPercent: 15,
-    soldCount: (b.stock || 5) * 12,
-    badgeLanguage: "ID",
+    price: toNumber(b.price),
     coverUrl: b.cover_url || "",
-    category,
+    category: "",
     type: "book",
     stock: b.stock,
   });
@@ -121,24 +122,24 @@ export default function Home() {
     featuredBooks.length > 0
       ? featuredBooks.slice(0, 8)
       : page.items.slice(0, 8)
-  ).map((b) => toProduct(b, "terlaris"));
+  ).map(toProduct);
   const campusBooks: Product[] = (
     featuredBooks.length > 8
       ? featuredBooks.slice(8, 16)
       : page.items.slice(0, 6)
-  ).map((b) => toProduct(b, "edukasi"));
+  ).map(toProduct);
   const newReleaseBooks: Product[] = (
     featuredBooks.length > 16
       ? featuredBooks.slice(16, 24)
       : page.items.slice(0, 6)
-  ).map((b) => toProduct(b, "rekomendasi"));
+  ).map(toProduct);
 
   // Processed catalog products with sorting, category filtering, and stock filtering
   const processedProducts = useMemo(() => {
-    let items = page.items.map((b) => toProduct(b, "katalog"));
+    let items = page.items.map(toProduct);
 
     // Category filtering
-    if (activeCategory !== "all" && selectedCategoryObj?.keywords?.length) {
+    if (activeCategory !== SEMUA_CATEGORY_ID && selectedCategoryObj?.keywords?.length) {
       const kwList = selectedCategoryObj.keywords;
       items = items.filter((p) => {
         const text = `${p.title} ${p.authorOrBrand}`.toLowerCase();
@@ -238,13 +239,13 @@ export default function Home() {
                 <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
                   Katalog Lengkap Toko Buku
                 </h3>
-                {activeCategory !== "all" && selectedCategoryObj && (
+                {activeCategory !== SEMUA_CATEGORY_ID && selectedCategoryObj && (
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0052cc] border border-blue-200 shadow-2xs">
                     <FreepikCategoryIcon id={activeCategory} size={16} className="w-4 h-4" />
                     <span>Kategori: {selectedCategoryObj.name}</span>
                     <button
                       type="button"
-                      onClick={() => setActiveCategory("all")}
+                      onClick={() => setActiveCategory(SEMUA_CATEGORY_ID)}
                       className="ml-1 text-gray-400 hover:text-red-500 font-bold cursor-pointer transition-colors"
                       title="Kembalikan ke semua kategori"
                     >
@@ -259,7 +260,7 @@ export default function Home() {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {activeCategory !== "all" && selectedCategoryObj
+                {activeCategory !== SEMUA_CATEGORY_ID && selectedCategoryObj
                   ? `Menampilkan ${processedProducts.length} judul buku untuk kategori "${selectedCategoryObj.name}".`
                   : query
                   ? `Hasil pencarian untuk "${query}"`
@@ -309,7 +310,7 @@ export default function Home() {
                 </select>
               </div>
 
-              {(query || onlyInStock || sortBy !== "relevance" || activeCategory !== "all") && (
+              {(query || onlyInStock || sortBy !== "relevance" || activeCategory !== SEMUA_CATEGORY_ID) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}

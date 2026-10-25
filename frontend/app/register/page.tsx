@@ -10,7 +10,7 @@ import { formatAuthError } from "@/lib/auth-utils";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { session, role, roleLoading, loading: authLoading, signUp } = useAuth();
+  const { session, role, roleLoading, loading: authLoading, signUp, signInWithOAuth } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,6 +33,20 @@ export default function RegisterPage() {
     if (authLoading || !session || roleLoading) return;
     router.replace(role === "admin" ? "/admin/dashboard" : "/");
   }, [authLoading, roleLoading, role, router, session]);
+
+  // Sama seperti halaman login: OAuth lewat Supabase, lalu `auth/callback`
+  // menukar kode sesi dan mengarahkan pengguna ke area yang sesuai.
+  async function handleOAuth(provider: "github" | "google" | "apple") {
+    setPending(true);
+    setServerError("");
+    try {
+      await signInWithOAuth(provider);
+    } catch (cause) {
+      const err = cause instanceof Error ? cause.message : "OAuth sign up failed.";
+      setServerError(err);
+      setPending(false);
+    }
+  }
 
   function validate(): boolean {
     let valid = true;
@@ -313,7 +327,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 disabled={pending || authLoading}
-                onClick={() => alert("GitHub sign-up coming soon.")}
+                onClick={() => handleOAuth("github")}
                 className="w-full h-11 rounded-md bg-[#1a1a1a] border border-zinc-800 hover:bg-[#242424] text-zinc-200 font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -326,7 +340,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 disabled={pending || authLoading}
-                onClick={() => alert("Apple sign-up coming soon.")}
+                onClick={() => handleOAuth("apple")}
                 className="w-full h-11 rounded-md bg-[#1a1a1a] border border-zinc-800 hover:bg-[#242424] text-zinc-200 font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -339,7 +353,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 disabled={pending || authLoading}
-                onClick={() => alert("Google sign-up coming soon.")}
+                onClick={() => handleOAuth("google")}
                 className="w-full h-11 rounded-md bg-[#1a1a1a] border border-zinc-800 hover:bg-[#242424] text-zinc-200 font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
@@ -354,15 +368,7 @@ export default function RegisterPage() {
 
             {/* Legal Footer */}
             <p className="text-center text-[11px] text-zinc-600 pt-2 leading-relaxed">
-              By signing up, you agree to our{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-zinc-400 transition-colors">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-zinc-400 transition-colors">
-                Privacy Policy
-              </a>
-              .
+              By signing up, you agree to our Terms of Service and Privacy Policy.
             </p>
           </form>
         </div>

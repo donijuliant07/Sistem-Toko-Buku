@@ -1,6 +1,7 @@
 "use client";
 
-import { CATEGORIES } from "@/data/mockData";
+import { useState } from "react";
+import { CATEGORIES, SEMUA_CATEGORY_ID } from "@/data/mockData";
 import FreepikCategoryIcon from "./FreepikCategoryIcon";
 
 interface CategoryShortcutsProps {
@@ -10,7 +11,7 @@ interface CategoryShortcutsProps {
 
 export default function CategoryShortcuts({
   onSelectCategory,
-  activeId = "all",
+  activeId = SEMUA_CATEGORY_ID,
 }: CategoryShortcutsProps) {
   const handleCardClick = (categoryId: string) => {
     // Trigger filter ke kategori buku yang dipilih tanpa menghentikan marquee

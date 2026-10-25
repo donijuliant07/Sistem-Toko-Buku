@@ -8,19 +8,61 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { SalesChart } from "@/components/admin/dashboard/SalesChart"
 import { CategoryChart } from "@/components/admin/dashboard/CategoryChart"
+import { getMonthlyReports } from "@/lib/api"
+import type { MonthlyReportItem } from "@/lib/types"
 import { formatRupiah } from "@/lib/utils"
 import { toast } from "sonner"
 
-const monthlyReports = [
-  { month: "Oktober 2026", orders: 124, revenue: 117200000, bestCategory: "Fiksi", growth: "+14.2%" },
-  { month: "September 2026", orders: 110, revenue: 104000000, bestCategory: "Pengembangan Diri", growth: "+9.8%" },
-  { month: "Agustus 2026", orders: 98, revenue: 89900000, bestCategory: "Pendidikan & SNBT", growth: "+6.5%" },
-  { month: "Juli 2026", orders: 92, revenue: 84300000, bestCategory: "Komik & Graphic Novel", growth: "+4.1%" },
-]
+/** CSV satu baris per bulan; sengaja minimal supaya Excel/Sheets bisa membukanya. */
+function toCsv(rows: MonthlyReportItem[]): string {
+  const header = ["Bulan", "Pesanan", "Pendapatan", "Kategori Terlaris", "Pertumbuhan"]
+  const lines = rows.map((row) =>
+    [row.month, row.orders, row.revenue, row.best_category, row.growth]
+      .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+      .join(",")
+  )
+  return [header.join(","), ...lines].join("\r\n")
+}
 
 export default function AdminReportsPage() {
-  const handleExportCSV = (month: string) => {
-    toast.success(`Mengunduh file laporan keuangan CSV untuk periode ${month}...`)
+  const [reports, setReports] = React.useState<MonthlyReportItem[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    let active = true
+    getMonthlyReports(4)
+      .then((rows) => {
+        if (active) setReports(rows)
+      })
+      .catch((error: unknown) => {
+        console.error("Gagal memuat laporan bulanan", error)
+        if (active) {
+          toast.error("Gagal memuat laporan penjualan.")
+          setReports([])
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleExportCSV = () => {
+    if (reports.length === 0) {
+      toast.error("Belum ada data laporan untuk diekspor.")
+      return
+    }
+    // BOM membuat Excel di Windows membaca UTF-8 dengan benar.
+    const blob = new Blob(["﻿" + toCsv(reports)], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `laporan-penjualan-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.success("Laporan penjualan diunduh sebagai CSV.")
   }
 
   return (
@@ -31,7 +73,7 @@ export default function AdminReportsPage() {
         action={
           <Button
             size="sm"
-            onClick={() => handleExportCSV("Semua Periode")}
+            onClick={handleExportCSV}
             className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
@@ -65,8 +107,21 @@ export default function AdminReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthlyReports.map((row, idx) => (
-                  <TableRow key={idx} className="border-b border-zinc-100 hover:bg-zinc-50/70 transition-colors">
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-xs text-zinc-400 py-6">
+                      Memuat laporan...
+                    </TableCell>
+                  </TableRow>
+                ) : reports.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-xs text-zinc-400 py-6">
+                      Belum ada pesanan tercatat pada periode ini.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  reports.map((row) => (
+                  <TableRow key={row.month} className="border-b border-zinc-100 hover:bg-zinc-50/70 transition-colors">
                     <TableCell className="font-semibold text-xs text-zinc-900">
                       {row.month}
                     </TableCell>
@@ -74,7 +129,15 @@ export default function AdminReportsPage() {
                     <TableCell className="text-xs font-bold text-zinc-900 tabular-nums">
                       {formatRupiah(row.revenue)}
                     </TableCell>
-                    <TableCell className="text-xs font-semibold text-emerald-600">
+                    <TableCell
+                      className={`text-xs font-semibold ${
+                        row.growth === "-"
+                          ? "text-zinc-400"
+                          : row.growth.startsWith("-")
+                            ? "text-rose-600"
+                            : "text-emerald-600"
+                      }`}
+                    >
                       {row.growth}
                     </TableCell>
                     <TableCell className="text-right">
@@ -82,14 +145,15 @@ export default function AdminReportsPage() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs gap-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg cursor-pointer"
-                        onClick={() => handleExportCSV(row.month)}
+                        onClick={handleExportCSV}
                       >
                         <FileSpreadsheet className="h-3.5 w-3.5" />
                         <span>CSV</span>
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

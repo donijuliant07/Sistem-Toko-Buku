@@ -21,8 +21,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { analyticsService, orderService, productService } from "@/lib/services";
-import { KPICardData, Order, Product } from "@/types";
+import { analyticsService, orderService } from "@/lib/services";
+import { getLowStockProducts } from "@/lib/api";
+import { KPICardData, Order } from "@/types";
+import type { LowStockBook } from "@/lib/types";
 import { formatRupiah, formatTanggalJam } from "@/lib/utils";
 import { toast } from "sonner";
 import { OrderStatusBadge } from "@/components/admin/StatusBadge";
@@ -30,7 +32,7 @@ import { OrderStatusBadge } from "@/components/admin/StatusBadge";
 export default function DashboardPage() {
   const [kpiData, setKpiData] = React.useState<KPICardData[]>([]);
   const [recentOrders, setRecentOrders] = React.useState<Order[]>([]);
-  const [lowStockItems, setLowStockItems] = React.useState<Product[]>([]);
+  const [lowStockItems, setLowStockItems] = React.useState<LowStockBook[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const loadAllData = React.useCallback(async () => {
@@ -39,7 +41,7 @@ export default function DashboardPage() {
       const [kpiRes, ordersRes, stockRes] = await Promise.all([
         analyticsService.getKPIData(),
         orderService.getAll(),
-        productService.getLowStock(5),
+        getLowStockProducts(),
       ]);
       setKpiData(kpiRes);
       setRecentOrders(ordersRes.slice(0, 5));

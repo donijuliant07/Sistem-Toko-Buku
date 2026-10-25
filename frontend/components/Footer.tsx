@@ -3,6 +3,25 @@
 import React from "react";
 import Link from "next/link";
 import { Send, Globe } from "lucide-react";
+import { siteConfig } from "@/config/site";
+
+/** Kategori belum punya halaman sendiri; semuanya memfilter katalog di beranda. */
+const PRODUCT_LINKS = [
+  "Buku & E-book",
+  "Alat Tulis & Kantor",
+  "Mainan & Hobi",
+  "Komputer & IT",
+  "Majalah & Tabloid",
+];
+
+/** Halaman informasi belum ada di aplikasi, jadi ditampilkan tanpa tautan. */
+const INFO_LINKS = [
+  "Cara Berbelanja",
+  "Metode Pembayaran",
+  "Biaya & Pengiriman",
+  "Syarat & Ketentuan",
+  "Kebijakan Privasi",
+];
 
 export default function Footer() {
   return (
@@ -52,20 +71,10 @@ export default function Footer() {
 
             {/* Social Media Icons (Brand Colors) */}
             <div className="flex items-center gap-3 pt-2">
-              {/* GitHub */}
-              <a
-                href="#"
-                className="w-9 h-9 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center text-gray-900 transition-all border border-gray-200 shadow-sm hover:scale-105"
-                title="GitHub"
-              >
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                </svg>
-              </a>
-
-              {/* Instagram */}
-              <a
-                href="#"
+              {/* Instagram */}              <a
+                href={siteConfig.socials.instagram}
+                target="_blank"
+                rel="noreferrer"
                 className="w-9 h-9 rounded-full bg-linear-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white transition-all shadow-sm hover:opacity-90 hover:scale-105"
                 title="Instagram"
               >
@@ -84,7 +93,9 @@ export default function Footer() {
 
               {/* X / Twitter */}
               <a
-                href="#"
+                href={siteConfig.socials.twitter}
+                target="_blank"
+                rel="noreferrer"
                 className="w-9 h-9 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center text-white transition-all shadow-sm hover:scale-105"
                 title="X / Twitter"
               >
@@ -93,14 +104,16 @@ export default function Footer() {
                 </svg>
               </a>
 
-              {/* YouTube */}
+              {/* TikTok */}
               <a
-                href="#"
-                className="w-9 h-9 rounded-full bg-white hover:bg-red-50 flex items-center justify-center text-[#FF0000] transition-all border border-gray-200 shadow-sm hover:scale-105"
-                title="YouTube"
+                href={siteConfig.socials.tiktok}
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center text-gray-900 transition-all border border-gray-200 shadow-sm hover:scale-105"
+                title="TikTok"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  <path d="M16.6 5.82A5.6 5.6 0 0 1 15.3 2h-3.1v13.1a2.6 2.6 0 1 1-1.86-2.5V9.4a5.72 5.72 0 1 0 4.96 5.66V8.9a8.7 8.7 0 0 0 4.7 1.38V7.15a5.6 5.6 0 0 1-3.4-1.33z" />
                 </svg>
               </a>
             </div>
@@ -112,46 +125,16 @@ export default function Footer() {
               Produk
             </h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Buku & E-book
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Alat Tulis & Kantor
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Mainan & Hobi
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Komputer & IT
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Majalah & Tabloid
-                </Link>
-              </li>
+              {PRODUCT_LINKS.map((label) => (
+                <li key={label}>
+                  <Link
+                    href="/#katalog"
+                    className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -161,46 +144,11 @@ export default function Footer() {
               Informasi
             </h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Cara Berbelanja
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Metode Pembayaran
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Biaya & Pengiriman
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Syarat & Ketentuan
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
-                >
-                  Kebijakan Privasi
-                </Link>
-              </li>
+              {INFO_LINKS.map((label) => (
+                <li key={label} className="text-gray-700 font-medium">
+                  {label}
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -258,9 +206,7 @@ export default function Footer() {
               <Globe className="w-3.5 h-3.5 text-gray-500" /> Indonesia
             </span>
             <span className="text-gray-300">•</span>
-            <Link href="#" className="hover:text-[#0052cc] transition-colors">
-              Versi Desktop
-            </Link>
+            <span>Versi Desktop</span>
           </div>
         </div>
       </div>

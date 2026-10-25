@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -11,12 +11,8 @@ import {
   Boxes,
   Users,
   Tag,
-  Image as ImageIcon,
-  MessageSquare,
   BarChart3,
-  TrendingUp,
   Settings,
-  HelpCircle,
   ChevronDown,
   LogOut,
   User,
@@ -28,6 +24,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { siteConfig } from "@/config/site"
+import { useAuth } from "@/components/AuthProvider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -62,10 +59,12 @@ const navGroups: NavGroup[] = [
     label: "Utama",
     items: [
       { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-      { title: "Pesanan", href: "/admin/pesanan", icon: ShoppingCart, badge: 5 },
+      // Tanpa badge: jumlahnya hanya bisa diketahui dari API, dan angka tetap
+      // yang ditulis di sini akan berbohong saat data berubah.
+      { title: "Pesanan", href: "/admin/pesanan", icon: ShoppingCart },
       { title: "Verifikasi Pembayaran", href: "/admin/pembayaran", icon: Wallet },
       { title: "Produk", href: "/admin/produk", icon: BookOpen },
-      { title: "Inventori / Stok", href: "/admin/inventori", icon: Boxes, badge: "3 Kritis" },
+      { title: "Inventori / Stok", href: "/admin/inventori", icon: Boxes },
       { title: "Pelanggan", href: "/admin/pelanggan", icon: Users },
     ],
   },
@@ -74,15 +73,12 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Promo & Voucher", href: "/admin/promo", icon: Tag },
       { title: "Link Harga Marketplace", href: "/admin/marketplace-sources", icon: Link2 },
-      { title: "Banner Toko", href: "/admin/promo#banner", icon: ImageIcon },
-      { title: "Ulasan Produk", href: "/admin/produk#ulasan", icon: MessageSquare },
     ],
   },
   {
     label: "Laporan",
     items: [
       { title: "Laporan Penjualan", href: "/admin/laporan", icon: BarChart3 },
-      { title: "Produk Terlaris", href: "/admin/laporan#terlaris", icon: TrendingUp },
     ],
   },
   {
@@ -90,7 +86,6 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Poin & Reward", href: "/admin/rewards", icon: Coins },
       { title: "Pengaturan", href: "/admin/pengaturan", icon: Settings },
-      { title: "Bantuan & CS", href: "/admin/pengaturan#bantuan", icon: HelpCircle },
     ],
   },
 ]
@@ -102,6 +97,31 @@ export function AppSidebar({
   onCloseMobile,
 }: AppSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { session, signOut } = useAuth()
+
+  // Identitas diambil dari sesi yang sedang login, bukan dari `siteConfig`
+  // (yang berisi nama pemilik toko fiktif untuk halaman statis).
+  const adminName =
+    (session?.user.user_metadata?.full_name as string | undefined) ||
+    (session?.user.user_metadata?.name as string | undefined) ||
+    session?.user.email?.split("@")[0] ||
+    "Administrator"
+  const adminEmail = session?.user.email ?? ""
+  const adminRole = "Administrator"
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.replace("/login")
+    } catch (error) {
+      console.error("Gagal keluar", error)
+    }
+  }
+
+  // Tanda aktif hanya untuk halaman itu sendiri, bukan `#anchor` di halaman
+  // yang sama — dua menu dengan path sama akan tampak aktif bersamaan.
+  const activeBase = (href: string) => href.split("#")[0]
 
   const sidebarContent = (
     <div className="flex h-full flex-col justify-between overflow-hidden bg-white">
@@ -145,7 +165,8 @@ export function AppSidebar({
                 </p>
               )}
               {group.items.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href))
+                const base = activeBase(item.href)
+                const isActive = pathname === base || (base !== "/admin/dashboard" && pathname.startsWith(base))
                 const Icon = item.icon
 
                 return (
@@ -207,19 +228,19 @@ export function AppSidebar({
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-zinc-100/80 cursor-pointer transition-colors">
               <Avatar className="h-8 w-8 rounded-xl ring-1 ring-zinc-200/80">
-                <AvatarImage src={siteConfig.adminUser.avatar} alt={siteConfig.adminUser.name} />
+                <AvatarImage src={siteConfig.adminUser.avatar} alt={adminName} />
                 <AvatarFallback className="rounded-xl bg-zinc-100 text-zinc-800 text-xs font-bold">
-                  RP
+                  {adminName.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
                 <>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="truncate text-xs font-semibold text-zinc-900">
-                      {siteConfig.adminUser.name}
+                      {adminName}
                     </span>
                     <span className="truncate text-[10px] text-zinc-500">
-                      {siteConfig.adminUser.email}
+                      {adminEmail}
                     </span>
                   </div>
                   <ChevronDown className="h-4 w-4 text-zinc-400 shrink-0" />
@@ -230,8 +251,8 @@ export function AppSidebar({
           <DropdownMenuContent align="end" className="w-56 mb-2 bg-white text-zinc-800 border-zinc-200/80 shadow-lg rounded-xl">
             <DropdownMenuLabel className="font-normal p-3">
               <div className="flex flex-col space-y-1">
-                <p className="text-xs font-semibold text-zinc-900">{siteConfig.adminUser.name}</p>
-                <p className="text-[10px] text-zinc-500">{siteConfig.adminUser.role}</p>
+                <p className="text-xs font-semibold text-zinc-900">{adminName}</p>
+                <p className="text-[10px] text-zinc-500">{adminRole}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-zinc-100" />
@@ -250,9 +271,7 @@ export function AppSidebar({
             <DropdownMenuSeparator className="bg-zinc-100" />
             <DropdownMenuItem
               className="text-xs cursor-pointer text-rose-600 focus:text-rose-600 focus:bg-rose-50 rounded-lg"
-              onClick={() => {
-                alert("Simulasi Logout berhasil.")
-              }}
+              onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4 mr-2 text-rose-500" />
               <span>Keluar</span>

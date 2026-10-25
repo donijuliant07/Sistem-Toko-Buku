@@ -60,10 +60,18 @@ export default function AdminInventoryPage() {
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedProduct) return
+    // `POST /inventory/adjust` menghitung stok akhir di server dari stok yang
+    // tersimpan (bukan stok yang mungkin sudah basi di layar) dan menolak hasil
+    // negatif, alih-alih diam-diam menimpanya dengan 0.
+    if (adjustAmount === 0) {
+      toast.error("Perubahan stok tidak boleh nol.")
+      return
+    }
     try {
-      const newStock = Math.max(0, selectedProduct.stock + adjustAmount)
-      await productService.adjustStock(selectedProduct.id, newStock)
-      toast.success(`Stok "${selectedProduct.title}" disesuaikan menjadi ${newStock} unit. Alasan: ${reason}`)
+      const adjusted = await productService.adjustStock(selectedProduct.id, adjustAmount, reason)
+      toast.success(
+        `Stok "${selectedProduct.title}" disesuaikan: ${adjusted.stock_before} → ${adjusted.stock_after} unit. Alasan: ${reason}`
+      )
       loadData()
       setAdjustOpen(false)
     } catch {

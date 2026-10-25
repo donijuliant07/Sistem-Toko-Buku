@@ -36,6 +36,68 @@ export type BookInput = {
 
 export type BookUpdate = Partial<BookInput>;
 
+/** Jenis pergerakan stok yang diterima `POST /inventory/adjust`. */
+export type StockMovementType = "Restok" | "Penjualan" | "Penyesuaian" | "Retur";
+
+export type StockAdjustmentInput = {
+  product_id: string;
+  /** Restok/Penjualan: jumlah perubahan; Penyesuaian/Retur: stok baru. */
+  quantity: number;
+  type: StockMovementType;
+  reason: string;
+  reference_id?: string | null;
+};
+
+export type StockAdjustmentResult = {
+  product_id: string;
+  title: string | null;
+  stock_before: number;
+  stock_after: number;
+  sukses: boolean;
+};
+
+/** Baris `GET /inventory/low-stock` — hanya kolom yang ada di tabel `books`. */
+export type LowStockBook = {
+  id: string;
+  title: string;
+  author: string | null;
+  stock: number;
+  cover_url: string | null;
+};
+
+// --- Dashboard & laporan admin (`/dashboard/*`) ---
+
+export type DashboardKpi = {
+  total_omset: number;
+  total_orders: number;
+  total_books_sold: number;
+  active_customers: number;
+  low_stock_count: number;
+};
+
+export type SalesTimeseriesItem = {
+  date_label: string;
+  buku_amount: number;
+  non_buku_amount: number;
+  total_amount: number;
+};
+
+export type CategorySalesSummary = {
+  category_name: string;
+  sales_count: number;
+  revenue: number;
+  percentage: number;
+};
+
+export type MonthlyReportItem = {
+  month: string;
+  orders: number;
+  revenue: number;
+  best_category: string;
+  /** Selisih persen dari bulan sebelumnya, mis. `+14.2%`; `-` bila tak ada pembanding. */
+  growth: string;
+};
+
 // Nilai mengikuti CHECK constraint database live, bukan pilihan bebas:
 //   orders_status_check   -> pending, paid, processing, shipped, completed, cancelled, expired
 //   payments_status_check -> pending, success, failed, expired, refunded
