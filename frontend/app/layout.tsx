@@ -5,6 +5,7 @@ import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
 import BookAdvisorWidget from "@/components/BookAdvisorWidget";
 import { SoundEffects } from "@/components/ui/sound";
+import PageTitle from "@/components/PageTitle";
 import "./globals.css";
 
 const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"] });
@@ -12,8 +13,14 @@ const display = Fraunces({ variable: "--font-display", subsets: ["latin"], style
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Readr — Toko buku pilihan",
-  description: "Temukan buku yang ingin kamu bawa pulang.",
+  // Setiap halaman menetapkan judulnya sendiri dan otomatis diberi akhiran
+  // "| Readr" lewat template ini.
+  title: {
+    template: "%s | Readr",
+    default: "Readr",
+  },
+  description:
+    "Beli buku pilihan, bandingkan harga di marketplace, kumpulkan poin Rewards, dan berdiskusi di komunitas Readr.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -23,6 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SoundEffects>
           <AuthProvider>
             <CartProvider>
+              <PageTitle />
               {children}
               <CartDrawer />
               <BookAdvisorWidget />
