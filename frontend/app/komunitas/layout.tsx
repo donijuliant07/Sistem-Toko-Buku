@@ -22,9 +22,11 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (loading || session) return;
-    // `/login` hanya menerima path internal tanpa query, jadi alamat tujuan
-    // cukup path-nya; grup yang sedang dibuka diingat di `?g=`.
-    const redirect = pathname?.startsWith("/komunitas") ? pathname : "/komunitas";
+    // `usePathname()` membuang query, padahal grup komunitas yang sedang dibuka
+    // ada di `?g=`. Query dibaca dari `window` (bukan `useSearchParams`) supaya
+    // layout tidak perlu Suspense boundary; `/login` menerima path + query.
+    const query = typeof window !== "undefined" ? window.location.search : "";
+    const redirect = `${pathname?.startsWith("/komunitas") ? pathname : "/komunitas"}${query}`;
     router.replace(`/login?redirect=${encodeURIComponent(redirect)}`);
   }, [loading, session, router, pathname]);
 
