@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CATEGORIES } from "@/data/mockData";
 import FreepikCategoryIcon from "./FreepikCategoryIcon";
-import { Play, Pause, Compass } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 
 interface CategoryShortcutsProps {
   onSelectCategory?: (id: string) => void;
@@ -30,27 +30,8 @@ export default function CategoryShortcuts({
 
   return (
     <section className="max-w-[1240px] mx-auto px-4 py-6">
-      {/* Header section with Freepik Badge & Marquee Control Status */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-[#0052cc]">
-            <Compass className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight">
-                Jelajahi Kategori Buku
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs">
-                Premium Freepik 3D
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500 hidden sm:block">
-              Pilih genre favoritmu — geser otomatis, klik untuk menghentikan & jelajahi buku
-            </p>
-          </div>
-        </div>
-
+      {/* Header section - Teks dihilangkan, hanya menyisakan tombol Play/Pause di kanan */}
+      <div className="flex items-center justify-end mb-4">
         {/* Marquee Play / Pause Control Button */}
         <div className="flex items-center gap-2">
           <button
