@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES } from "@/data/mockData";
+import { CATEGORIES, SEMUA_CATEGORY_ID } from "@/data/mockData";
 import FreepikCategoryIcon from "./FreepikCategoryIcon";
 import { Play, Pause } from "lucide-react";
 
@@ -12,7 +12,7 @@ interface CategoryShortcutsProps {
 
 export default function CategoryShortcuts({
   onSelectCategory,
-  activeId = "all",
+  activeId = SEMUA_CATEGORY_ID,
 }: CategoryShortcutsProps) {
   // State untuk mengontrol status perhentian marquee (berhenti saat diklik)
   const [isPaused, setIsPaused] = useState(false);

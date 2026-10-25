@@ -144,8 +144,14 @@ export default function ProductCard({
 
         <div className="flex items-center justify-between mt-1.5 text-[10px] text-gray-500">
           <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-            <span className="font-semibold text-gray-700">4.8</span>
+            {product.rating ? (
+              <>
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                <span className="font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
+              </>
+            ) : (
+              <span className="text-gray-400">Belum ada ulasan</span>
+            )}
           </div>
           {product.soldCount ? (
             <span>
