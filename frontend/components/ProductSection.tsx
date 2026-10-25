@@ -79,14 +79,6 @@ export default function ProductSection({
                 {sideBanner.subtitle}
               </p>
             </div>
-            <div className="relative z-10 mt-6">
-              <Link
-                href={sideBanner.href || seeAllHref}
-                className="inline-flex items-center gap-2 self-start px-4 py-2 bg-white text-gray-900 rounded-lg text-xs font-bold shadow-md hover:bg-gray-100 transition-colors"
-              >
-                Jelajahi &rarr;
-              </Link>
-            </div>
           </div>
 
           {/* Product Grid / Row */}

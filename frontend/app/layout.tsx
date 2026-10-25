@@ -25,7 +25,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <CartProvider>
               {children}
               <CartDrawer />
-              <BookAdvisorWidget />
             </CartProvider>
           </AuthProvider>
         </SoundEffects>
