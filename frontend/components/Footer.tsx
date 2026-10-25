@@ -41,7 +41,7 @@ export default function Footer() {
                 R
               </div>
               <span className="text-xl font-bold text-gray-900 tracking-tight">
-                InforBook
+                Readr
               </span>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed max-w-sm">
@@ -252,7 +252,7 @@ export default function Footer() {
 
         {/* Bottom Bar / Copyright */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600 font-medium">
-          <p>© 2026 InforBook Media. Hak Cipta Dilindungi.</p>
+          <p>© 2026 Readr Media. Hak Cipta Dilindungi.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <Globe className="w-3.5 h-3.5 text-gray-500" /> Indonesia

@@ -66,7 +66,7 @@ export default function ProductCard({
               className={`w-full h-full bg-gradient-to-br ${bgGradient} text-white p-3 flex flex-col justify-between relative shadow-inner`}
             >
               <div className="text-[10px] font-bold tracking-widest opacity-60">
-                INFORBOOK
+                READR
               </div>
               <div>
                 <span className="text-xl font-black block mb-1 opacity-40">

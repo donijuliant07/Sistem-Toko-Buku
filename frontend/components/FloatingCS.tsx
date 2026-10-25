@@ -3,7 +3,7 @@
 import { siteConfig } from "@/config/site";
 
 export default function FloatingCS() {
-  const waUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=Halo%20InforBook,%20saya%20butuh%20bantuan%20pesanan.`;
+  const waUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=Halo%20Readr,%20saya%20butuh%20bantuan%20pesanan.`;
 
   return (
     <aside aria-label="Customer Service">
