@@ -1000,6 +1000,38 @@ async def test_admin_source_endpoint_requires_admin(client):
 
 
 @pytest.mark.asyncio
+async def test_marketplace_list_is_admin_only(client):
+    """Daftar marketplace mengisi dropdown halaman admin, jadi pelanggan ditolak.
+
+    Halaman `/admin/marketplace-sources` adalah satu-satunya pemanggilnya; saat
+    endpoint ini memakai `require_user`, admin selalu mendapat 403 dan dropdown
+    "tambah sumber" tidak pernah terisi.
+    """
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(
+        id="user-1", email="user@example.test", role="user"
+    )
+
+    response = await client.get("/api/v1/marketplaces")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_gets_supported_marketplaces_for_the_dropdown(client):
+    """Admin menerima slug+label, dan marketplace contoh tidak ikut ditawarkan."""
+    app.dependency_overrides[get_current_user] = lambda: UserPayload(
+        id="admin-1", email="admin@example.test", role="admin"
+    )
+
+    response = await client.get("/api/v1/marketplaces")
+
+    assert response.status_code == 200
+    items = response.json()["data"]
+    assert [item["slug"] for item in items] == [adapter.slug for adapter in supported_marketplaces()]
+    assert not {item["slug"] for item in items} & set(MOCK_SLUGS)
+
+
+@pytest.mark.asyncio
 async def test_admin_can_create_source_and_duplicate_is_rejected(client):
     """Admin bisa menambah sumber; marketplace yang sama dua kali ditolak 409."""
     source_repo = FakeSourceRepository()

@@ -5,7 +5,8 @@ Dua kelompok endpoint dengan otorisasi berbeda:
 - **Pembanding harga** (`GET /books/{id}/marketplace-prices`) hanya untuk akun
   pelanggan yang sudah login (`require_user`). Sama seperti keranjang, akun admin
   tidak ikut memakainya — admin berbelanja dengan akun pelanggan terpisah.
-- **Sumber marketplace** (`/marketplace-sources`) hanya untuk admin. Tanpa
+- **Sumber marketplace** (`/marketplace-sources`) dan daftar marketplace yang
+  didukung (`GET /marketplaces`, isi dropdown admin) hanya untuk admin. Tanpa
   sumber, sebuah buku tidak akan pernah punya harga pembanding, jadi ini bagian
   yang wajib diisi admin lebih dulu.
 
@@ -128,7 +129,7 @@ async def compare_marketplace_prices(
 
 @router.get("/marketplaces", response_model=ApiResponse[list[MarketplaceInfo]])
 async def list_marketplaces(
-    current_user: Annotated[UserPayload, Depends(require_user)],
+    current_user: Annotated[UserPayload, Depends(require_admin)],
 ) -> ApiResponse[list[MarketplaceInfo]]:
     """Marketplace yang didukung, untuk dropdown di halaman admin."""
     return ApiResponse(
