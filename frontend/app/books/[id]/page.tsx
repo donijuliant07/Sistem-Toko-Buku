@@ -199,7 +199,7 @@ export default function BookDetailPage() {
                 <img src={book.cover_url} alt={book.title} className="w-full h-full object-contain p-2" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-6 flex flex-col justify-between">
-                  <span className="text-xs font-bold text-amber-300">INFORBOOK</span>
+                  <span className="text-xs font-bold text-amber-300">READR</span>
                   <p className="text-base font-bold line-clamp-4">{book.title}</p>
                 </div>
               )}
