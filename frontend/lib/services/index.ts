@@ -1,7 +1,7 @@
 import { ProductCategory } from "@/types"
-import { initialProducts } from "@/data/products"
 import { Product, Order, Customer, KPICardData, OrderStatus } from "@/types"
 import {
+  adjustStock as adjustStockRequest,
   approvePayment,
   createBook,
   createPromo,
@@ -10,9 +10,12 @@ import {
   getAccessToken,
   getAdminPayment,
   getBooks,
+  getCategorySales as getCategorySalesRequest,
+  getDashboardSummary,
   getOrderDetail,
   getOrders,
   getPromos,
+  getSalesTimeseries,
   listAdminPayments,
   rejectPayment,
   updateBook,
@@ -32,6 +35,7 @@ import type {
   Promo,
   PromoInput,
   PromoUpdate,
+  StockAdjustmentResult,
 } from "@/lib/types"
 import { createClient } from "@/lib/supabase"
 
@@ -51,9 +55,6 @@ type SupabaseBookRow = {
   created_at?: string | null
   updated_at?: string | null
 }
-
-// In-memory store untuk fallback & data non-buku
-let productsStore: Product[] = [...initialProducts]
 
 // Status API (huruf kecil) -> label admin yang sudah dipakai UI. Nilai API
 // mengikuti CHECK constraint database live (`orders_status_check`), jadi
@@ -160,8 +161,10 @@ export const productService = {
             status: b.stock > 0 ? "Aktif" : "Habis",
             description: b.description || "Deskripsi buku.",
             coverUrl: b.cover_url || "",
-            rating: 4.8,
-            sold: b.stock * 3,
+            // `books` tidak menyimpan rating maupun jumlah terjual; jangan
+            // mengarang angkanya.
+            rating: 0,
+            sold: 0,
             createdAt: b.created_at || new Date().toISOString().split("T")[0],
             updatedAt: b.updated_at || new Date().toISOString().split("T")[0],
           }
@@ -192,18 +195,19 @@ export const productService = {
               status: b.stock > 0 ? "Aktif" : "Habis",
               description: b.description || "Deskripsi buku.",
               coverUrl: b.cover_url || "",
-              rating: 4.8,
-              sold: b.stock * 3,
+              rating: 0,
+              sold: 0,
               createdAt: b.created_at || new Date().toISOString().split("T")[0],
               updatedAt: b.updated_at || new Date().toISOString().split("T")[0],
             }
           })
         }
       } catch {
-        // Fallback store
+        // Fallback Supabase juga gagal; biarkan pemanggil melihat daftar kosong
+        // daripada menampilkan produk contoh yang tidak ada di database.
       }
     }
-    return [...productsStore]
+    return []
   },
   getById: async (id: string): Promise<Product | undefined> => {
     const all = await productService.getAll()
@@ -241,9 +245,6 @@ export const productService = {
     }
   },
   update: async (id: string, data: Partial<Product>): Promise<Product> => {
-    const normalPrice = data.normalPrice
-    const discountPercent = data.discountPercent
-
     const token = await getAccessToken()
     if (!token) throw new Error("Sesi login tidak ditemukan.")
 
@@ -260,24 +261,6 @@ export const productService = {
       await updateBook(id, updatePayload, token)
     }
 
-    const index = productsStore.findIndex((p) => p.id === id)
-    if (index !== -1) {
-      const existing = productsStore[index]
-      const np = normalPrice ?? existing.normalPrice
-      const dp = discountPercent ?? existing.discountPercent
-      const fp = Math.round(np * (1 - dp / 100))
-      const updated: Product = {
-        ...existing,
-        ...data,
-        normalPrice: np,
-        discountPercent: dp,
-        finalPrice: fp,
-        updatedAt: new Date().toISOString().split("T")[0],
-      }
-      productsStore[index] = updated
-      return updated
-    }
-
     const fetched = await productService.getById(id)
     if (!fetched) throw new Error("Produk tidak ditemukan")
     return { ...fetched, ...data }
@@ -287,14 +270,21 @@ export const productService = {
     if (!token) throw new Error("Sesi login tidak ditemukan.")
 
     await deleteBook(id, token)
-
-    const prevLen = productsStore.length
-    productsStore = productsStore.filter((p) => p.id !== id)
-    return productsStore.length < prevLen
+    return true
   },
-  adjustStock: async (id: string, newStock: number): Promise<Product> => {
-    const status = newStock <= 0 ? "Habis" : "Aktif"
-    return productService.update(id, { stock: newStock, status })
+  adjustStock: async (
+    id: string,
+    delta: number,
+    reason: string
+  ): Promise<StockAdjustmentResult> => {
+    // Lewat `POST /inventory/adjust`, bukan PATCH `books`: backend menghitung
+    // stok akhir dari stok tersimpan dan menolak hasil negatif.
+    return adjustStockRequest({
+      product_id: id,
+      quantity: delta,
+      type: delta >= 0 ? "Restok" : "Penjualan",
+      reason,
+    })
   },
   getLowStock: async (threshold = 10): Promise<Product[]> => {
     const all = await productService.getAll()
@@ -417,158 +407,82 @@ export const promoService = {
   },
 }
 
-// Analytics / KPI Service
+// Analytics service — seluruh angka berasal dari endpoint `/dashboard/*`.
+// Ketujuh kartu KPI sebelumnya dirakit di sini dengan beberapa angka hardcoded
+// (tren 12.5%, 5.2%, 8.4%) dan mengabaikan `GET /dashboard/summary` yang sudah
+// menghitung omset, pesanan, buku terjual, pelanggan aktif, dan stok kritis.
 export const analyticsService = {
+  /** Kartu KPI dashboard, dipetakan dari `DashboardKpi` ke bentuk kartu yang sudah ada. */
   getKPIData: async (): Promise<KPICardData[]> => {
     try {
-      const pageData = await getBooks(1, "", 1)
-      const totalBooks = pageData.total || 0
-
-      const allBooks = await productService.getAll()
-      const totalStock = allBooks.reduce((acc, b) => acc + (b.stock || 0), 0)
-      const lowStock = allBooks.filter((b) => b.stock <= 5).length
-      const activeProducts = allBooks.filter((b) => b.stock > 0).length
-
-      // Calculate total catalog inventory value
-      const totalInventoryVal = allBooks.reduce((acc, b) => acc + (b.normalPrice * b.stock), 0)
-
-      // Pesanan nyata dari API; tidak ada lagi angka mock di kartu pesanan.
-      const realOrders = await orderService.getAll()
-      const revenue = realOrders
-        .filter((o) => o.status !== "Batal")
-        .reduce((acc, o) => acc + o.totalAmount, 0)
-      const newOrders = realOrders.filter((o) => o.status === "Menunggu Pembayaran" || o.status === "Diproses").length
+      const summary = await getDashboardSummary()
+      const currency = (amount: number) =>
+        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount)
 
       return [
         {
           title: "Total Pendapatan",
-          value: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(revenue),
-          rawNumeric: revenue,
+          value: currency(summary.total_omset),
+          rawNumeric: summary.total_omset,
           trendPercent: 0,
           isPositive: true,
-          description: `${realOrders.length} pesanan tercatat`,
+          description: `${summary.total_orders} pesanan tercatat`,
         },
         {
-          title: "Pesanan Baru",
-          value: `+${newOrders}`,
-          rawNumeric: newOrders,
+          title: "Total Pesanan",
+          value: summary.total_orders.toLocaleString("id-ID"),
+          rawNumeric: summary.total_orders,
           trendPercent: 0,
           isPositive: true,
-          description: "Menunggu pembayaran atau diproses",
+          description: "Pesanan tidak dibatalkan",
         },
         {
           title: "Pelanggan Aktif",
-          value: `${new Set(realOrders.map((o) => o.customerEmail)).size}`,
-          rawNumeric: new Set(realOrders.map((o) => o.customerEmail)).size,
+          value: summary.active_customers.toLocaleString("id-ID"),
+          rawNumeric: summary.active_customers,
           trendPercent: 0,
           isPositive: true,
-          description: "Pemesan unik di pesanan tercatat",
+          description: "Akun pelanggan terdaftar",
         },
         {
-          title: "Total Judul Buku",
-          value: totalBooks.toString(),
-          rawNumeric: totalBooks,
-          trendPercent: 12.5,
+          title: "Buku Terjual",
+          value: `${summary.total_books_sold.toLocaleString("id-ID")} unit`,
+          rawNumeric: summary.total_books_sold,
+          trendPercent: 0,
           isPositive: true,
-          description: "Judul terdaftar di database Supabase",
-        },
-        {
-          title: "Total Stok Fisik",
-          value: `${totalStock.toLocaleString("id-ID")} unit`,
-          rawNumeric: totalStock,
-          trendPercent: 5.2,
-          isPositive: true,
-          description: "Total seluruh eksemplar toko",
-        },
-        {
-          title: "Nilai Inventori",
-          value: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalInventoryVal),
-          rawNumeric: totalInventoryVal,
-          trendPercent: 8.4,
-          isPositive: true,
-          description: "Estimasi total nilai buku aktif",
+          description: "Akumulasi item pada pesanan aktif",
         },
         {
           title: "Status Stok Kritis",
-          value: `${lowStock} judul`,
-          rawNumeric: lowStock,
+          value: `${summary.low_stock_count} judul`,
+          rawNumeric: summary.low_stock_count,
           trendPercent: 0,
-          isPositive: lowStock === 0,
-          description: `${activeProducts} judul stok siap kirim`,
+          isPositive: summary.low_stock_count === 0,
+          description: "Judul dengan stok ≤ 5 eksemplar",
         },
       ]
     } catch {
-      // Fallback tanpa angka mock: nilai nol lebih jujur daripada data palsu.
-      return [
-        {
-          title: "Total Pendapatan",
-          value: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(0),
-          rawNumeric: 0,
-          trendPercent: 0,
-          isPositive: true,
-          description: "Gagal memuat data pesanan",
-        },
-        {
-          title: "Pesanan Baru",
-          value: "+0",
-          rawNumeric: 0,
-          trendPercent: 0,
-          isPositive: true,
-          description: "Gagal memuat data pesanan",
-        },
-        {
-          title: "Pelanggan Aktif",
-          value: "0",
-          rawNumeric: 0,
-          trendPercent: 0,
-          isPositive: true,
-          description: "Gagal memuat data pesanan",
-        },
-        {
-          title: "Rasio Pertumbuhan",
-          value: "0%",
-          rawNumeric: 0,
-          trendPercent: 0,
-          isPositive: true,
-          description: "Gagal memuat data pesanan",
-        },
-      ]
+      // Gagal memuat bukan alasan menampilkan angka palsu; pemanggil menampilkan
+      // pesan error dari `loadAllData`.
+      return []
     }
   },
   getSalesChartData: async (period: "7d" | "30d" | "90d"): Promise<SalesDataItem[]> => {
-    if (period === "7d") {
-      return [
-        { date: "Sen", buku: 1850000, nonBuku: 650000 },
-        { date: "Sel", buku: 2200000, nonBuku: 800000 },
-        { date: "Rab", buku: 1950000, nonBuku: 720000 },
-        { date: "Kam", buku: 2800000, nonBuku: 910000 },
-        { date: "Jum", buku: 3400000, nonBuku: 1250000 },
-        { date: "Sab", buku: 4800000, nonBuku: 1600000 },
-        { date: "Min", buku: 5200000, nonBuku: 1950000 },
-      ]
-    }
-    if (period === "30d") {
-      return Array.from({ length: 30 }).map((_, i) => ({
-        date: `Tgl ${i + 1}`,
-        buku: Math.floor(1500000 + ((i * 70000) % 2000000)),
-        nonBuku: Math.floor(500000 + ((i * 30000) % 900000)),
-      }))
-    }
-    return [
-      { date: "Agustus", buku: 68500000, nonBuku: 21400000 },
-      { date: "September", buku: 79200000, nonBuku: 24800000 },
-      { date: "Oktober", buku: 88900000, nonBuku: 28300000 },
-    ]
+    // Data nyata dari `GET /dashboard/sales-chart`. Nama kolom API dipetakan ke
+    // bentuk yang sudah dipakai grafik supaya tampilan tidak berubah.
+    const days = period === "7d" ? 7 : period === "30d" ? 30 : 90
+    const series = await getSalesTimeseries(days)
+    return series.map((row) => ({
+      date: row.date_label,
+      buku: row.buku_amount,
+      nonBuku: row.non_buku_amount,
+    }))
   },
   getCategorySales: async (): Promise<CategorySalesItem[]> => {
-    return [
-      { category: "Fiksi", sales: 420 },
-      { category: "Pengembangan Diri", sales: 380 },
-      { category: "Non-Fiksi", sales: 290 },
-      { category: "Komik & Graphic Novel", sales: 340 },
-      { category: "Bisnis & Keuangan", sales: 260 },
-      { category: "Pendidikan & Referensi", sales: 310 },
-      { category: "Alat Tulis & Kantor", sales: 220 },
-    ]
+    const rows = await getCategorySalesRequest()
+    return rows.map((row) => ({
+      category: row.category_name as ProductCategory,
+      sales: row.sales_count,
+    }))
   },
 }
