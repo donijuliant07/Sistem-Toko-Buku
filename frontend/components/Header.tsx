@@ -6,7 +6,8 @@ import { siteConfig } from "@/config/site";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/context/CartContext";
-import { Search, X, Bell, ShoppingCart } from "lucide-react";
+import { Search, X, Bell, ShoppingCart, Sparkles } from "lucide-react";
+import BookAdvisorWidget from "@/components/BookAdvisorWidget";
 
 interface HeaderProps {
   query: string;
@@ -16,11 +17,11 @@ interface HeaderProps {
 
 export default function Header({ query, onSearchSubmit }: HeaderProps) {
   const [input, setInput] = useState(query);
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+  
   const { totalItems, setIsCartOpen } = useCart();
   const { role } = useAuth();
 
-  // Admin tidak berbelanja dengan akun adminnya, jadi tombol keranjang
-  // disembunyikan. Ini hanya UX; backend tetap menolak cart/checkout admin.
   const showCart = role !== "admin";
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -86,8 +87,18 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
             </div>
           </form>
 
-          {/* Actions: Wishlist/Notif, Cart, User Identifier */}
+          {/* Actions: AI, Wishlist/Notif, Cart, User Identifier */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Tombol AI Advisor Header */}
+            <button
+              type="button"
+              onClick={() => setIsAiSidebarOpen(true)}
+              className="p-2 text-emerald-600 bg-transparent hover:bg-gray-100 rounded-full transition-colors relative hidden md:flex items-center justify-center cursor-pointer"
+              title="AI Advisor"
+            >
+              <Sparkles className="w-5 h-5" />
+            </button>
+
             <button
               type="button"
               className="p-2 text-gray-500 hover:text-[#0052cc] hover:bg-blue-50/50 rounded-full transition-colors relative hidden md:block"
@@ -133,6 +144,22 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
           ))}
         </nav>
       </div>
+
+      {/* AI Chat Sidebar */}
+      {isAiSidebarOpen && (
+        <>
+          {/* Overlay transparan */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-[60]"
+            onClick={() => setIsAiSidebarOpen(false)}
+          />
+          
+          {/* Panel Sidebar Kanan */}
+          <div className="fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-2xl z-[70] flex flex-col transform transition-transform duration-300">
+            <BookAdvisorWidget onClose={() => setIsAiSidebarOpen(false)} />
+          </div>
+        </>
+      )}
     </header>
   );
 }

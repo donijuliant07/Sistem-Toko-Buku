@@ -194,17 +194,15 @@ export default function Home() {
             products={bestsellerProducts}
             onSelectProduct={(p) => setSelectedProduct(p)}
             sideBanner={{
-              tag: "BESTSELLER 2026",
-              title: "Koleksi Buku Pilihan Paling Dicari",
-              subtitle:
-                "Dari fiksi mendalam hingga pengembangan diri inspiratif.",
-              bgGradient: "from-slate-950/95 via-slate-900/85 to-slate-900/60",
-              imageUrl: "/images/reading-corner.jpg",
+              tag: "",
+              title: "",
+              subtitle: "",
+              bgGradient: "", // Dikosongkan agar tidak ada efek gelap/warna menimpa gambar
+              imageUrl: "/images/banner-readr.jpg",
             }}
             cardAspect="book"
           />
         )}
-
         {/* 6. Section: Rekomendasi Pilihan */}
         {campusBooks.length > 0 && (
           <ProductSection
@@ -213,17 +211,15 @@ export default function Home() {
             products={campusBooks}
             onSelectProduct={(p) => setSelectedProduct(p)}
             sideBanner={{
-              tag: "EDUKASI & SASTRA",
-              title: "Bacaan Inspiratif Masa Kini",
-              subtitle:
-                "Koleksi sastra Indonesia dan pengembangan diri terlengkap.",
-              bgGradient: "from-slate-950/95 via-stone-900/85 to-stone-900/60",
-              imageUrl: "/images/bookstore-visitor.jpg",
+              tag: "",
+              title: "",
+              subtitle: "",
+              bgGradient: "",
+              imageUrl: "/images/buku-prestasi.jpg",
             }}
             cardAspect="book"
           />
         )}
-
         {/* 7. Section: Buku Baru & Unggulan */}
         {newReleaseBooks.length > 0 && (
           <ProductSection
@@ -414,8 +410,6 @@ export default function Home() {
       {/* 9. Footer */}
       <Footer />
 
-      {/* 10. Floating Customer Service WhatsApp */}
-      <FloatingCS />
 
       {/* 11. Modal Detail Buku & Tambah ke Keranjang */}
       <BookDetailModal

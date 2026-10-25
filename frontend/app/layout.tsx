@@ -33,7 +33,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <PageTitle />
               {children}
               <CartDrawer />
-              <BookAdvisorWidget />
             </CartProvider>
           </AuthProvider>
         </SoundEffects>
