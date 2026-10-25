@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
   const handleRefresh = () => {
     loadAllData().then(() => {
-      toast.success("Dashboard InforBook berhasil diperbarui");
+      toast.success("Dashboard Readr berhasil diperbarui");
     });
   };
 
@@ -73,7 +73,7 @@ export default function DashboardPage() {
             </span>
             <span className="text-zinc-400 text-xs">•</span>
             <span className="text-xs font-medium text-zinc-500">
-              InforBook Storefront
+              Readr Storefront
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
@@ -204,7 +204,7 @@ export default function DashboardPage() {
 
       {/* 3. Main Content: Grid Split (Daftar Pesanan & Stok Alert) */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left 2 Cols: Pesanan Terbaru InforBook */}
+        {/* Left 2 Cols: Pesanan Terbaru Readr */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-zinc-200/80 bg-white rounded-2xl shadow-xs overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between p-5 pb-4 border-b border-zinc-100">
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                   Pesanan Terbaru
                 </CardTitle>
                 <CardDescription className="text-xs text-zinc-600 font-medium mt-0.5">
-                  Transaksi belanja terbaru dari website InforBook Store
+                  Transaksi belanja terbaru dari website Readr Store
                 </CardDescription>
               </div>
               <Button
@@ -352,7 +352,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Navigasi Cepat Admin InforBook */}
+          {/* Navigasi Cepat Admin Readr */}
           <Card className="border-zinc-200/80 bg-white rounded-2xl shadow-xs p-5 space-y-3">
             <h3 className="text-xs font-semibold text-zinc-600 tracking-tight">
               Akses Cepat Admin
