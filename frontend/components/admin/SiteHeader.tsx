@@ -71,7 +71,8 @@ export function SiteHeader({ onToggleMobileMenu }: SiteHeaderProps) {
             </kbd>
           </button>
 
-          {/* Notification Menu with Badge */}
+          {/* Notification Menu — backend belum punya endpoint notifikasi, jadi
+              tidak ada daftar contoh yang ditampilkan sebagai pesanan nyata. */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -80,44 +81,20 @@ export function SiteHeader({ onToggleMobileMenu }: SiteHeaderProps) {
                 className="relative h-9 w-9 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
               >
                 <Bell className="h-4 w-4" />
-                <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
                 <span className="sr-only">Notifikasi</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-2 rounded-2xl border-zinc-200/80 shadow-lg bg-white">
               <DropdownMenuLabel className="flex items-center justify-between text-xs font-semibold px-2 py-1.5">
                 <span className="text-zinc-900">Notifikasi</span>
-                <span className="rounded-md bg-blue-500/10 text-blue-600 border border-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold">
-                  3 Baru
-                </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-100" />
-              <div className="space-y-1 py-1">
-                <DropdownMenuItem className="flex flex-col items-start gap-1 p-2 text-xs rounded-xl cursor-pointer hover:bg-zinc-50">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-semibold text-zinc-900">Pesanan Baru #ORD-001</span>
-                    <span className="text-[10px] text-zinc-400">5m lalu</span>
-                  </div>
-                  <p className="text-zinc-500 text-[11px]">Ahmad Fauzi melakukan checkout Rp191.950</p>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start gap-1 p-2 text-xs rounded-xl cursor-pointer hover:bg-zinc-50">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-semibold text-rose-600">Peringatan Stok</span>
-                    <span className="text-[10px] text-zinc-400">20m lalu</span>
-                  </div>
-                  <p className="text-zinc-500 text-[11px]">Atomic Habits tersisa 4 eksemplar</p>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start gap-1 p-2 text-xs rounded-xl cursor-pointer hover:bg-zinc-50">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-semibold text-emerald-600">Pembayaran Sukses</span>
-                    <span className="text-[10px] text-zinc-400">1j lalu</span>
-                  </div>
-                  <p className="text-zinc-500 text-[11px]">Budi Santoso telah membayar via QRIS</p>
-                </DropdownMenuItem>
-              </div>
+              <p className="px-2 py-3 text-[11px] text-zinc-500">
+                Belum ada notifikasi. Pesanan baru dan peringatan stok tampil di halaman terkait.
+              </p>
               <DropdownMenuSeparator className="bg-zinc-100" />
               <DropdownMenuItem asChild className="justify-center text-center text-xs font-semibold text-zinc-900 hover:bg-zinc-100 rounded-xl cursor-pointer">
-                <Link href="/admin/pesanan">Lihat Semua Notifikasi</Link>
+                <Link href="/admin/pesanan">Lihat Pesanan</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

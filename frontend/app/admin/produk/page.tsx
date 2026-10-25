@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import { useSearchParams } from "next/navigation"
 import {
   Plus,
   Search,
@@ -34,11 +35,25 @@ import { formatRupiah } from "@/lib/utils"
 import { toast } from "sonner"
 
 export default function AdminProductsPage() {
+  // `useSearchParams` wajib berada di dalam <Suspense> agar halaman tetap
+  // bisa di-prerender (sama seperti halaman pesanan admin).
+  return (
+    <React.Suspense fallback={<div className="p-6 text-sm text-slate-500">Memuat data produk…</div>}>
+      <AdminProductsContent />
+    </React.Suspense>
+  )
+}
+
+function AdminProductsContent() {
+  const searchParams = useSearchParams()
+  // Kata kunci dari pencarian global (Cmd+K) → `/admin/produk?q=...`.
+  const initialQuery = searchParams.get("q") ?? ""
+
   const [products, setProducts] = React.useState<Product[]>([])
   const [loading, setLoading] = React.useState(true)
 
   // Filters
-  const [searchQuery, setSearchQuery] = React.useState("")
+  const [searchQuery, setSearchQuery] = React.useState(initialQuery)
   const [categoryFilter, setCategoryFilter] = React.useState<string>("all")
   const [typeFilter, setTypeFilter] = React.useState<string>("all")
   const [stockFilter, setStockFilter] = React.useState<string>("all")

@@ -257,15 +257,7 @@ function LoginForm() {
 
         {/* Legal Footer */}
         <p className="text-center text-[11px] text-zinc-600 pt-2 leading-relaxed">
-          By signing in, you agree to our{" "}
-          <a href="#" className="underline underline-offset-2 hover:text-zinc-400 transition-colors">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="#" className="underline underline-offset-2 hover:text-zinc-400 transition-colors">
-            Privacy Policy
-          </a>
-          .
+          By signing in, you agree to our Terms of Service and Privacy Policy.
         </p>
       </form>
     </div>

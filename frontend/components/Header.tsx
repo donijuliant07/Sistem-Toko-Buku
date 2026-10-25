@@ -126,11 +126,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
             <Link
               key={tag.label}
               href={tag.href}
-              className={`hover:text-[#0052cc] transition-colors py-1 ${
-                tag.isHighlight
-                  ? "text-[#e61c24] font-bold ml-auto"
-                  : "text-gray-700"
-              }`}
+              className="hover:text-[#0052cc] transition-colors py-1 text-gray-700"
             >
               {tag.label}
             </Link>

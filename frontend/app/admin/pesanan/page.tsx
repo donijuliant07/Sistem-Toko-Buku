@@ -51,13 +51,15 @@ export default function AdminOrdersPage() {
 function AdminOrdersContent() {
   const searchParams = useSearchParams()
   const highlightId = searchParams.get("id")
+  // Kata kunci dari pencarian global (Cmd+K) → `/admin/pesanan?q=...`.
+  const initialQuery = searchParams.get("q") ?? ""
 
   const [orders, setOrders] = React.useState<Order[]>([])
   const [loading, setLoading] = React.useState(true)
 
   // Filters
   const [statusTab, setStatusTab] = React.useState<string>("semua")
-  const [searchQuery, setSearchQuery] = React.useState("")
+  const [searchQuery, setSearchQuery] = React.useState(initialQuery)
   const [paymentFilter, setPaymentFilter] = React.useState<string>("all")
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc")
 

@@ -11,6 +11,8 @@ interface SearchItem {
   subtitle: string
   category: "Produk" | "Pesanan" | "Halaman"
   href: string
+  /** Halaman tujuan membaca kata kunci yang sama dengan yang diketik di sini. */
+  acceptsQuery?: boolean
   icon: React.ComponentType<{ className?: string }>
 }
 
@@ -21,9 +23,16 @@ const staticItems: SearchItem[] = [
   { title: "Inventori & Stok", subtitle: "Pemantauan stok menipis", category: "Halaman", href: "/admin/inventori", icon: BookOpen },
   { title: "Pelanggan", subtitle: "Daftar akun & riwayat belanja", category: "Halaman", href: "/admin/pelanggan", icon: Users },
   { title: "Promo & Voucher", subtitle: "Diskon 10.10 & kupon belanja", category: "Halaman", href: "/admin/promo", icon: Tag },
-  { title: "Laut Bercerita", subtitle: "Leila S. Chudori • Stok 45", category: "Produk", href: "/admin/produk?search=Laut", icon: BookOpen },
-  { title: "Atomic Habits", subtitle: "James Clear • Stok Kritis 4", category: "Produk", href: "/admin/produk?search=Atomic", icon: BookOpen },
-  { title: "ORD-20261005-001", subtitle: "Ahmad Fauzi • Rp191.950", category: "Pesanan", href: "/admin/pesanan?search=1001", icon: ShoppingCart },
+  { title: "Laporan Penjualan", subtitle: "Rekap bulanan & ekspor CSV", category: "Halaman", href: "/admin/laporan", icon: BookOpen },
+  { title: "Verifikasi Pembayaran", subtitle: "Setujui atau tolak bukti QRIS", category: "Halaman", href: "/admin/pembayaran", icon: ShoppingCart },
+  { title: "Poin & Reward", subtitle: "Aturan poin dan akses ulasan AI", category: "Halaman", href: "/admin/rewards", icon: Tag },
+  { title: "Link Harga Marketplace", subtitle: "URL produk per marketplace", category: "Halaman", href: "/admin/marketplace-sources", icon: Tag },
+  { title: "Pengaturan", subtitle: "Profil admin dan preferensi toko", category: "Halaman", href: "/admin/pengaturan", icon: Users },
+  // Daftar produk/pesanan sebelumnya ditulis tangan (judul, stok, dan nomor
+  // pesanan karangan) dengan href rusak seperti `?seartomic`. Keduanya kini
+  // membuka halaman tujuan dan melanjutkan dengan kata kunci yang diketik.
+  { title: "Cari produk", subtitle: "Cari judul atau penulis di katalog", category: "Produk", href: "/admin/produk", icon: BookOpen, acceptsQuery: true },
+  { title: "Cari pesanan", subtitle: "Cari nomor pesanan atau pelanggan", category: "Pesanan", href: "/admin/pesanan", icon: ShoppingCart, acceptsQuery: true },
 ]
 
 interface CommandSearchDialogProps {
@@ -46,9 +55,13 @@ export function CommandSearchDialog({ open, onOpenChange }: CommandSearchDialogP
     )
   }, [query])
 
-  const handleSelect = (href: string) => {
+  const handleSelect = (item: SearchItem) => {
     onOpenChange(false)
-    router.push(href)
+    const target =
+      item.acceptsQuery && query.trim()
+        ? `${item.href}?q=${encodeURIComponent(query.trim())}`
+        : item.href
+    router.push(target)
   }
 
   return (
@@ -75,7 +88,7 @@ export function CommandSearchDialog({ open, onOpenChange }: CommandSearchDialogP
               return (
                 <button
                   key={idx}
-                  onClick={() => handleSelect(item.href)}
+                  onClick={() => handleSelect(item)}
                   className="flex w-full items-center justify-between rounded-xl p-2.5 text-left text-xs transition-colors hover:bg-zinc-100 cursor-pointer"
                 >
                   <div className="flex items-center gap-3">

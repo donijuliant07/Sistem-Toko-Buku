@@ -3,18 +3,26 @@
 import * as React from "react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { analyticsService, CategorySalesItem } from "@/lib/services"
+import { getCategorySales } from "@/lib/api"
+
+type CategoryPoint = { category: string; sales: number }
 
 const colors = ["#18181B", "#2563EB", "#10B981", "#3B82F6", "#8B5CF6", "#64748B"]
 
 export function CategoryChart() {
-  const [data, setData] = React.useState<CategorySalesItem[]>([])
+  const [data, setData] = React.useState<CategoryPoint[]>([])
 
   React.useEffect(() => {
     let mounted = true
-    analyticsService.getCategorySales().then((res) => {
-      if (mounted) setData(res)
-    })
+    getCategorySales()
+      .then((rows) => {
+        if (mounted) {
+          setData(rows.map((row) => ({ category: row.category_name, sales: row.sales_count })))
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Gagal memuat penjualan per kategori", error)
+      })
     return () => {
       mounted = false
     }

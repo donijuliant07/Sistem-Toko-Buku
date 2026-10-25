@@ -5,6 +5,13 @@ import type {
   BookInput,
   BookPage,
   BookUpdate,
+  CategorySalesSummary,
+  DashboardKpi,
+  LowStockBook,
+  MonthlyReportItem,
+  SalesTimeseriesItem,
+  StockAdjustmentInput,
+  StockAdjustmentResult,
   CartItemAddInput,
   CartMergeInput,
   CartPayload,
@@ -953,4 +960,61 @@ export function deleteGroupMessage(
     communityPath(groupId, `/messages/${encodeURIComponent(messageId)}`),
     { method: "DELETE", accessToken }
   );
+}
+
+// --- Inventori (khusus admin; backend memverifikasi peran lewat token) ---
+
+/**
+ * Sesuaikan stok lewat backend. Server membaca stok tersimpan saat itu,
+ * menghitung stok akhir, dan menolak hasil negatif (400) — jadi pemanggil tidak
+ * perlu (dan tidak boleh) menimpa `books.stock` langsung.
+ */
+export async function adjustStock(data: StockAdjustmentInput): Promise<StockAdjustmentResult> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<StockAdjustmentResult>>("/inventory/adjust", {
+    method: "POST",
+    body: JSON.stringify(data),
+    accessToken,
+  });
+  return res.data;
+}
+
+/** Produk dengan stok kritis (`stock <= 5` di backend). */
+export async function getLowStockProducts(): Promise<LowStockBook[]> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<LowStockBook[]>>("/inventory/low-stock", { accessToken });
+  return res.data ?? [];
+}
+
+// --- Dashboard & laporan (khusus admin) ---
+
+export async function getDashboardSummary(): Promise<DashboardKpi> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<DashboardKpi>>("/dashboard/summary", { accessToken });
+  return res.data;
+}
+
+export async function getSalesTimeseries(days: 7 | 30 | 90 = 30): Promise<SalesTimeseriesItem[]> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<SalesTimeseriesItem[]>>(`/dashboard/sales-chart?days=${days}`, {
+    accessToken,
+  });
+  return res.data ?? [];
+}
+
+export async function getCategorySales(): Promise<CategorySalesSummary[]> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<CategorySalesSummary[]>>("/dashboard/categories-chart", {
+    accessToken,
+  });
+  return res.data ?? [];
+}
+
+export async function getMonthlyReports(months = 4): Promise<MonthlyReportItem[]> {
+  const accessToken = await getAccessToken();
+  const res = await request<ApiEnvelope<MonthlyReportItem[]>>(
+    `/dashboard/reports/monthly?months=${months}`,
+    { accessToken }
+  );
+  return res.data ?? [];
 }

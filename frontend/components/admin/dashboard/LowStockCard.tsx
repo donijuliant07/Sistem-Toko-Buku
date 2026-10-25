@@ -5,41 +5,48 @@ import Link from "next/link"
 import { AlertTriangle, ArrowRight, PackagePlus } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Product } from "@/types"
-import { productService } from "@/lib/services"
+import type { LowStockBook } from "@/lib/types"
+import { adjustStock, getLowStockProducts } from "@/lib/api"
 import { toast } from "sonner"
 
 export function LowStockCard() {
-  const [items, setItems] = React.useState<Product[]>([])
+  const [items, setItems] = React.useState<LowStockBook[]>([])
   const [loading, setLoading] = React.useState(true)
 
   const loadData = React.useCallback(() => {
-    productService.getLowStock(5).then((res) => {
-      setItems(res)
-      setLoading(false)
-    })
+    getLowStockProducts()
+      .then((res) => setItems(res))
+      .catch((error: unknown) => console.error("Gagal memuat stok menipis", error))
+      .finally(() => setLoading(false))
   }, [])
 
   React.useEffect(() => {
     let active = true
-    productService.getLowStock(5).then((res) => {
-      if (active) {
-        setItems(res)
-        setLoading(false)
-      }
-    })
+    getLowStockProducts()
+      .then((res) => {
+        if (active) setItems(res)
+      })
+      .catch((error: unknown) => console.error("Gagal memuat stok menipis", error))
+      .finally(() => {
+        if (active) setLoading(false)
+      })
     return () => {
       active = false
     }
   }, [])
 
-  const handleQuickRestock = async (product: Product) => {
+  const handleQuickRestock = async (product: LowStockBook) => {
     try {
-      const newStock = product.stock + 20
-      await productService.adjustStock(product.id, newStock)
-      toast.success(`Stok "${product.title}" berhasil ditambah +20 unit (Total: ${newStock})`)
+      const result = await adjustStock({
+        product_id: product.id,
+        quantity: 20,
+        type: "Restok",
+        reason: "Restok cepat dari dashboard",
+      })
+      toast.success(`Stok "${product.title}" ditambah 20 unit (total ${result.stock_after}).`)
       loadData()
-    } catch {
+    } catch (error) {
+      console.error("Gagal menambah stok", error)
       toast.error("Gagal menambah stok")
     }
   }
@@ -83,8 +90,8 @@ export function LowStockCard() {
                   <p className="truncate text-xs font-semibold text-zinc-900">
                     {prod.title}
                   </p>
-                  <p className="text-[11px] text-zinc-500">
-                    {prod.category} • SKU: {prod.isbn}
+                  <p className="truncate text-[11px] text-zinc-500">
+                    {prod.author || "Tanpa penulis"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

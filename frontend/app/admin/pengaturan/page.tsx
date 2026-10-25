@@ -8,24 +8,29 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { siteConfig } from "@/config/site"
+import { useAuth } from "@/components/AuthProvider"
 import { toast } from "sonner"
 import { Store, User, Bell, Save } from "lucide-react"
 
 export default function AdminSettingsPage() {
+  const { session, role } = useAuth()
   const [storeName, setStoreName] = React.useState(siteConfig.name)
   const [email, setEmail] = React.useState(siteConfig.adminEmail)
   const [orderNotif, setOrderNotif] = React.useState(true)
   const [stockNotif, setStockNotif] = React.useState(true)
   const [promoNotif, setPromoNotif] = React.useState(false)
 
+  // Belum ada endpoint penyimpanan identitas toko/preferensi notifikasi di
+  // backend, jadi jangan mengaku "berhasil diperbarui" saat tidak ada yang
+  // tersimpan. Nilainya tetap bisa diubah di layar untuk pratinjau.
   const handleSaveStore = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success("Pengaturan profil toko berhasil diperbarui")
+    toast.info("Perubahan belum tersimpan: backend belum punya endpoint pengaturan toko.")
   }
 
   const handleSaveNotif = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success("Preferensi notifikasi berhasil disimpan")
+    toast.info("Perubahan belum tersimpan: backend belum punya endpoint preferensi notifikasi.")
   }
 
   return (
@@ -144,22 +149,30 @@ export default function AdminSettingsPage() {
               <div className="space-y-4 max-w-lg text-xs">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-zinc-800">Nama Lengkap</label>
-                  <Input defaultValue={siteConfig.adminUser.name} className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900" />
+                  <Input
+                    value={(session?.user.user_metadata?.full_name as string | undefined) ?? "-"}
+                    disabled
+                    className="rounded-xl border-zinc-200 bg-zinc-100 text-zinc-700 opacity-70"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <label className="font-semibold text-zinc-800">Alamat Email Login</label>
-                  <Input defaultValue={siteConfig.adminUser.email} disabled className="rounded-xl border-zinc-200 bg-zinc-100 text-zinc-700 opacity-70" />
+                  <Input value={session?.user.email ?? "-"} disabled className="rounded-xl border-zinc-200 bg-zinc-100 text-zinc-700 opacity-70" />
                   <p className="text-[10px] text-zinc-500">Email dikaitkan dengan sesi autentikasi utama.</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="font-semibold text-zinc-800">Peran & Otorisasi</label>
-                  <Input defaultValue={siteConfig.adminUser.role} disabled className="rounded-xl border-zinc-200 bg-zinc-100 text-zinc-700 opacity-70" />
+                  <Input value={role ?? "-"} disabled className="rounded-xl border-zinc-200 bg-zinc-100 text-zinc-700 opacity-70" />
+                  <p className="text-[10px] text-zinc-500">
+                    Peran berasal dari profil di database dan hanya bisa diubah lewat backend.
+                  </p>
                 </div>
                 <Button
                   type="button"
                   size="sm"
-                  className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-xs font-medium cursor-pointer"
-                  onClick={() => toast.success("Data administrator tersimpan")}
+                  disabled
+                  title="Belum ada endpoint untuk mengubah profil"
+                  className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-xs font-medium cursor-not-allowed opacity-60"
                 >
                   Perbarui Profil
                 </Button>
