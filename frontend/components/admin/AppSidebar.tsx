@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   ShoppingCart,
+  Wallet,
   BookOpen,
   Boxes,
   Users,
@@ -62,6 +63,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { title: "Pesanan", href: "/admin/pesanan", icon: ShoppingCart, badge: 5 },
+      { title: "Verifikasi Pembayaran", href: "/admin/pembayaran", icon: Wallet },
       { title: "Produk", href: "/admin/produk", icon: BookOpen },
       { title: "Inventori / Stok", href: "/admin/inventori", icon: Boxes, badge: "3 Kritis" },
       { title: "Pelanggan", href: "/admin/pelanggan", icon: Users },

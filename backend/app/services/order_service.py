@@ -404,18 +404,6 @@ class OrderService:
         return OrderService.get_by_id(order_id) or _serialize_order(new_order, items_data)
 
     @staticmethod
-    def _current_payment(order_id: str) -> dict[str, Any] | None:
-        res = (
-            supabase_admin.table("payments")
-            .select("*")
-            .eq("order_id", order_id)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-        return (res.data or [None])[0]
-
-    @staticmethod
     def update_status(order_id: str, payload: OrderStatusUpdate) -> dict[str, Any]:
         # RPC `update_order_status` tidak ada di database live, jadi transisi
         # dilakukan langsung.
@@ -464,21 +452,5 @@ class OrderService:
             "sukses": True,
             **({"rewards": rewards} if rewards else {}),
         }
-
-    @staticmethod
-    def update_payment_status(order_id: str, status: str) -> dict[str, Any]:
-        """Pisahkan dari `update_status`: perubahan status pesanan tidak boleh
-        otomatis menandai pembayaran berhasil."""
-        payment = OrderService._current_payment(order_id)
-        if not payment:
-            raise ValueError(f"Pembayaran untuk pesanan {order_id} tidak ditemukan.")
-
-        data: dict[str, Any] = {"status": status}
-        if status == "success":
-            data["paid_at"] = datetime.now(UTC).isoformat()
-        supabase_admin.table("payments").update(data).eq("id", payment["id"]).execute()
-
-        return {"order_id": order_id, "payment_id": payment["id"], "payment_status": status, "sukses": True}
-
 
 order_service = OrderService()

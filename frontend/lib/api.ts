@@ -1,4 +1,6 @@
 import type {
+  PaymentDetail,
+  PaymentPage,
   Book,
   BookInput,
   BookPage,
@@ -16,8 +18,10 @@ import type {
   Order,
   OrderInput,
   OrderPage,
+  OrderPayment,
   OrderStatus,
-  PaymentStatus,
+  PaymentProof,
+  PaymentStatusView,
   Promo,
   PromoInput,
   PromoUpdate,
@@ -59,7 +63,7 @@ function apiHostLabel(url: string): string {
   }
 }
 
-type RequestOptions = RequestInit & { accessToken?: string };
+type RequestOptions = RequestInit & { accessToken?: string; timeoutMs?: number };
 
 type ApiEnvelope<T> = { sukses: boolean; pesan: string; data: T };
 
@@ -110,8 +114,9 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestOptions): Promise<T> {  const { accessToken, headers, signal, ...requestInit } = init ?? {};
-  const signals: AbortSignal[] = [timeoutSignal(DEFAULT_TIMEOUT_MS)];
+async function request<T>(path: string, init?: RequestOptions): Promise<T> {
+  const { accessToken, headers, signal, timeoutMs, ...requestInit } = init ?? {};
+  const signals: AbortSignal[] = [timeoutSignal(timeoutMs ?? DEFAULT_TIMEOUT_MS)];
   if (signal) signals.push(signal);
 
   let response: Response;
@@ -120,7 +125,10 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {  co
       ...requestInit,
       headers: {
         Accept: "application/json",
-        ...(requestInit.body ? { "Content-Type": "application/json" } : {}),
+        // FormData memasang boundary sendiri; menimpanya dengan JSON merusak unggahan.
+        ...(requestInit.body && !(requestInit.body instanceof FormData)
+          ? { "Content-Type": "application/json" }
+          : {}),
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...headers,
       },
@@ -440,24 +448,89 @@ export function updateOrderStatus(
   });
 }
 
-/**
- * Konfirmasi pembayaran manual (khusus admin). Nilai `status` mengikuti CHECK
- * `payments_status_check`: `pending`, `success`, `failed`, `expired`, `refunded`.
- *
- * Memisahkan dari `updateOrderStatus`: menandai pesanan `completed` tidak
- * mengonfirmasi pembayaran, dan sebaliknya. Backend menolak `completed` selama
- * pembayaran belum `success`.
- */
-export function updatePaymentStatus(
-  id: string,
-  status: PaymentStatus,
+// --- Pembayaran manual (bukti transfer) ---
+// Unggahan bukti hanya membuat pembayaran `under_review`; status `paid` muncul
+// setelah admin menyetujui. Tidak ada nilai status yang dikirim dari sini.
+
+export function getOrderPayment(
+  orderId: string,
   accessToken: string
-): Promise<ApiEnvelope<Record<string, unknown>>> {
-  return request<ApiEnvelope<Record<string, unknown>>>(`/orders/${encodeURIComponent(id)}/payment`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
+): Promise<ApiEnvelope<OrderPayment>> {
+  return request<ApiEnvelope<OrderPayment>>(
+    `/orders/${encodeURIComponent(orderId)}/payment`,
+    { accessToken }
+  );
+}
+
+export function getOrderPaymentProofs(
+  orderId: string,
+  accessToken: string
+): Promise<ApiEnvelope<PaymentProof[]>> {
+  return request<ApiEnvelope<PaymentProof[]>>(
+    `/orders/${encodeURIComponent(orderId)}/payment/proofs`,
+    { accessToken }
+  );
+}
+
+/** Kirim/ganti bukti. Batas 5MB & format diperiksa lagi di server. */
+export function uploadPaymentProof(
+  orderId: string,
+  file: File,
+  accessToken: string
+): Promise<ApiEnvelope<OrderPayment>> {
+  const body = new FormData();
+  body.append("file", file);
+  return request<ApiEnvelope<OrderPayment>>(
+    `/orders/${encodeURIComponent(orderId)}/payment/proof`,
+    // Unggahan 5MB bisa lebih lambat dari batas default.
+    { method: "POST", body, accessToken, timeoutMs: 90_000 }
+  );
+}
+
+export function listAdminPayments(
+  params: { page?: number; limit?: number; status?: PaymentStatusView; search?: string },
+  accessToken: string
+): Promise<PaymentPage> {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.status) query.set("status", params.status);
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  const suffix = query.toString();
+  return request<PaymentPage>(`/admin/payments${suffix ? `?${suffix}` : ""}`, {
     accessToken,
   });
+}
+
+export function getAdminPayment(
+  paymentId: string,
+  accessToken: string
+): Promise<ApiEnvelope<PaymentDetail>> {
+  return request<ApiEnvelope<PaymentDetail>>(
+    `/admin/payments/${encodeURIComponent(paymentId)}`,
+    { accessToken }
+  );
+}
+
+export function approvePayment(
+  paymentId: string,
+  accessToken: string
+): Promise<ApiEnvelope<OrderPayment>> {
+  return request<ApiEnvelope<OrderPayment>>(
+    `/admin/payments/${encodeURIComponent(paymentId)}/approve`,
+    { method: "POST", accessToken }
+  );
+}
+
+export function rejectPayment(
+  paymentId: string,
+  reason: string,
+  accessToken: string
+): Promise<ApiEnvelope<OrderPayment>> {
+  return request<ApiEnvelope<OrderPayment>>(
+    `/admin/payments/${encodeURIComponent(paymentId)}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }), accessToken }
+  );
 }
 
 // --- Keranjang (server; selalu butuh token user) ---// Harga dan stok tidak pernah dikirim dari sini: server membacanya dari `books`

@@ -500,35 +500,19 @@ def test_order_detail_allows_the_owner():
     assert data["items"][0]["total_price"] == 178000
 
 
-def test_payment_status_cannot_be_set_by_a_customer():
-    as_user()
+def test_legacy_payment_patch_endpoint_is_gone():
+    """Status pembayaran tidak boleh diubah lewat endpoint generik lagi.
+
+    Satu-satunya jalur adalah `/admin/payments/{id}/approve|reject`, yang
+    mencatat bukti, alasan, dan audit log. Method lain di path ini jatuh ke
+    405 (path `GET /orders/{order_id}/payment` milik router pembayaran).
+    """
+    as_admin()
     response = client.patch(
         "/api/v1/orders/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/payment",
         json={"status": "success"},
     )
-    assert response.status_code == 403
-
-
-def test_payment_status_is_set_independently_of_order_status():
-    as_admin()
-    payments_table = MagicMock()
-    payments_table.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
-        {"id": "pppppppp-1111-1111-1111-111111111111", "status": "pending"}
-    ]
-    admin = MagicMock()
-    admin.table.side_effect = lambda name: {"payments": payments_table}[name]
-
-    with patch("app.services.order_service.supabase_admin", admin):
-        response = client.patch(
-            "/api/v1/orders/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/payment",
-            json={"status": "success"},
-        )
-
-    assert response.status_code == 200
-    update_payload = payments_table.update.call_args.args[0]
-    assert update_payload["status"] == "success"
-    assert "paid_at" in update_payload
-
+    assert response.status_code == 405
 
 def test_update_status_returns_stock_once_when_cancelled():
     as_admin()
@@ -660,15 +644,6 @@ def test_update_order_status_rejects_user():
     response = client.patch(
         f"/api/v1/orders/{ORDER_ID}/status",
         json={"status": "cancelled"},
-    )
-    assert response.status_code == 403
-
-
-def test_update_payment_status_rejects_user():
-    as_user()
-    response = client.patch(
-        f"/api/v1/orders/{ORDER_ID}/payment",
-        json={"status": "success"},
     )
     assert response.status_code == 403
 

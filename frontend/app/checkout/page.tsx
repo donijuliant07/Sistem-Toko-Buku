@@ -149,7 +149,9 @@ function CheckoutContent() {
       } catch {
         // abaikan: pesanan sudah dibuat
       }
-      router.replace(`/orders/${result.data.id}`);
+      // Checkout berakhir di instruksi pembayaran: di sana user melihat total
+      // dari server dan mengunggah bukti transfer.
+      router.replace(`/orders/${result.data.id}/payment`);
     } catch (cause) {
       setServerError(cause instanceof Error ? cause.message : "Pesanan gagal dibuat. Silakan coba lagi.");
       setPending(false);

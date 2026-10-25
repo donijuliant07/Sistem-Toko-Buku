@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  QRIS SIMULASI — bukan QRIS aktif.
+
+  Gambar ini hanya untuk mendemokan alur unggah bukti pembayaran. Pola kotak
+  hitam-putih di bawah adalah ornamen dekoratif, BUKAN kode QR yang dapat
+  dipindai: tidak ada data yang dikodekan di dalamnya, sehingga aplikasi bank
+  tidak dapat membacanya dan tidak ada transaksi yang mungkin terjadi.
+
+  Label "Simulasi" sengaja dicetak di dalam gambar agar tetap muncul bila
+  gambar dibuka/screenshot di luar halaman.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360" role="img" aria-labelledby="title desc">
+  <title id="title">QRIS simulasi — bukan untuk pembayaran</title>
+  <desc id="desc">Gambar dekoratif yang menyerupai kode QR. Tidak dapat dipindai dan tidak melakukan pembayaran apa pun.</desc>
+
+  <rect width="360" height="360" rx="16" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="359" height="359" rx="16" fill="none" stroke="#e2e8f0"/>
+
+  <g fill="#0f172a" opacity="0.9">
+    <!-- Ornamen "finder pattern" di tiga sudut, seperti QR sungguhan. -->
+    <g>
+      <rect x="28" y="28" width="72" height="72" rx="6"/>
+      <rect x="44" y="44" width="40" height="40" rx="3" fill="#ffffff"/>
+      <rect x="56" y="56" width="16" height="16" fill="#0f172a"/>
+    </g>
+    <g>
+      <rect x="260" y="28" width="72" height="72" rx="6"/>
+      <rect x="276" y="44" width="40" height="40" rx="3" fill="#ffffff"/>
+      <rect x="288" y="56" width="16" height="16" fill="#0f172a"/>
+    </g>
+    <g>
+      <rect x="28" y="260" width="72" height="72" rx="6"/>
+      <rect x="44" y="276" width="40" height="40" rx="3" fill="#ffffff"/>
+      <rect x="56" y="288" width="16" height="16" fill="#0f172a"/>
+    </g>
+
+    <!-- Pola tengah: murni dekoratif, tanpa data. -->
+    <g opacity="0.75">
+      <rect x="120" y="40" width="16" height="16"/><rect x="152" y="40" width="16" height="16"/>
+      <rect x="184" y="40" width="16" height="16"/><rect x="216" y="40" width="16" height="16"/>
+      <rect x="136" y="72" width="16" height="16"/><rect x="200" y="72" width="16" height="16"/>
+      <rect x="120" y="104" width="16" height="16"/><rect x="168" y="104" width="16" height="16"/>
+      <rect x="216" y="104" width="16" height="16"/><rect x="40" y="120" width="16" height="16"/>
+      <rect x="72" y="120" width="16" height="16"/><rect x="104" y="120" width="16" height="16"/>
+      <rect x="136" y="136" width="16" height="16"/><rect x="168" y="136" width="16" height="16"/>
+      <rect x="200" y="152" width="16" height="16"/><rect x="232" y="152" width="16" height="16"/>
+      <rect x="264" y="136" width="16" height="16"/><rect x="296" y="136" width="16" height="16"/>
+      <rect x="40" y="168" width="16" height="16"/><rect x="88" y="168" width="16" height="16"/>
+      <rect x="120" y="184" width="16" height="16"/><rect x="152" y="184" width="16" height="16"/>
+      <rect x="232" y="184" width="16" height="16"/><rect x="296" y="184" width="16" height="16"/>
+      <rect x="56" y="200" width="16" height="16"/><rect x="104" y="216" width="16" height="16"/>
+      <rect x="136" y="216" width="16" height="16"/><rect x="200" y="216" width="16" height="16"/>
+      <rect x="248" y="216" width="16" height="16"/><rect x="280" y="216" width="16" height="16"/>
+      <rect x="120" y="248" width="16" height="16"/><rect x="168" y="248" width="16" height="16"/>
+      <rect x="216" y="248" width="16" height="16"/><rect x="264" y="248" width="16" height="16"/>
+      <rect x="120" y="280" width="16" height="16"/><rect x="152" y="296" width="16" height="16"/>
+      <rect x="200" y="280" width="16" height="16"/><rect x="248" y="296" width="16" height="16"/>
+      <rect x="296" y="280" width="16" height="16"/><rect x="136" y="312" width="16" height="16"/>
+      <rect x="216" y="312" width="16" height="16"/><rect x="280" y="312" width="16" height="16"/>
+    </g>
+  </g>
+
+  <!-- Label simulasi: bagian dari gambar, bukan overlay yang bisa hilang. -->
+  <g>
+    <rect x="76" y="170" width="208" height="46" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+    <text x="180" y="190" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" font-weight="700" fill="#b45309">SIMULASI</text>
+    <text x="180" y="207" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#92400e">bukan QRIS aktif — tidak dapat dipindai</text>
+  </g>
+</svg>

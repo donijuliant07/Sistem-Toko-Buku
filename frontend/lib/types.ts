@@ -118,6 +118,81 @@ export type OrderPage = {
   meta: OrderPageMeta;
 };
 
+// --- Pembayaran manual & verifikasi admin ---
+
+/**
+ * Status pembayaran **seperti yang dilihat UI**, hasil terjemahan backend dari
+ * kolom `payments.status` + status bukti terakhir:
+ *   pending + belum ada bukti -> pending
+ *   pending + bukti menunggu  -> under_review
+ *   success                   -> paid
+ *   failed                    -> rejected
+ * Jangan mengirim nilai ini ke endpoint tulis; backend memakai kosakata kolom.
+ */
+export type PaymentStatusView =
+  | "pending"
+  | "under_review"
+  | "paid"
+  | "rejected"
+  | "expired"
+  | "refunded";
+
+export type PaymentProofStatus = "pending" | "approved" | "rejected" | "superseded";
+
+export type PaymentProof = {
+  id: string;
+  storage_path: string;
+  original_filename: string | null;
+  content_type: string;
+  file_size: number;
+  status: PaymentProofStatus;
+  uploaded_at: string;
+  reviewed_at: string | null;
+  review_note: string | null;
+  /** Signed URL berumur pendek; `null` bila gagal dibuat (bucket belum siap). */
+  url: string | null;
+};
+
+export type OrderPayment = {
+  id: string;
+  order_id: string;
+  amount: number;
+  payment_method: string | null;
+  status: PaymentStatusView;
+  rejection_reason: string | null;
+  verified_at: string | null;
+  current_proof: PaymentProof | null;
+  history: PaymentProof[];
+  can_submit: boolean;
+};
+
+export type PaymentAdminListItem = {
+  id: string;
+  order_id: string;
+  order_number: string | null;
+  customer_name: string | null;
+  order_created_at: string | null;
+  amount: number;
+  payment_method: string | null;
+  status: PaymentStatusView;
+  order_status: OrderStatus;
+  proof_uploaded_at: string | null;
+};
+
+export type PaymentDetail = {
+  payment: OrderPayment;
+  order: Order;
+  order_status: OrderStatus;
+  buyer: { name?: string | null; email?: string | null; phone?: string | null };
+};
+
+export type PaymentPage = {
+  sukses: boolean;
+  pesan: string;
+  data: PaymentAdminListItem[];
+  meta: OrderPageMeta;
+};
+
 // --- Keranjang (server) ---
 // `unit_price` dan `stock` selalu berasal dari tabel `books` di server, bukan
 // dari client: POST/PATCH hanya mengirim `book_id` + `quantity`.

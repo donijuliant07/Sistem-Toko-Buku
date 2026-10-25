@@ -25,16 +25,15 @@ export default function Footer() {
         </video>
 
         {/* Gradien transisi di sisi atas agar menyatu halus (tidak kepotong) dengan seksi di atasnya */}
-        <div className="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-white via-white/80 to-transparent z-10"></div>
+        <div className="absolute top-0 left-0 w-full h-48 bg-linear-to-b from-white via-white/80 to-transparent z-10"></div>
 
         {/* Tingkat putih diturunkan ke bg-white/40 dan efek blur dikurangi agar video lebih terang & jelas */}
-        <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-0"></div>
+        <div className="absolute inset-0 bg-white/40 z-0"></div>
       </div>
 
       {/* KONTEN FOOTER UTAMA */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 pb-12 border-b border-gray-200/60">
-          
           {/* Col 1: Brand Info & Social Links */}
           <div className="md:col-span-4 space-y-4">
             <div className="flex items-center gap-2">
@@ -42,13 +41,15 @@ export default function Footer() {
                 R
               </div>
               <span className="text-xl font-bold text-gray-900 tracking-tight">
-                InforBook
+                Readr
               </span>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed max-w-sm">
-              Toko buku online terpercaya di Indonesia. Menyediakan ribuan koleksi buku fisik & digital terlengkap untuk menemani perjalanan literasimu.
+              Toko buku online terpercaya di Indonesia. Menyediakan ribuan
+              koleksi buku fisik & digital terlengkap untuk menemani perjalanan
+              literasimu.
             </p>
-            
+
             {/* Social Media Icons (Brand Colors) */}
             <div className="flex items-center gap-3 pt-2">
               {/* GitHub */}
@@ -65,10 +66,16 @@ export default function Footer() {
               {/* Instagram */}
               <a
                 href="#"
-                className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white transition-all shadow-sm hover:opacity-90 hover:scale-105"
+                className="w-9 h-9 rounded-full bg-linear-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white transition-all shadow-sm hover:opacity-90 hover:scale-105"
                 title="Instagram"
               >
-                <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  className="w-4 h-4 stroke-current fill-none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
@@ -105,11 +112,46 @@ export default function Footer() {
               Produk
             </h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Buku & E-book</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Alat Tulis & Kantor</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Mainan & Hobi</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Komputer & IT</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Majalah & Tabloid</Link></li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Buku & E-book
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Alat Tulis & Kantor
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Mainan & Hobi
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Komputer & IT
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Majalah & Tabloid
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -119,11 +161,46 @@ export default function Footer() {
               Informasi
             </h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Cara Berbelanja</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Metode Pembayaran</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Biaya & Pengiriman</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Syarat & Ketentuan</Link></li>
-              <li><Link href="#" className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors">Kebijakan Privasi</Link></li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Cara Berbelanja
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Metode Pembayaran
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Biaya & Pengiriman
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Syarat & Ketentuan
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="text-gray-700 hover:text-[#0052cc] font-medium transition-colors"
+                >
+                  Kebijakan Privasi
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -133,11 +210,15 @@ export default function Footer() {
               Berlangganan Newsletter
             </h3>
             <p className="text-xs text-gray-700">
-              Dapatkan promo eksklusif dan rekomendasi buku terbaru setiap minggu.
+              Dapatkan promo eksklusif dan rekomendasi buku terbaru setiap
+              minggu.
             </p>
-            
+
             {/* Input Newsletter Box */}
-            <form onSubmit={(e) => e.preventDefault()} className="flex items-center gap-2">
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="flex items-center gap-2"
+            >
               <input
                 type="email"
                 placeholder="Masukkan email kamu..."
@@ -153,22 +234,33 @@ export default function Footer() {
 
             {/* Partner / Trust Badges */}
             <div className="pt-2 flex flex-wrap items-center gap-4 opacity-70 grayscale hover:grayscale-0 transition-all">
-              <span className="text-xs font-bold tracking-tight text-gray-800">Gramedia</span>
-              <span className="text-xs font-bold tracking-tight text-gray-800">Mizan</span>
-              <span className="text-xs font-bold tracking-tight text-gray-800">Erlangga</span>
-              <span className="text-xs font-bold tracking-tight text-gray-800">Periplus</span>
+              <span className="text-xs font-bold tracking-tight text-gray-800">
+                Gramedia
+              </span>
+              <span className="text-xs font-bold tracking-tight text-gray-800">
+                Mizan
+              </span>
+              <span className="text-xs font-bold tracking-tight text-gray-800">
+                Erlangga
+              </span>
+              <span className="text-xs font-bold tracking-tight text-gray-800">
+                Periplus
+              </span>
             </div>
           </div>
-
         </div>
 
         {/* Bottom Bar / Copyright */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600 font-medium">
-          <p>© 2026 InforBook Media. Hak Cipta Dilindungi.</p>
+          <p>© 2026 Readr Media. Hak Cipta Dilindungi.</p>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-gray-500" /> Indonesia</span>
+            <span className="flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5 text-gray-500" /> Indonesia
+            </span>
             <span className="text-gray-300">•</span>
-            <Link href="#" className="hover:text-[#0052cc] transition-colors">Versi Desktop</Link>
+            <Link href="#" className="hover:text-[#0052cc] transition-colors">
+              Versi Desktop
+            </Link>
           </div>
         </div>
       </div>

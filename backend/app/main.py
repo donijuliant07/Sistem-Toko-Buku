@@ -22,6 +22,7 @@ from app.api.v1 import (
     inventory,
     marketplaces,
     orders,
+    payments,
     promos,
     reviews,
     rewards,
@@ -83,6 +84,8 @@ app.include_router(reviews.router, prefix=settings.API_V1_PREFIX)
 app.include_router(rewards.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_rewards.router, prefix=settings.API_V1_PREFIX)
+app.include_router(payments.router, prefix=settings.API_V1_PREFIX)
+app.include_router(payments.admin_router, prefix=settings.API_V1_PREFIX)
 
 # Klien Gemini dibuat malas pada pemanggilan pertama dan ditutup lewat
 # lifespan di atas; tanpa API key tidak ada koneksi yang dibuka.

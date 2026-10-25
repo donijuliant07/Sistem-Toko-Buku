@@ -23,7 +23,6 @@ from app.schemas.order import (
     OrderCreate,
     OrderResponse,
     OrderStatusUpdate,
-    PaymentStatusUpdate,
 )
 from app.services.order_service import OrderTransitionError, order_service
 
@@ -179,29 +178,5 @@ async def update_order_status(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Gagal memperbarui status pesanan: {e!s}",
-        )
-
-
-@router.patch("/{order_id}/payment", response_model=ApiResponse[dict])
-async def update_payment_status(
-    order_id: str,
-    payload: PaymentStatusUpdate,
-    current_user: Annotated[UserPayload, Depends(require_admin)],
-):
-    """Konfirmasi manual pembayaran. Tidak ada payment gateway, jadi hanya admin
-    yang boleh menandai pembayaran; tidak ada aksi UI yang melakukannya otomatis."""
-    try:
-        res = order_service.update_payment_status(order_id, payload.status)
-        return ApiResponse(
-            sukses=True,
-            pesan=f"Status pembayaran berhasil diubah menjadi '{payload.status}'.",
-            data=res,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except SERVICE_ERRORS as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Gagal memperbarui status pembayaran: {e!s}",
         )
 
