@@ -669,6 +669,7 @@ export interface GroupUpdateInput {
   name?: string;
   description?: string;
   category?: GroupCategory;
+  avatar_url?: string | null;
 }
 
 export interface SharedBook {

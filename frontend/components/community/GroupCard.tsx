@@ -29,7 +29,7 @@ export function GroupCard({ group, active, joining, onOpen, onJoin }: GroupCardP
       )}
     >
       <div className="flex items-start gap-3">
-        <GroupAvatar name={group.name} category={group.category} />
+        <GroupAvatar name={group.name} avatarUrl={group.avatar_url} category={group.category} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className={cn("truncate text-sm font-semibold", active ? "text-emerald-900" : "text-gray-900")}>

@@ -97,6 +97,7 @@ class GroupUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=3, max_length=MAX_GROUP_NAME)
     description: str | None = Field(default=None, max_length=MAX_GROUP_DESCRIPTION)
     category: GroupCategory | None = None
+    avatar_url: str | None = None  # <-- 1. TAMBAHKAN KOLOM INI
 
     @field_validator("name")
     @classmethod
@@ -108,9 +109,23 @@ class GroupUpdate(BaseModel):
     def _strip_description(cls, value: str | None) -> str | None:
         return value.strip() if value is not None else None
 
+    @field_validator("avatar_url")
+    @classmethod
+    def _strip_avatar_url(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            return value if value else None
+        return None
+
     @model_validator(mode="after")
     def _require_change(self) -> "GroupUpdate":
-        if self.name is None and self.description is None and self.category is None:
+        # 2. UPDATE VALIDATOR INI AGAR AVATAR_URL DIPERHITUNGKAN
+        if (
+            self.name is None
+            and self.description is None
+            and self.category is None
+            and self.avatar_url is None
+        ):
             raise ValueError("Tidak ada perubahan yang dikirim")
         return self
 

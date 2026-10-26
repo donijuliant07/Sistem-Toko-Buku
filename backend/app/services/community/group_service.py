@@ -180,7 +180,7 @@ class GroupService:
     async def update(
         self, user: UserPayload, group_id: UUID, payload: GroupUpdate
     ) -> GroupDetail:
-        """Ubah nama/deskripsi/kategori (owner atau admin)."""
+        """Ubah nama/deskripsi/kategori/foto profil (owner atau admin)."""
         row = await self.load_visible(group_id, user)
         if not permissions.can_manage_group(row.my_role, _is_admin(user)):
             raise forbidden("Hanya owner grup atau administrator yang dapat mengubah grup.")
@@ -193,6 +193,10 @@ class GroupService:
             changes["description"] = payload.description
         if payload.category is not None:
             changes["category"] = payload.category.value
+        # --- TAMBAHKAN KONDISI INI ---
+        if payload.avatar_url is not None:
+            changes["avatar_url"] = payload.avatar_url
+
         if not changes:
             raise CommunityError(422, "Tidak ada perubahan yang dikirim.")
         try:

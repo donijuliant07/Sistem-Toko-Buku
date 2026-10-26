@@ -844,7 +844,12 @@ export function updateCommunityGroup(
 ): Promise<GroupDetail> {
   return communityRequest<GroupDetail>(communityPath(groupId), {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      name: data.name,
+      description: data.description,
+      category: data.category,
+      avatar_url: data.avatar_url,
+    }),
     accessToken,
   });
 }
