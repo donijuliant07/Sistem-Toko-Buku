@@ -1,11 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Camera, Upload } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,9 +17,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { GroupAvatar } from "@/components/community/GroupAvatar";
 import { GROUP_CATEGORIES } from "@/lib/community";
 import { createCommunityGroup, updateCommunityGroup } from "@/lib/api";
 import type { GroupCategory, GroupDetail, GroupVisibility } from "@/lib/types";
+
+// Client Supabase untuk mengunggah gambar ke Storage
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const schema = z.object({
   name: z.string().trim().min(3, "Nama minimal 3 karakter").max(80, "Nama maksimal 80 karakter"),
@@ -172,19 +180,25 @@ type EditGroupDialogProps = {
   onUpdated: (group: GroupDetail) => void;
 };
 
-/** Ubah nama/deskripsi/kategori (owner atau admin). */
+/** Ubah nama/deskripsi/kategori/foto profil (owner atau admin). */
 export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpdated }: EditGroupDialogProps) {
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>(group.avatar_url || "");
   const [serverError, setServerError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const defaults = (source: GroupDetail): FormValues => ({
     name: source.name,
-    description: source.description,
+    description: source.description || "",
     category: source.category,
     visibility: source.visibility,
   });
+
   const {
     register,
     handleSubmit,
+    watch,
     reset,
     formState: { errors },
   } = useForm<FormValues>({
@@ -192,12 +206,55 @@ export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpda
     defaultValues: defaults(group),
   });
 
+  const watchedName = watch("name");
+
   const handleOpenChange = (next: boolean) => {
     if (next) {
       reset(defaults(group));
+      setAvatarUrl(group.avatar_url || "");
       setServerError("");
     }
     onOpenChange(next);
+  };
+
+  // Upload file gambar langsung ke Supabase Storage
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar (JPG, PNG, WEBP).");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 2 MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${group.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("group-avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("group-avatars")
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(data.publicUrl);
+      toast.success("Foto profil diunggah. Klik Simpan untuk memperbarui.");
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Gagal mengunggah foto.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const onSubmit = handleSubmit(async (values) => {
@@ -210,6 +267,7 @@ export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpda
           name: values.name,
           description: values.description,
           category: values.category as GroupCategory,
+          avatar_url: avatarUrl || null,
         },
         accessToken,
       );
@@ -224,7 +282,7 @@ export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpda
   });
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !submitting && handleOpenChange(next)}>
+    <Dialog open={open} onOpenChange={(next) => !submitting && !uploading && handleOpenChange(next)}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Ubah informasi grup</DialogTitle>
@@ -232,35 +290,74 @@ export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpda
             Visibilitas dan kepemilikan tidak berubah lewat formulir ini; gunakan panel anggota.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-3" noValidate>
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+          {/* Upload Foto Profil */}
+          <div className="flex flex-col items-center justify-center gap-2 pt-1">
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <GroupAvatar
+                name={watchedName || group.name}
+                avatarUrl={avatarUrl}
+                category={group.category}
+                size="lg"
+              />
+              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white">
+                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={uploading || submitting}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || submitting}
+              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {uploading ? "Mengunggah..." : "Pilih foto dari perangkat"}
+            </button>
+          </div>
+
           <div>
-            <label htmlFor="edit-group-name" className="mb-1 block text-xs font-medium text-gray-700">
+            <label htmlFor="edit-group-name" className="mb-1 block text-xs font-medium text-gray-700 dark:text-zinc-300">
               Nama grup
             </label>
             <Input id="edit-group-name" {...register("name")} />
             {errors.name ? <p className="mt-1 text-xs text-red-600">{errors.name.message}</p> : null}
           </div>
+
           <div>
-            <label htmlFor="edit-group-description" className="mb-1 block text-xs font-medium text-gray-700">
+            <label htmlFor="edit-group-description" className="mb-1 block text-xs font-medium text-gray-700 dark:text-zinc-300">
               Deskripsi
             </label>
             <textarea
               id="edit-group-description"
               rows={3}
-              className="flex w-full rounded-xl border border-zinc-200/90 bg-white px-3.5 py-2 text-xs sm:text-sm text-zinc-900 shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400"
+              className="flex w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10 focus-visible:border-zinc-400"
               {...register("description")}
             />
             {errors.description ? (
               <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
             ) : null}
           </div>
+
           <div>
-            <label htmlFor="edit-group-category" className="mb-1 block text-xs font-medium text-gray-700">
+            <label htmlFor="edit-group-category" className="mb-1 block text-xs font-medium text-gray-700 dark:text-zinc-300">
               Kategori
             </label>
             <select
               id="edit-group-category"
-              className="h-9 w-full rounded-xl border border-zinc-200/90 bg-white px-2 text-xs text-zinc-900"
+              className="h-9 w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 text-xs text-zinc-900 dark:text-zinc-100"
               {...register("category")}
             >
               {GROUP_CATEGORIES.map((item) => (
@@ -270,14 +367,16 @@ export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpda
               ))}
             </select>
           </div>
+
           {serverError ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{serverError}</p>
           ) : null}
+
           <DialogFooter className="gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={submitting}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={submitting || uploading}>
               Batal
             </Button>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting || uploading} className="bg-emerald-600 hover:bg-emerald-500 text-white">
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
               Simpan
             </Button>

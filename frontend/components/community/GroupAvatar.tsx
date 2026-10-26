@@ -4,6 +4,7 @@ import type { GroupCategory } from "@/lib/types";
 
 type GroupAvatarProps = {
   name: string;
+  avatarUrl?: string | null;
   category: GroupCategory;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -15,8 +16,23 @@ const SIZES = {
   lg: "w-14 h-14 text-lg",
 } as const;
 
-/** Foto grup belum diunggah; inisial + warna kategori dipakai sebagai gantinya. */
-export function GroupAvatar({ name, category, size = "md", className }: GroupAvatarProps) {
+/** Foto grup: menampilkan gambar URL jika ada, selain itu fallback ke inisial + warna kategori. */
+export function GroupAvatar({ name, avatarUrl, category, size = "md", className }: GroupAvatarProps) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- avatar eksternal berukuran kecil
+      <img
+        src={avatarUrl}
+        alt={name}
+        className={cn(
+          "shrink-0 rounded-xl object-cover border border-zinc-200/60 dark:border-zinc-800",
+          SIZES[size],
+          className
+        )}
+      />
+    );
+  }
+
   return (
     <span
       aria-hidden

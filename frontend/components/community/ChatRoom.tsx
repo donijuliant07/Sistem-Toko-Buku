@@ -2,12 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, BookOpen, Loader2, Lock, Trash2, Users } from "lucide-react";
-import {
-  Conversation,
-  ConversationBubble,
-  ConversationContent,
-} from "@/components/ui/conversation";
+import { ArrowLeft, BookOpen, Loader2, Lock, Send, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GroupAvatar } from "@/components/community/GroupAvatar";
@@ -43,7 +38,6 @@ type ChatRoomProps = {
 
 const PAGE_LIMIT = 30;
 
-/** Pertahankan pesan optimistis yang belum dikonfirmasi saat menyegarkan riwayat. */
 function keepPending(current: LocalMessage[] | null): LocalMessage[] {
   return (current ?? []).filter((item) => item.id.startsWith("local-"));
 }
@@ -88,8 +82,6 @@ export function ChatRoom({
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [groupError, setGroupError] = useState("");
   const [groupKey, setGroupKey] = useState(0);
-  // `null` = halaman pertama belum termuat. Komponen di-key per grup, jadi
-  // berpindah grup me-remount dan tidak perlu reset manual.
   const [messages, setMessages] = useState<LocalMessage[] | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loadKey, setLoadKey] = useState(0);
@@ -123,7 +115,6 @@ export function ChatRoom({
   }, [groupId, accessToken, groupKey]);
 
   const loadingGroup = !group && !groupError;
-
   const canRead = !!group && (group.is_member || isAdmin);
 
   // --- Riwayat pesan ---
@@ -181,7 +172,6 @@ export function ChatRoom({
       setMessages((current) => {
         const list = current ?? [];
         if (list.some((item) => item.id === incoming.id)) return list;
-        // Pesan sendiri yang masih optimistis: ganti id lokal dengan id server.
         const index = incoming.client_message_id
           ? list.findIndex(
               (item) => item.id.startsWith("local-") && item.client_message_id === incoming.client_message_id,
@@ -198,7 +188,6 @@ export function ChatRoom({
     onDelete: (messageId) => {
       setMessages((current) => (current ?? []).filter((item) => item.id !== messageId));
     },
-    // Sambungan ulang bisa kehilangan event; ambil ulang halaman terbaru.
     onResync: () => void loadLatest(),
   });
 
@@ -255,7 +244,6 @@ export function ChatRoom({
     await deliver({ content, clientMessageId }, localId);
   };
 
-  /** Kirim ulang pesan gagal dengan `client_message_id` yang sama — server tidak membuat duplikat. */
   const retry = async (message: LocalMessage) => {
     if (!message.client_message_id) return;
     setMessages((current) =>
@@ -378,22 +366,23 @@ export function ChatRoom({
   const meta = categoryMeta(group.category);
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2.5">
+    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+      {/* Header Chat */}
+      <div className="flex items-center gap-3 border-b border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
         <button
           type="button"
           onClick={onBack}
-          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 lg:hidden"
+          className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
           aria-label="Kembali ke daftar grup"
         >
-          <ArrowLeft className="w-4 h-4" aria-hidden />
+          <ArrowLeft className="w-5 h-5" aria-hidden />
         </button>
-        <GroupAvatar name={group.name} category={group.category} size="sm" />
+        <GroupAvatar name={group.name} avatarUrl={group.avatar_url} category={group.category} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-gray-900">{group.name}</p>
-          <p className="truncate text-[11px] text-gray-500">
+          <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{group.name}</p>
+          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
             {meta.label} · {VISIBILITY_LABELS[group.visibility]} · {group.member_count} anggota
-            {realtimeStatus === "error" ? " · real-time terputus, muat ulang untuk memperbarui" : ""}
+            {realtimeStatus === "error" ? " · real-time terputus" : ""}
           </p>
         </div>
         <Button
@@ -402,8 +391,9 @@ export function ChatRoom({
           onClick={() => setMembersOpen(true)}
           aria-label="Lihat anggota grup"
           title="Anggota"
+          className="text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
         >
-          <Users className="w-4 h-4" aria-hidden />
+          <Users className="w-5 h-5" aria-hidden />
         </Button>
         {group.can_manage_group ? (
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
@@ -413,20 +403,20 @@ export function ChatRoom({
       </div>
 
       {!canRead ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-          <GroupAvatar name={group.name} category={group.category} size="lg" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center bg-[#efeae2] dark:bg-zinc-950">
+          <GroupAvatar name={group.name} avatarUrl={group.avatar_url} category={group.category} size="lg" />
           <div>
-            <p className="text-sm font-semibold text-gray-900">{group.name}</p>
-            <p className="mt-1 max-w-sm text-xs text-gray-600">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{group.name}</p>
+            <p className="mt-1 max-w-sm text-xs text-zinc-600 dark:text-zinc-400">
               {group.description || "Grup publik untuk berdiskusi tentang buku."}
             </p>
           </div>
           {group.visibility === "public" ? (
-            <Button size="sm" onClick={handleJoin}>
+            <Button size="sm" onClick={handleJoin} className="bg-emerald-600 hover:bg-emerald-500 text-white">
               Bergabung untuk mulai berdiskusi
             </Button>
           ) : (
-            <p className="flex items-center gap-1 text-xs text-gray-500">
+            <p className="flex items-center gap-1 text-xs text-zinc-500">
               <Lock className="w-3.5 h-3.5" aria-hidden />
               Grup privat — minta owner atau moderator menambahkan Anda.
             </p>
@@ -434,10 +424,11 @@ export function ChatRoom({
         </div>
       ) : (
         <>
+          {/* Area Diskusi Chat */}
           <div
             ref={scrollRef}
             onScroll={handleScroll}
-            className="min-h-0 flex-1 overflow-y-auto bg-[#ECE5DD]/30 px-3 py-3 sm:px-4"
+            className="min-h-0 flex-1 overflow-y-auto bg-[#efeae2] dark:bg-zinc-950 px-3 py-4 sm:px-6 space-y-2"
           >
             {loadingMessages ? (
               <div className="space-y-3" aria-label="Memuat pesan">
@@ -446,7 +437,7 @@ export function ChatRoom({
                 <Skeleton className="h-16 w-3/5 rounded-xl" />
               </div>
             ) : messageError ? (
-              <div className="mx-auto mt-6 max-w-sm rounded-xl border border-red-100 bg-red-50 p-3 text-center text-xs text-red-700">
+              <div className="mx-auto mt-6 max-w-sm rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 p-3 text-center text-xs text-red-600">
                 <p>{messageError}</p>
                 <Button
                   variant="outline"
@@ -463,115 +454,152 @@ export function ChatRoom({
               </div>
             ) : rows.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                <BookOpen className="w-8 h-8 text-gray-300" aria-hidden />
-                <p className="text-sm font-medium text-gray-700">Belum ada pesan</p>
-                <p className="text-xs text-gray-500">Sapa anggota lain atau bagikan buku favoritmu.</p>
+                <BookOpen className="w-8 h-8 text-zinc-400" aria-hidden />
+                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Belum ada pesan</p>
+                <p className="text-xs text-zinc-500">Sapa anggota lain atau bagikan buku favoritmu.</p>
               </div>
             ) : (
               <>
                 {cursor ? (
-                  <div className="mb-3 flex justify-center">
-                    <Button variant="outline" size="sm" onClick={handleLoadOlder} disabled={loadingOlder}>
+                  <div className="mb-4 flex justify-center">
+                    <Button variant="outline" size="sm" onClick={handleLoadOlder} disabled={loadingOlder} className="bg-white/80 dark:bg-zinc-900/80 shadow-xs">
                       {loadingOlder ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : null}
                       Muat pesan lama
                     </Button>
                   </div>
                 ) : null}
-                <Conversation className="gap-1">
-                  {rows.map((message, index) => {
-                    const own = message.sender.id === currentUserId;
-                    const previous = rows[index - 1];
-                    const showDay =
-                      !previous || dayLabel(previous.created_at) !== dayLabel(message.created_at);
-                    const grouped = !!previous && previous.sender.id === message.sender.id && !showDay;
-                    const canDelete = own || canDeleteOthers;
-                    return (
+
+                {rows.map((message, index) => {
+                  const own = message.sender.id === currentUserId;
+                  const previous = rows[index - 1];
+                  const showDay =
+                    !previous || dayLabel(previous.created_at) !== dayLabel(message.created_at);
+                  const grouped = !!previous && previous.sender.id === message.sender.id && !showDay;
+                  const canDelete = own || canDeleteOthers;
+
+                  return (
+                    <div key={message.id} className="flex flex-col">
+                      {showDay ? (
+                        <div className="my-3 flex justify-center">
+                          <span className="rounded-lg bg-white/90 dark:bg-zinc-800/90 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 shadow-xs">
+                            {dayLabel(message.created_at)}
+                          </span>
+                        </div>
+                      ) : null}
+
                       <div
-                        key={message.id}
-                        data-slot="message"
-                        data-align={own ? "end" : "start"}
-                        className="group/message flex flex-col"
+                        className={cn(
+                          "group/message flex items-end gap-1.5 w-full",
+                          own ? "justify-end" : "justify-start"
+                        )}
                       >
-                        {showDay ? (
-                          <div className="my-3 flex justify-center">
-                            <span className="rounded-full bg-white/80 px-3 py-0.5 text-[11px] font-medium text-gray-500 shadow-2xs">
-                              {dayLabel(message.created_at)}
-                            </span>
-                          </div>
-                        ) : null}
-                        {!own && !grouped ? (
-                          <p className="mb-0.5 ml-1 text-[11px] font-medium text-gray-500">
-                            {memberDisplayName(message.sender)}
-                          </p>
-                        ) : null}
-                        <ConversationBubble
-                          variant={own ? "default" : "muted"}
-                          align={own ? "end" : "start"}
-                          className={cn("mb-1", message.status === "sending" && "opacity-70")}
-                        >
-                          <ConversationContent className="rounded-xl px-3 py-2">
-                            {message.message_type === "book" ? (
-                              <BookMessageCard book={message.book} />
-                            ) : (
-                              <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
-                            )}
-                            <p className="text-end text-[10px] opacity-70">
-                              {timeLabel(message.created_at)}
-                              {message.status === "sending" ? " · mengirim…" : ""}
-                            </p>
-                          </ConversationContent>
-                        </ConversationBubble>
-                        {message.status === "failed" ? (
-                          <div className="mb-1 flex items-center gap-2 self-end text-[11px] text-red-600">
-                            <span>Gagal terkirim</span>
-                            <button type="button" className="font-semibold underline" onClick={() => void retry(message)}>
-                              Kirim ulang
-                            </button>
-                            <button
-                              type="button"
-                              className="underline"
-                              onClick={() =>
-                                setMessages((current) => (current ?? []).filter((item) => item.id !== message.id))
-                              }
-                            >
-                              Buang
-                            </button>
-                          </div>
-                        ) : canDelete ? (
+                        {/* Tombol Hapus di sebelah kiri (pesan kita) */}
+                        {own && canDelete && message.status !== "failed" && (
                           <button
                             type="button"
                             onClick={() => void handleDeleteMessage(message)}
                             disabled={deletingId === message.id}
                             aria-label="Hapus pesan"
-                            className={cn(
-                              "mb-1 rounded p-1 text-gray-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 group-hover/message:opacity-100",
-                              own ? "self-end" : "self-start",
-                            )}
+                            className="mb-1 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover/message:opacity-100"
                           >
                             <Trash2 className="w-3.5 h-3.5" aria-hidden />
                           </button>
-                        ) : null}
+                        )}
+
+                        {/* Bubble Pesan */}
+                        <div
+                          className={cn(
+                            "relative max-w-[80%] sm:max-w-[65%] px-3.5 py-2 shadow-xs text-sm transition-all flex flex-col min-w-[100px]",
+                            own
+                              ? "rounded-2xl rounded-tr-xs bg-[#d9fdd3] dark:bg-[#005c4b] text-zinc-900 dark:text-zinc-100"
+                              : "rounded-2xl rounded-tl-xs bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700/50",
+                            message.status === "sending" && "opacity-70"
+                          )}
+                        >
+                          {/* Nama Pengirim */}
+                          {!own && !grouped && (
+                            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-0.5">
+                              {memberDisplayName(message.sender)}
+                            </span>
+                          )}
+
+                          {/* Isi Pesan / Rekomendasi Buku */}
+                          {message.message_type === "book" ? (
+                            <div className="pb-3">
+                              <BookMessageCard book={message.book} />
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words leading-relaxed pb-3">
+                              {message.content}
+                            </p>
+                          )}
+
+                          {/* Time Stamp (Pojok Kanan Bawah) */}
+                          <span
+                            className={cn(
+                              "absolute right-2.5 bottom-1 text-[10px] select-none",
+                              own ? "text-zinc-500 dark:text-emerald-200/70" : "text-zinc-400"
+                            )}
+                          >
+                            {timeLabel(message.created_at)}
+                            {message.status === "sending" ? " · mengirim…" : ""}
+                          </span>
+                        </div>
+
+                        {/* Tombol Hapus di sebelah kanan (pesan orang lain) */}
+                        {!own && canDelete && message.status !== "failed" && (
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteMessage(message)}
+                            disabled={deletingId === message.id}
+                            aria-label="Hapus pesan"
+                            className="mb-1 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover/message:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                          </button>
+                        )}
                       </div>
-                    );
-                  })}
-                </Conversation>
+
+                      {/* Notifikasi Gagal Terkirim */}
+                      {message.status === "failed" && (
+                        <div className="mt-1 flex items-center gap-2 self-end text-[11px] text-red-600">
+                          <span>Gagal terkirim</span>
+                          <button type="button" className="font-semibold underline" onClick={() => void retry(message)}>
+                            Kirim ulang
+                          </button>
+                          <button
+                            type="button"
+                            className="underline"
+                            onClick={() =>
+                              setMessages((current) => (current ?? []).filter((item) => item.id !== message.id))
+                            }
+                          >
+                            Buang
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>
 
-          <div className="border-t border-gray-100 px-3 py-2">
+          {/* Form Input Bar Bawah (Style WA Web) */}
+          <div className="bg-[#f0f2f5] dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 px-3 py-2.5">
             {group.can_send ? (
-              <div className="flex items-end gap-2">
+              <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   aria-label="Bagikan buku"
                   title="Bagikan buku"
                   onClick={() => setShareOpen(true)}
-                  className="shrink-0"
+                  className="shrink-0 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 rounded-full"
                 >
-                  <BookOpen className="w-4 h-4" aria-hidden />
+                  <BookOpen className="w-5 h-5" aria-hidden />
                 </Button>
+
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value.slice(0, 2000))}
@@ -583,21 +611,22 @@ export function ChatRoom({
                   }}
                   rows={1}
                   maxLength={2000}
-                  placeholder="Tulis pesan… (Enter kirim, Shift+Enter baris baru)"
+                  placeholder="Ketik pesan... (Shift+Enter baris baru)"
                   aria-label="Tulis pesan"
-                  className="max-h-32 min-h-9 flex-1 resize-none rounded-xl border border-zinc-200/90 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10"
+                  className="max-h-28 min-h-[40px] flex-1 resize-none rounded-xl bg-white dark:bg-zinc-800 px-4 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none border border-transparent focus:border-emerald-500/50 transition-all"
                 />
-                <Button
-                  size="sm"
+
+                <button
+                  type="button"
                   onClick={() => void handleSendText()}
                   disabled={!draft.trim() || sending}
-                  className="h-9 shrink-0"
+                  className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs shrink-0 cursor-pointer"
                 >
-                  Kirim
-                </Button>
+                  <Send className="w-4 h-4 translate-x-0.5" aria-hidden />
+                </button>
               </div>
             ) : (
-              <p className="py-1 text-center text-xs text-gray-500">
+              <p className="py-1 text-center text-xs text-zinc-500">
                 {isAdmin && !group.is_member
                   ? "Admin hanya dapat membaca grup tanpa menjadi anggota."
                   : "Anda tidak dapat mengirim pesan di grup ini."}
@@ -605,18 +634,19 @@ export function ChatRoom({
             )}
           </div>
 
+          {/* Keluar & Hapus Grup Footer */}
           {group.is_member ? (
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-3 py-1.5">
+            <div className="flex items-center justify-end gap-3 bg-[#f0f2f5] dark:bg-zinc-900 border-t border-zinc-200/50 dark:border-zinc-800/50 px-3 py-1.5">
               {group.my_role !== "owner" ? (
                 <button
                   type="button"
                   onClick={() => setConfirm("leave")}
-                  className="text-[11px] text-gray-500 hover:text-red-600"
+                  className="text-[11px] text-zinc-500 hover:text-red-600 transition-colors"
                 >
                   Keluar grup
                 </button>
               ) : (
-                <span className="text-[11px] text-gray-400">
+                <span className="text-[11px] text-zinc-400">
                   Pemilik tidak dapat keluar; pindahkan kepemilikan dulu.
                 </span>
               )}
@@ -624,7 +654,7 @@ export function ChatRoom({
                 <button
                   type="button"
                   onClick={() => setConfirm("delete-group")}
-                  className="text-[11px] text-gray-500 hover:text-red-600"
+                  className="text-[11px] text-zinc-500 hover:text-red-600 transition-colors"
                 >
                   Hapus grup
                 </button>
@@ -634,6 +664,7 @@ export function ChatRoom({
         </>
       )}
 
+      {/* Dialogs */}
       <MemberPanel
         open={membersOpen}
         onOpenChange={setMembersOpen}
