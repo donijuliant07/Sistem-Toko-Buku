@@ -34,6 +34,13 @@
   --color-bubble-sent-foreground: var(--bubble-sent-foreground);
   --color-bubble-received: var(--bubble-received);
   --color-bubble-received-foreground: var(--bubble-received-foreground);
+  --color-chat-brand: var(--chat-brand);
+  --color-chat-ink: var(--chat-ink);
+  --color-chat-bubble-foreground: var(--chat-bubble-foreground);
+  --color-chat-surface: var(--chat-surface);
+  --color-chat-success: var(--chat-success);
+  --color-chat-success-soft: var(--chat-success-soft);
+  --color-chat-success-ink: var(--chat-success-ink);
   --color-shell-fg-muted: var(--shell-fg-muted);
   --color-shell-fg-faint: var(--shell-fg-faint);
 }
@@ -374,6 +381,22 @@ body {
   --bubble-received-foreground: #000000;
   --shell-fg-muted: #333333;
   --shell-fg-faint: #6d6d6d;
+
+  /* AI Penasihat Buku: hijau WhatsApp (#25D366) untuk isian aksi,
+     hijau WhatsApp tua (#128C7E) untuk teks/ikon agar tetap kontras,
+     dan tint bubble keluar WhatsApp asli (#D9FDD3). */
+  --chat-brand: #25d366;
+  --chat-ink: #128c7e; /* hijau WhatsApp tua: teks/ikon di atas putih */
+  --chat-bubble: #d9fdd3;
+  --chat-bubble-foreground: #111b21;
+
+  /* Aksen "sukses" untuk kecocokan buku & indikator saldo. Hijau emerald
+     yang lebih dalam dari --chat-brand agar teks kecil tetap lolos kontras
+     di atas putih (--chat-brand terlalu terang untuk teks 11px). */
+  --chat-surface: #f7faf8;
+  --chat-success: #10b981;
+  --chat-success-soft: #dcfce7;
+  --chat-success-ink: #065f46;
 }
 
 .dark {
@@ -381,6 +404,51 @@ body {
   --bubble-received-foreground: #ffffff;
   --shell-fg-muted: #d4d4d4;
   --shell-fg-faint: #8e8e8e;
+
+  --chat-brand: #25d366;
+  --chat-ink: #4fb58a;
+  --chat-bubble: #144d37;
+  --chat-bubble-foreground: #e6eee9;
+
+  --chat-surface: #101a16;
+  --chat-success: #34d399;
+  --chat-success-soft: #123a2b;
+  --chat-success-ink: #a7f3d0;
+}
+
+/* ========================================================
+   Panel AI Penasihat Buku: seluruh aksi utama dan gelembung
+   pesan memakai hijau WhatsApp toko, bukan --blue Kobra.
+   Override menimpa token --color-* (yang dipakai utility
+   Tailwind v4), bukan --primary mentah: nilai --color-* sudah
+   ter-resolve di :root sehingga override bersarang tidak sampai.
+   Font sans panel ditulis eksplisit di sini karena `font-family`
+   pada `body` di luar @layer base mengalahkan utility Tailwind;
+   angka harga & saldo tetap dapat monospace lewat `.font-mono`
+   yang di-redeclare di bawah.
+   ======================================================== */
+.chat-advisor {
+  --color-primary: var(--chat-brand);
+  --color-primary-hover: #20bd5a;
+  --color-primary-foreground: #ffffff;
+  --color-ring: var(--chat-brand);
+  --color-bubble-sent: var(--chat-bubble);
+  --color-bubble-sent-foreground: var(--chat-bubble-foreground);
+  --color-bubble-received: #f0f2eb;
+  --color-bubble-received-foreground: #14201b;
+  font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.chat-advisor :where(.font-mono) {
+  font-family: var(--font-mono), "JetBrains Mono", "Geist Mono", ui-monospace, "SFMono-Regular",
+    Menlo, Consolas, monospace;
+}
+
+
+.dark .chat-advisor {
+  --color-primary-foreground: #0e1613;
+  --color-bubble-received: #1d2a24;
+  --color-bubble-received-foreground: #e6eee9;
 }
 
 @utility transition-ring {

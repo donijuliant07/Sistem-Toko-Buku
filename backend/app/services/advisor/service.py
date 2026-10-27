@@ -150,14 +150,19 @@ class BookAdvisorService:
             session.preferences = pref_rules.merge_preferences(session.preferences, delta)
 
         # Sapaan/obrolan ringan dijawab apa adanya; jangan menembak daftar buku
-        # hanya karena preferensi lama sudah lengkap.
-        if intent == "chit_chat" and reply:
+        # hanya karena preferensi lama sudah lengkap. Keputusan `chit_chat`
+        # dihormati walau model tidak memberi kalimat balasan — bila tidak,
+        # pesan di luar topik akan jatuh ke jalur rekomendasi dan pengguna
+        # disodori buku tanpa diminta.
+        if intent == "chit_chat":
             session.conversation_state = (
                 ConversationState.READY_TO_RECOMMEND
                 if pref_rules.is_ready(session.preferences)
                 else ConversationState.COLLECTING_PREFERENCES
             )
-            answer = self._join_reply(reply, question)
+            answer = self._join_reply(reply, question) or self._small_talk_fallback(
+                session.preferences
+            )
             session.append("assistant", answer)
             return self._response(session, turn, configured, answer, question, [])
 
@@ -438,6 +443,17 @@ class BookAdvisorService:
         if delta.reading_level == ReadingLevel.BEGINNER:
             parts.append("Aku akan utamakan buku yang ramah untuk pemula.")
         return " ".join(parts) or None
+
+    @staticmethod
+    def _small_talk_fallback(preferences: BookPreferences) -> str:
+        """Balasan netral saat model menandai `chit_chat` tanpa memberi kalimat.
+
+        Bukan rekomendasi: obrolan di luar katalog harus tetap dijawab sebagai
+        obrolan, bukan disodori daftar buku hanya karena preferensi lama ada.
+        """
+        if pref_rules.is_ready(preferences):
+            return "Siap, aku di sini kalau kamu mau lanjut cari buku lagi."
+        return "Oke! Kalau nanti mau cari bacaan, bilang aja tema yang lagi kamu cari."
 
     @staticmethod
     def _ask_question(preferences: BookPreferences) -> str:
