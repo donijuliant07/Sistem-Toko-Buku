@@ -9,6 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getAIReview, getBook, getMyRewards, getSpoilerAccess } from "@/lib/api";
 import type { AIReviewResponse, SpoilerAccess, SpoilerLevel } from "@/lib/types";
 import SpoilerSelectorModal from "@/components/books/SpoilerSelectorModal";
+import AiReviewButton from "@/components/books/AiReviewButton";
 import AIReviewResult from "@/components/books/AIReviewResult";
 import ComparePriceModal from "@/components/books/ComparePriceModal";
 
@@ -228,24 +229,11 @@ export default function BookDetailModal({
 
                 {/* AI Review Button below Cover */}
                 <div className="w-full max-w-50 mt-4">
-                  <button
-                    type="button"
+                  <AiReviewButton
+                    size="sm"
                     onClick={() => setIsSpoilerModalOpen(true)}
-                    disabled={aiState === "generating"}
-                    className="w-full py-2 px-3 rounded-xl font-bold text-xs bg-linear-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
-                  >
-                    {aiState === "generating" ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />
-                        <span>Menganalisis...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                        <span>✨ AI Review</span>
-                      </>
-                    )}
-                  </button>
+                    busy={aiState === "generating"}
+                  />
                 </div>
               </div>
 
@@ -274,10 +262,10 @@ export default function BookDetailModal({
                       type="button"
                       onClick={() => setIsSpoilerModalOpen(true)}
                       disabled={aiState === "generating"}
-                      className="md:hidden inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer"
+                      className="md:hidden inline-flex items-center gap-1 rounded-full bg-[#EAF2FF] px-2 py-0.5 text-[10px] font-semibold text-[#0058B0] transition-colors duration-150 hover:bg-[#DCE9FF] cursor-pointer"
                     >
-                      <Sparkles className="w-3 h-3 text-amber-500" />
-                      <span>✨ AI Review</span>
+                      <Sparkles className="w-3 h-3" />
+                      <span>AI Review</span>
                     </button>
                   </div>
 

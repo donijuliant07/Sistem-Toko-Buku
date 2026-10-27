@@ -6,6 +6,11 @@
 @theme {
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
   --font-inter: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Fraunces sudah dimuat di app/layout.tsx; tanpa entri ini `font-display`
+     tidak pernah dibuat sebagai utility sehingga fontnya terbuang. */
+  --font-display: var(--font-display-stack), "Fraunces", Georgia, "Times New Roman", serif;
+  /* Plus Jakarta Sans dimuat di app/layout.tsx; dipakai modal Ulasan AI Readr. */
+  --font-jakarta: var(--font-jakarta), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --ring-duration: 150ms;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -83,6 +88,8 @@
     --danger-soft: #FBECEA;
     --info: #2A7F86;
     --info-soft: #E3F2F3;
+    /* Versi gelap untuk teks di atas info-soft (--info = 4.08:1). */
+    --info-ink: #1D5F65;
     --shipped: #5B5FA8;
     --shipped-soft: #ECECF8;
 
@@ -163,6 +170,7 @@
     --danger-soft: #FEF2F2;
     --info: #3B82F6;
     --info-soft: #EFF6FF;
+    --info-ink: #1D4ED8;
     --shipped: #6366F1;
     --shipped-soft: #EEF2FF;
 
