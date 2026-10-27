@@ -115,11 +115,6 @@ function LoginForm() {
 
   return (
     <>
-      {/* Import stylesheet JetBrains Mono resmi dari CDN */}
-      <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/jetbrains-mono.css"
-      />
 
       {/* Terapkan font JetBrains Mono khusus di pembungkus login */}
       <section 

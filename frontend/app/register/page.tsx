@@ -96,11 +96,6 @@ export default function RegisterPage() {
 
   return (
     <>
-      {/* Import font JetBrains Mono */}
-      <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/jetbrains-mono.css"
-      />
 
       <section
         style={{ fontFamily: "'JetBrains Mono', monospace" }}
