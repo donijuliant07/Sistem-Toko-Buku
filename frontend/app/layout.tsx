@@ -26,6 +26,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" className={`${sans.variable} ${display.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/jetbrains-mono.css"
+        />
+      </head>
       <body suppressHydrationWarning>
         <SoundEffects>
           <AuthProvider>

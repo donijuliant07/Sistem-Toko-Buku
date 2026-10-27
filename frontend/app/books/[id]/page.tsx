@@ -9,7 +9,6 @@ import type { Book, AIReviewResponse, SpoilerLevel, SpoilerAccess } from "@/lib/
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FloatingCS from "@/components/FloatingCS";
 import { formatRupiah } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/components/AuthProvider";
@@ -417,7 +416,6 @@ export default function BookDetailPage() {
       />
 
       <Footer />
-      <FloatingCS />
     </div>
   );
 }

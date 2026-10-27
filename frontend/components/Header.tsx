@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { siteConfig } from "@/config/site";
 import UserDropdown from "@/components/UserDropdown";
@@ -8,6 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/context/CartContext";
 import { Search, X, Bell, ShoppingCart, Sparkles } from "lucide-react";
 import BookAdvisorWidget from "@/components/BookAdvisorWidget";
+import ReadrLogo from "@/components/ReadrLogo";
 
 interface HeaderProps {
   query: string;
@@ -16,6 +18,8 @@ interface HeaderProps {
 }
 
 export default function Header({ query, onSearchSubmit }: HeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [input, setInput] = useState(query);
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
   
@@ -24,9 +28,27 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
 
   const showCart = role !== "admin";
 
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setInput(query);
+  }
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSearchSubmit(input);
+    if (pathname === "/") {
+      onSearchSubmit(input);
+      if (input.trim()) {
+        setTimeout(() => {
+          const catalogElem = document.getElementById("katalog");
+          if (catalogElem) {
+            catalogElem.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 50);
+      }
+    } else {
+      router.push(`/?q=${encodeURIComponent(input)}#katalog`);
+    }
   };
 
   const handleClear = () => {
@@ -39,19 +61,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
       <div className="max-w-[1200px] mx-auto px-4 py-2.5">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0052cc] to-blue-600 flex items-center justify-center text-white font-black text-xl shadow-sm group-hover:scale-105 transition-transform">
-              G
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-xl leading-tight text-[#0052cc] tracking-tight">
-                {siteConfig.brandName}
-              </span>
-              <span className="text-[10px] text-gray-400 font-medium tracking-wider uppercase">
-                Toko Buku Online
-              </span>
-            </div>
-          </Link>
+          <ReadrLogo href="/" size="md" showTagline />
 
           {/* Search Bar */}
           <form
@@ -72,7 +82,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
                   type="button"
                   onClick={handleClear}
                   aria-label="Bersihkan pencarian"
-                  className="absolute right-10 sm:right-11 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-10 sm:right-11 p-1 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -80,7 +90,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
               <button
                 type="submit"
                 aria-label="Cari"
-                className="absolute right-1 w-8 h-8 bg-[#0052cc] hover:bg-[#0041a8] text-white rounded-full flex items-center justify-center transition-colors shadow-xs active:scale-95"
+                className="absolute right-1 w-8 h-8 bg-[#0052cc] hover:bg-[#0041a8] text-white rounded-full flex items-center justify-center transition-colors shadow-xs active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
               </button>

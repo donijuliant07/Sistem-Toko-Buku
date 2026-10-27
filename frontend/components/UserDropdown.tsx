@@ -41,16 +41,18 @@ export default function UserDropdown() {
 
   if (!session) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
         <Link
           href="/login"
-          className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-[#0052cc] hover:bg-[#0041a8] rounded-full transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-[#0052cc] hover:bg-[#0041a8] rounded-full transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer font-mono"
         >
           Masuk
         </Link>
         <Link
           href="/register"
-          className="hidden md:inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-gray-700 hover:text-[#0052cc] bg-gray-100 hover:bg-gray-200 rounded-full transition-all active:scale-95 cursor-pointer"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          className="hidden md:inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-gray-700 hover:text-[#0052cc] bg-gray-100 hover:bg-gray-200 rounded-full transition-all active:scale-95 cursor-pointer font-mono"
         >
           Daftar
         </Link>
@@ -78,10 +80,16 @@ export default function UserDropdown() {
 
   return (
     <DropdownMenu>
+      {/* Import stylesheet JetBrains Mono resmi dari CDN */}
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/jetbrains-mono.css"
+      />
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 shadow-2xs transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 cursor-pointer group active:scale-[0.98]"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 shadow-2xs transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 cursor-pointer group active:scale-[0.98] font-mono"
           title="Menu Akun"
         >
           {/* Default Shadcn Avatar */}
@@ -122,7 +130,8 @@ export default function UserDropdown() {
       <DropdownMenuContent
         align="end"
         sideOffset={6}
-        className="w-72 p-1.5 shadow-lg border border-slate-200/80 rounded-xl bg-white text-slate-900"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        className="w-72 p-1.5 shadow-lg border border-slate-200/80 rounded-xl bg-white text-slate-900 font-mono"
       >
         {/* User Identity Header Card */}
         <DropdownMenuLabel className="p-2.5 font-normal bg-slate-50/80 rounded-lg mb-1 border border-slate-100">

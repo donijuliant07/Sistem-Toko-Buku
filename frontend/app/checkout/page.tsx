@@ -7,7 +7,6 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FloatingCS from "@/components/FloatingCS";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/components/AuthProvider";
 import { createOrder, getShippingOptions, type ShippingOption } from "@/lib/api";
@@ -386,7 +385,6 @@ function CheckoutContent() {
       </main>
 
       <Footer />
-      <FloatingCS />
     </div>
   );
 }
