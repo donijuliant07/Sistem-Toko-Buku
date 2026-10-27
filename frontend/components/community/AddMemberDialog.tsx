@@ -105,7 +105,7 @@ export function AddMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="font-community max-w-md">
         <DialogHeader>
           <DialogTitle>Tambah anggota</DialogTitle>
           <DialogDescription>Cari pengguna berdasarkan nama atau username (minimal 2 huruf).</DialogDescription>

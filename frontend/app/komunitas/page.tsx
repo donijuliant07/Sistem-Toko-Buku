@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessagesSquare } from "lucide-react";
 import { GroupBrowser } from "@/components/community/GroupBrowser";
 import { ChatRoom } from "@/components/community/ChatRoom";
 import { useAuth } from "@/components/AuthProvider";
@@ -28,7 +28,7 @@ function CommunityContent() {
 
   if (!accessToken || !currentUserId) {
     return (
-      <div className="flex h-[60vh] items-center justify-center gap-2 text-sm text-gray-500">
+      <div className="flex h-[60vh] items-center justify-center gap-2 text-sm text-[var(--muted-foreground)]">
         <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
         Memuat sesi…
       </div>
@@ -39,7 +39,7 @@ function CommunityContent() {
     <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-4">
       <aside
         className={cn(
-          "rounded-xl border border-gray-200 bg-white p-3 lg:sticky lg:top-[104px] lg:h-[calc(100vh-136px)] lg:overflow-y-auto",
+          "rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 lg:sticky lg:top-[104px] lg:h-[calc(100vh-136px)] lg:overflow-y-auto",
           selectedId ? "hidden lg:block" : "block",
         )}
         aria-label="Daftar grup komunitas"
@@ -68,11 +68,16 @@ function CommunityContent() {
             onBack={() => selectGroup(null)}
           />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
-            <p className="text-sm font-semibold text-gray-800">Pilih grup untuk mulai berdiskusi</p>
-            <p className="mt-1 max-w-xs text-xs text-gray-500">
-              Grup publik bisa langsung diikuti. Untuk grup privat, minta owner menambahkan Anda.
-            </p>
+          <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] p-8 text-center">
+            <div className="flex size-11 items-center justify-center rounded-xl bg-[var(--surface)] text-[var(--primary-deep)] shadow-xs">
+              <MessagesSquare className="w-5 h-5" aria-hidden />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground)]">Pilih grup untuk mulai berdiskusi</p>
+              <p className="mx-auto mt-1 max-w-[42ch] text-xs leading-relaxed text-[var(--muted-foreground)]">
+                Grup publik bisa langsung diikuti. Untuk grup privat, minta owner menambahkan Anda.
+              </p>
+            </div>
           </div>
         )}
       </section>
@@ -84,7 +89,7 @@ export default function CommunityPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-[60vh] items-center justify-center gap-2 text-sm text-gray-500">
+        <div className="flex h-[60vh] items-center justify-center gap-2 text-sm text-[var(--muted-foreground)]">
           <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
           Memuat komunitas…
         </div>

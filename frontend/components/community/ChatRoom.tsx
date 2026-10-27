@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import type { ChatMessage, GroupDetail } from "@/lib/types";
 
 /** Pesan optimistis: `id` lokal sampai server mengonfirmasi lewat respons/Realtime. */
-type LocalMessage = ChatMessage & { status?: "sending" | "failed" };
+type LocalMessage = ChatMessage & { status?: "sending" | "failed"; fresh?: boolean };
 
 type ChatRoomProps = {
   groupId: string;
@@ -182,7 +182,7 @@ export function ChatRoom({
           next[index] = { ...next[index], id: incoming.id, created_at: incoming.created_at, status: undefined };
           return next;
         }
-        return [...list, incoming];
+        return [...list, { ...incoming, fresh: true }];
       });
     },
     onDelete: (messageId) => {
@@ -237,6 +237,7 @@ export function ChatRoom({
       client_message_id: clientMessageId,
       created_at: new Date().toISOString(),
       status: "sending",
+      fresh: true,
     };
     setMessages((current) => [...(current ?? []), optimistic]);
     setDraft("");
@@ -380,7 +381,18 @@ export function ChatRoom({
         <GroupAvatar name={group.name} avatarUrl={group.avatar_url} category={group.category} size="sm" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{group.name}</p>
-          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="flex items-center gap-1.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+            <span
+              aria-hidden
+              className={cn(
+                "inline-block size-1.5 shrink-0 rounded-full",
+                realtimeStatus === "subscribed"
+                  ? "bg-emerald-500 community-pulse"
+                  : realtimeStatus === "error"
+                    ? "bg-red-500"
+                    : "bg-zinc-300 dark:bg-zinc-600",
+              )}
+            />
             {meta.label} · {VISIBILITY_LABELS[group.visibility]} · {group.member_count} anggota
             {realtimeStatus === "error" ? " · real-time terputus" : ""}
           </p>
@@ -478,7 +490,10 @@ export function ChatRoom({
                   const canDelete = own || canDeleteOthers;
 
                   return (
-                    <div key={message.id} className="flex flex-col">
+                    // Kunci memakai `client_message_id` agar pesan optimistis tidak
+                    // di-remount saat server/Realtime mengonfirmasi id aslinya —
+                    // tanpa ini animasi masuk akan berulang di setiap konfirmasi.
+                    <div key={message.client_message_id ?? message.id} className="flex flex-col">
                       {showDay ? (
                         <div className="my-3 flex justify-center">
                           <span className="rounded-lg bg-white/90 dark:bg-zinc-800/90 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 shadow-xs">
@@ -492,8 +507,7 @@ export function ChatRoom({
                           "group/message flex items-end gap-1.5 w-full",
                           own ? "justify-end" : "justify-start"
                         )}
-                      >
-                        {/* Tombol Hapus di sebelah kiri (pesan kita) */}
+                      >                        {/* Tombol Hapus di sebelah kiri (pesan kita) */}
                         {own && canDelete && message.status !== "failed" && (
                           <button
                             type="button"
@@ -509,11 +523,12 @@ export function ChatRoom({
                         {/* Bubble Pesan */}
                         <div
                           className={cn(
-                            "relative max-w-[80%] sm:max-w-[65%] px-3.5 py-2 shadow-xs text-sm transition-all flex flex-col min-w-[100px]",
+                            "relative max-w-[80%] sm:max-w-[65%] px-3.5 py-2 shadow-xs text-sm transition-[opacity,box-shadow] flex flex-col min-w-[100px]",
                             own
                               ? "rounded-2xl rounded-tr-xs bg-[#d9fdd3] dark:bg-[#005c4b] text-zinc-900 dark:text-zinc-100"
                               : "rounded-2xl rounded-tl-xs bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700/50",
-                            message.status === "sending" && "opacity-70"
+                            message.status === "sending" && "opacity-70",
+                            message.fresh && "community-enter",
                           )}
                         >
                           {/* Nama Pengirim */}
@@ -620,7 +635,7 @@ export function ChatRoom({
                   type="button"
                   onClick={() => void handleSendText()}
                   disabled={!draft.trim() || sending}
-                  className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs shrink-0 cursor-pointer"
+                  className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-[background-color,transform,opacity] duration-150 enabled:active:scale-90 shrink-0 cursor-pointer shadow-xs"
                 >
                   <Send className="w-4 h-4 translate-x-0.5" aria-hidden />
                 </button>
@@ -678,9 +693,7 @@ export function ChatRoom({
       <BookShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
-        onPick={async (bookId) => {
-          await deliver({ bookId, clientMessageId: newClientId() });
-        }}
+        onPick={async (bookId) => deliver({ bookId, clientMessageId: newClientId() })}
       />
 
       <EditGroupDialog

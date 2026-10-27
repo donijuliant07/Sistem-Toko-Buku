@@ -452,6 +452,67 @@ body {
   --color-bubble-received-foreground: #e6eee9;
 }
 
+/* ========================================================
+   Komunitas: JetBrains Mono untuk seluruh area /komunitas,
+   termasuk dialog yang di-portal ke <body> (karena itu kelasnya
+   dipasang langsung, bukan lewat pewarisan dari wadah rute).
+   Utility `font-mono` di dalam scope ikut keluarga yang sama.
+   ======================================================== */
+.font-community {
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    monospace;
+  font-family: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    monospace;
+  font-variant-ligatures: none;
+}
+
+/* Pesan baru — kiriman sendiri atau realtime — masuk dengan satu gerakan. */
+@keyframes community-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.community-enter {
+  animation: community-enter 180ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) both;
+}
+
+/* Titik status real-time berdenyut selama kanal tersambung. */
+@keyframes community-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+.community-pulse {
+  animation: community-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-enter,
+  .community-pulse {
+    animation: none;
+  }
+
+  /* Micro interaction komunitas hanya dekoratif: hilangkan geraknya,
+     keadaannya tetap terbaca lewat warna/border. */
+  .font-community,
+  .font-community * {
+    transition-duration: 1ms !important;
+  }
+}
+
 @utility transition-ring {
   transition-property: color, background-color, border-color, box-shadow, outline-color, outline-offset;
   transition-duration: var(--ring-duration);

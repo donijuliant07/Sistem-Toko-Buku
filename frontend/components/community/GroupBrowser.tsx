@@ -114,8 +114,8 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-extrabold text-gray-900">Komunitas</h1>
-          <p className="text-xs text-gray-500">Diskusi buku bareng pembaca lain.</p>
+          <h1 className="text-lg font-extrabold tracking-tight text-[var(--foreground)]">Komunitas</h1>
+          <p className="text-xs text-[var(--muted-foreground)]">Diskusi buku bareng pembaca lain.</p>
         </div>
         {isAdmin ? (
           <Button size="sm" onClick={() => setCreateOpen(true)} className="cursor-pointer">
@@ -126,7 +126,7 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" aria-hidden />
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -139,7 +139,7 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
             type="button"
             onClick={() => setQuery("")}
             aria-label="Hapus pencarian"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 cursor-pointer"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--muted-foreground)] transition-[background-color,color,transform] duration-150 hover:bg-[var(--surface-tint)] hover:text-[var(--foreground)] active:scale-90 cursor-pointer motion-reduce:transition-none"
           >
             <X className="w-3.5 h-3.5" aria-hidden />
           </button>
@@ -147,7 +147,7 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg bg-gray-100 p-0.5" role="tablist" aria-label="Filter grup">
+        <div className="inline-flex rounded-lg bg-[var(--surface-muted)] p-0.5" role="tablist" aria-label="Filter grup">
           {(["all", "mine"] as const).map((value) => (
             <button
               key={value}
@@ -155,8 +155,10 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
               role="tab"
               aria-selected={tab === value}
               onClick={() => tab !== value && updateFilters({ tab: value })}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                tab === value ? "bg-white text-gray-900 shadow-2xs" : "text-gray-500 hover:text-gray-700"
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40 active:scale-[0.97] cursor-pointer ${
+                tab === value
+                  ? "bg-[var(--surface)] text-[var(--foreground)] shadow-2xs"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               {value === "all" ? "Semua" : "Grup Saya"}
@@ -167,7 +169,7 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
           value={category}
           onChange={(event) => updateFilters({ category: event.target.value as GroupCategory | "" })}
           aria-label="Filter kategori"
-          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0052cc]/20"
+          className="h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 text-xs text-[var(--foreground)] transition-colors hover:border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30"
         >
           <option value="">Semua kategori</option>
           {GROUP_CATEGORIES.map((item) => (
@@ -192,11 +194,11 @@ export function GroupBrowser({ accessToken, selectedId, isAdmin, onSelect, onCha
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center">
-          <p className="text-sm font-medium text-gray-700">
+        <div className="community-enter rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] p-6 text-center">
+          <p className="text-sm font-semibold text-[var(--foreground)]">
             {tab === "mine" ? "Belum ikut grup mana pun." : "Belum ada grup yang cocok."}
           </p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mx-auto mt-1 max-w-[38ch] text-xs leading-relaxed text-[var(--muted-foreground)]">
             {tab === "mine"
               ? "Cari grup publik lalu bergabung, atau minta owner menambahkan Anda."
               : "Coba kata kunci atau kategori lain."}
