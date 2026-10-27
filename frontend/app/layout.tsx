@@ -3,7 +3,6 @@ import { DM_Sans, Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
-import BookAdvisorWidget from "@/components/BookAdvisorWidget";
 import { SoundEffects } from "@/components/ui/sound";
 import PageTitle from "@/components/PageTitle";
 import "./globals.css";

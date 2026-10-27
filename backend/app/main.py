@@ -58,10 +58,22 @@ _DEV_LAN_ORIGIN_REGEX = (
     r"|192\.168(?:\.\d{1,3}){2}):3000$"
 )
 
+# `CORSMiddleware` menerima satu regex saja; gabungkan pola dev LAN (bila
+# aktif) dengan origin Vercel dari konfigurasi. Tanpa keduanya, `None`.
+_origin_regexes = [
+    pattern
+    for pattern in (
+        _DEV_LAN_ORIGIN_REGEX if settings.dev_lan_origins_trusted else None,
+        settings.vercel_origins_regex,
+    )
+    if pattern
+]
+_ORIGIN_REGEX = "|".join(f"(?:{pattern})" for pattern in _origin_regexes) or None
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_origin_regex=_DEV_LAN_ORIGIN_REGEX if settings.dev_lan_origins_trusted else None,
+    allow_origin_regex=_ORIGIN_REGEX,
     # Autentikasi memakai header Bearer, bukan cookie; `allow_credentials`
     # dibiarkan aktif tanpa wildcard origin agar tetap sah bila kelak ada cookie.
     allow_credentials=True,

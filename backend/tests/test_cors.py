@@ -44,3 +44,81 @@ async def test_simple_request_gets_allow_origin(client):
     response = await client.get("/health", headers={"Origin": "http://localhost:3000"})
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://readr.vercel.app",
+        "https://readr-abc123.vercel.app",
+        "https://readr-git-main-r3nddy.vercel.app",
+    ],
+)
+async def test_vercel_origins_allowed_in_production(origin):
+    """URL preview berubah tiap deploy; project name + pola itulah yang didaftarkan."""
+    from httpx import ASGITransport, AsyncClient
+    from starlette.applications import Starlette
+    from starlette.middleware.cors import CORSMiddleware
+    from starlette.responses import PlainTextResponse
+    from starlette.routing import Route
+
+    from app.core.config import Settings
+
+    regex = Settings(VERCEL_FRONTEND_PROJECTS="readr").vercel_origins_regex
+    app = Starlette(routes=[Route("/x", lambda request: PlainTextResponse("ok"))])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[],
+        allow_origin_regex=regex,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.get("/x", headers={"Origin": origin})
+    assert response.headers.get("access-control-allow-origin") == origin
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "origin",
+    ["https://readrx.vercel.app", "https://readr.vercel.app.evil.com", "http://readr.vercel.app"],
+)
+async def test_vercel_lookalike_origins_rejected(origin):
+    from httpx import ASGITransport, AsyncClient
+    from starlette.applications import Starlette
+    from starlette.middleware.cors import CORSMiddleware
+    from starlette.responses import PlainTextResponse
+    from starlette.routing import Route
+
+    from app.core.config import Settings
+
+    app = Starlette(routes=[Route("/x", lambda request: PlainTextResponse("ok"))])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[],
+        allow_origin_regex=Settings(VERCEL_FRONTEND_PROJECTS="readr").vercel_origins_regex,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.get("/x", headers={"Origin": origin})
+    assert "access-control-allow-origin" not in response.headers
+
+
+def test_cors_origins_trims_trailing_slash():
+    """Browser mengirim origin tanpa `/`; nilai ber-slash tidak boleh lolos."""
+    from app.core.config import Settings
+
+    assert Settings(FRONTEND_ORIGINS="https://a.example/, ,https://b.example").cors_origins == [
+        "https://a.example",
+        "https://b.example",
+    ]
+
+
+def test_vercel_origins_regex_none_without_projects():
+    from app.core.config import Settings
+
+    assert Settings(VERCEL_FRONTEND_PROJECTS=" , ").vercel_origins_regex is None

@@ -37,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     if (supabaseConfigError) {
+      // Jangan biarkan UI menunggu selamanya: tanpa konfigurasi, anggap sesi kosong.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- konfigurasi hilang saat mount
+      setLoading(false);
       return () => {
         mounted = false;
       };

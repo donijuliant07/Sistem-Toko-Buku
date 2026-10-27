@@ -9,7 +9,6 @@ import CategoryShortcuts from "@/components/CategoryShortcuts";
 import ProductCard from "@/components/ProductCard";
 import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
-import FloatingCS from "@/components/FloatingCS";
 import BookDetailModal from "@/components/BookDetailModal";
 import { Product, CATEGORIES, SEMUA_CATEGORY_ID } from "@/data/mockData";
 import FreepikCategoryIcon from "@/components/FreepikCategoryIcon";

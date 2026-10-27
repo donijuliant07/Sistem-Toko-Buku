@@ -6,6 +6,10 @@ bawah. Nilai default sengaja permisif untuk pengembangan lokal, tetapi wajib
 ditimpa di lingkungan nyata (lihat `.env.example`).
 """
 
+from __future__ import annotations
+
+import re
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -36,6 +40,9 @@ class Settings(BaseSettings):
     #: Kedua ejaan loopback didaftarkan: browser Windows bisa membuka dev server
     #: lewat `127.0.0.1` sementara origin `localhost` saja akan ditolak CORS.
     FRONTEND_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    #: Nama proyek frontend di Vercel (dipisah koma) yang origin-nya diterima
+    #: untuk produksi sekaligus URL preview. Kosong = tidak ada origin Vercel.
+    VERCEL_FRONTEND_PROJECTS: str = ""
     STORAGE_BUCKET_PRODUCTS: str = "product-images"
     #: Bucket privat bukti pembayaran. Browser tidak pernah mengaksesnya
     #: langsung; backend membuat signed URL berumur pendek.
@@ -142,8 +149,36 @@ class Settings(BaseSettings):
 
         Nilai kosong dibuang supaya koma berlebih di `.env` tidak menghasilkan
         origin string kosong yang membuat CORS menolak secara tidak terduga.
+        Garis miring di akhir dibuang: browser mengirim origin tanpa `/`, dan
+        `https://x.vercel.app/` tidak akan pernah cocok.
         """
-        return [origin.strip() for origin in self.FRONTEND_ORIGINS.split(",") if origin.strip()]
+        return [
+            origin.strip().rstrip("/")
+            for origin in self.FRONTEND_ORIGINS.split(",")
+            if origin.strip()
+        ]
+
+    @property
+    def vercel_origins_regex(self) -> str | None:
+        """Origin Vercel dari `VERCEL_FRONTEND_PROJECTS` (dipisah koma).
+
+        URL preview Vercel berubah setiap deployment dan tidak mungkin
+        didaftarkan satu per satu di `FRONTEND_ORIGINS`. Yang didaftarkan cukup
+        nama proyek frontend; pola yang diterima:
+
+        - `https://<proyek>.vercel.app` (produksi)
+        - `https://<proyek>-<hash>.vercel.app` (preview)
+        - `https://<proyek>-<branch/hash>-<scope>.vercel.app` (preview tim)
+        """
+        projects = [
+            name.strip().lower()
+            for name in self.VERCEL_FRONTEND_PROJECTS.split(",")
+            if name.strip()
+        ]
+        if not projects:
+            return None
+        names = "|".join(re.escape(name) for name in projects)
+        return rf"^https://(?:{names})(?:-[a-z0-9-]+)?\.vercel\.app$"
 
     @property
     def dev_lan_origins_trusted(self) -> bool:

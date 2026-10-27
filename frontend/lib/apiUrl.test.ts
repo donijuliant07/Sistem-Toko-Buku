@@ -30,4 +30,11 @@ describe("resolveApiUrl", () => {
     const resolveApiUrl = await loadResolveApiUrl(undefined)
     expect(resolveApiUrl(null)).toBe("http://localhost:8000/api/v1")
   })
+
+  it("tidak menukar localhost menjadi port 8000 di halaman HTTPS", async () => {
+    const resolveApiUrl = await loadResolveApiUrl("http://localhost:8000/api/v1")
+    expect(resolveApiUrl({ protocol: "https:", hostname: "toko.vercel.app" })).toBe(
+      "https://toko.vercel.app/api/v1",
+    )
+  })
 })

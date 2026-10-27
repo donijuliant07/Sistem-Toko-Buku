@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { CATEGORIES, SEMUA_CATEGORY_ID } from "@/data/mockData";
 import FreepikCategoryIcon from "./FreepikCategoryIcon";
 

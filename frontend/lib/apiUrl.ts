@@ -25,6 +25,10 @@ export function resolveApiUrl(
   try {
     const url = new URL(fromEnv);
     if (LOOPBACK.has(url.hostname) && !LOOPBACK.has(location.hostname)) {
+      // Deploy HTTPS tidak punya backend di `localhost`, dan menukarnya dengan
+      // host halaman + port 8000 selalu gagal. Jatuh ke origin halaman agar
+      // salah konfigurasi terlihat sebagai 404, bukan koneksi menggantung.
+      if (location.protocol === "https:") return `${location.protocol}//${location.hostname}/api/v1`;
       url.hostname = location.hostname;
     }
     return url.toString().replace(/\/$/, "");

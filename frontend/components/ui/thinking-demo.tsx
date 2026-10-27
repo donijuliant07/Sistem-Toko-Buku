@@ -38,7 +38,6 @@ export default function ThinkingDemo({ autoplay = true, loop = true }: DemoProps
   React.useEffect(() => {
     if (!motion.ready) return;
     if (run.source === "auto" && (!autoplay || motion.reduced || paused)) {
-      if (motion.reduced) setState((previous) => previous.status === "idle" ? previous : initial());
       return;
     }
     const timers: number[] = [];
@@ -54,13 +53,15 @@ Connect your own response stream to answer this question.`;
       { id: "ready", text: "Sample ready", status: "complete" },
     ];
     const finished = progress.map((step) => ({ ...step, status: "complete" as const }));
+    // Mode gerak-dikurangi: satu langkah terjadwal, bukan `setState` sinkron di
+    // badan effect (yang memicu render berantai).
     if (motion.reduced) {
-      setState({ status: "done", prompt: run.prompt, value: "", steps: run.think ? finished : [], answer: response, elapsed: 0 });
-      return;
+      later(0, () => setState({ status: "done", prompt: run.prompt, value: "", steps: run.think ? finished : [], answer: response, elapsed: 0 }));
+      return () => timers.forEach((timer) => window.clearTimeout(timer));
     }
     const offset = run.source === "auto" ? 1000 : 0;
     if (run.source === "auto") {
-      setState(initial());
+      later(0, () => setState(initial()));
       const length = PROMPT.length;
       for (let index = 1; index <= length; index++) {
         later(200 + (index / length) * 620, () => setState((previous) => ({ ...previous, value: PROMPT.slice(0, index) })));
