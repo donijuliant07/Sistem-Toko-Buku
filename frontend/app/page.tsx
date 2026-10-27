@@ -9,7 +9,6 @@ import CategoryShortcuts from "@/components/CategoryShortcuts";
 import ProductCard from "@/components/ProductCard";
 import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
-import FloatingCS from "@/components/FloatingCS";
 import BookDetailModal from "@/components/BookDetailModal";
 import { Product, CATEGORIES, SEMUA_CATEGORY_ID } from "@/data/mockData";
 import FreepikCategoryIcon from "@/components/FreepikCategoryIcon";
@@ -31,7 +30,12 @@ type SortOption = "relevance" | "price_asc" | "price_desc" | "title_asc";
 export default function Home() {
   const [page, setPage] = useState<BookPage>(initialPage);
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("q") || "";
+    }
+    return "";
+  });
   const [activeCategory, setActiveCategory] = useState(SEMUA_CATEGORY_ID);
   const [loaded, setLoaded] = useState(0);
   const [error, setError] = useState("");
@@ -55,6 +59,22 @@ export default function Home() {
     return () => {
       active = false;
     };
+  }, []);
+
+  // Auto scroll ke katalog jika halaman dibuka dengan parameter pencarian ?q=...
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("q")) {
+        const timer = setTimeout(() => {
+          const catalogElem = document.getElementById("katalog");
+          if (catalogElem) {
+            catalogElem.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
   }, []);
 
   // Selected category object for labels and keyword filtering
@@ -84,6 +104,14 @@ export default function Home() {
   const handleSearchSubmit = (q: string) => {
     setPage((curr) => ({ ...curr, page: 1 }));
     setQuery(q);
+    if (q.trim()) {
+      setTimeout(() => {
+        const catalogElem = document.getElementById("katalog");
+        if (catalogElem) {
+          catalogElem.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 50);
+    }
   };
 
   const handleCategorySelect = (categoryId: string) => {
@@ -112,9 +140,10 @@ export default function Home() {
     authorOrBrand: b.author,
     price: toNumber(b.price),
     coverUrl: b.cover_url || "",
-    category: "",
+    category: (b as { category?: string; category_id?: string }).category || (b as { category?: string; category_id?: string }).category_id || "",
     type: "book",
     stock: b.stock,
+    description: b.description || "",
   });
 
   // Showcase books
@@ -142,8 +171,18 @@ export default function Home() {
     if (activeCategory !== SEMUA_CATEGORY_ID && selectedCategoryObj?.keywords?.length) {
       const kwList = selectedCategoryObj.keywords;
       items = items.filter((p) => {
-        const text = `${p.title} ${p.authorOrBrand}`.toLowerCase();
-        return kwList.some((kw) => text.includes(kw.toLowerCase()));
+        // 1. Jika produk sudah memiliki id atau nama kategori yang cocok langsung
+        const prodCat = (p.category || "").toLowerCase();
+        if (
+          prodCat &&
+          (prodCat === activeCategory.toLowerCase() ||
+            prodCat === selectedCategoryObj.name.toLowerCase())
+        ) {
+          return true;
+        }
+        // 2. Pencocokan kata kunci ke gabungan judul, penulis, dan sinopsis/deskripsi
+        const haystack = `${p.title} ${p.authorOrBrand} ${p.description || ""}`.toLowerCase();
+        return kwList.some((kw) => haystack.includes(kw.toLowerCase()));
       });
     }
 
@@ -232,7 +271,7 @@ export default function Home() {
         )}
 
         {/* 8. Full Catalog / Backend Integration Section */}
-        <section id="katalog" className="max-w-300 mx-auto px-4 py-8">
+        <section id="katalog" className="max-w-300 mx-auto px-4 py-8 scroll-mt-24">
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-gray-200 gap-4">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -367,6 +406,8 @@ export default function Home() {
               <p className="text-xs text-gray-400 mt-1 mb-4">
                 {query
                   ? `Tidak ada buku yang cocok dengan "${query}".`
+                  : activeCategory !== SEMUA_CATEGORY_ID && selectedCategoryObj
+                  ? `Belum ada buku untuk kategori "${selectedCategoryObj.name}" di katalog.`
                   : "Tidak ada buku yang sesuai dengan filter yang dipilih."}
               </p>
               <button
@@ -410,8 +451,7 @@ export default function Home() {
       {/* 9. Footer */}
       <Footer />
 
-
-      {/* 11. Modal Detail Buku & Tambah ke Keranjang */}
+      {/* 10. Modal Detail Buku & Tambah ke Keranjang */}
       <BookDetailModal
         product={selectedProduct}
         isOpen={!!selectedProduct}

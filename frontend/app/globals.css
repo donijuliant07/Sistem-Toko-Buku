@@ -4,6 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
   --font-inter: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --ring-duration: 150ms;
   --color-background: var(--background);

@@ -21,7 +21,7 @@ type AuthContextValue = {
   roleLoading: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithOAuth: (provider: "github" | "google" | "apple") => Promise<void>;
+  signInWithOAuth: (provider: "google" | "facebook" | "github" | "apple") => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<{ user: User | null; session: Session | null }>;
   signOut: () => Promise<void>;
 };
@@ -101,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
-  async function signInWithOAuth(provider: "github" | "google" | "apple") {
-    const redirectTo = `${window.location.origin}/auth/callback`;
+  async function signInWithOAuth(provider: "google" | "facebook" | "github" | "apple") {
+    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {

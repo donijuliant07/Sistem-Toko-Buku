@@ -33,7 +33,7 @@ export default function AuthButton() {
   const isAdmin = role === "admin";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
       {isAdmin ? (
         <Link
           href="/admin/dashboard"
