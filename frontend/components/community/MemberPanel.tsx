@@ -163,7 +163,7 @@ export function MemberPanel({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="font-community max-w-md">
           <DialogHeader>
             <DialogTitle>Anggota grup</DialogTitle>
             <DialogDescription>

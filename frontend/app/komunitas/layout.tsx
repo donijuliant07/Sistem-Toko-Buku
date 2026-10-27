@@ -32,10 +32,10 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
 
   if (loading || !session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="font-community min-h-screen bg-[var(--background)] flex flex-col">
         <TopBar />
         <Header query="" onSearchSubmit={() => {}} />
-        <main className="flex-1 flex items-center justify-center gap-3 text-gray-500">
+        <main className="flex-1 flex items-center justify-center gap-3 text-[var(--muted-foreground)]">
           <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
           <span>Memuat sesi…</span>
         </main>
@@ -44,13 +44,13 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="font-community min-h-screen bg-[var(--background)] flex flex-col">
       <TopBar />
       <Header query="" onSearchSubmit={() => {}} />
       <main className="flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {children}
       </main>
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors toastOptions={{ className: "font-community" }} />
     </div>
   );
 }

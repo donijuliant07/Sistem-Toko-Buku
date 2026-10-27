@@ -93,7 +93,7 @@ export function CreateGroupDialog({ open, onOpenChange, accessToken, onCreated }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !submitting && handleOpenChange(next)}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="font-community max-w-md">
         <DialogHeader>
           <DialogTitle>Buat grup komunitas</DialogTitle>
           <DialogDescription>
@@ -283,7 +283,7 @@ export function EditGroupDialog({ open, onOpenChange, accessToken, group, onUpda
 
   return (
     <Dialog open={open} onOpenChange={(next) => !submitting && !uploading && handleOpenChange(next)}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="font-community max-w-md">
         <DialogHeader>
           <DialogTitle>Ubah informasi grup</DialogTitle>
           <DialogDescription>
