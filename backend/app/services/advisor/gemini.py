@@ -41,8 +41,11 @@ pembaca menemukan buku dari katalog toko lewat percakapan alami.
 
 Gaya mengobrol:
 - Balas seperti manusia: sapa balik sapaan, tanggapi candaan ringan atau \
-pertanyaan umum dengan singkat, lalu arahkan perlahan ke buku. Jangan \
-menjawab dengan daftar bernomor atau nada formulir.
+pertanyaan umum dengan singkat dan apa adanya. Jangan menjawab dengan daftar \
+bernomor atau nada formulir.
+- Pertanyaan yang tidak berkaitan dengan buku atau katalog (sapaan, obrolan, \
+keluhan, tanya hal umum) dijawab natural tanpa menawarkan judul buku. Cukup \
+jawab, lalu biarkan pengguna yang memutuskan mau lanjut cari buku atau tidak.
 - Pakai bahasa Indonesia sehari-hari ("aku/kamu" atau "saya/Anda" mengikuti \
 gaya pengguna), variasi kalimat, dan sesekali cerminkan kata-kata pengguna.
 - Satu pertanyaan lanjutan per balasan, paling banyak. Jangan menanyakan \
@@ -79,9 +82,13 @@ label, bukan ringkasan poin. Boleh menanggapi sapaan/obrolan pengguna lebih \
 dulu, baru bertanya. `follow_up_question` hanya diisi bila pertanyaannya \
 belum tercakup di `assistant_message`; jangan mengulang kalimat yang sama.
 Pakai `chit_chat` bila pesan pengguna hanya sapaan, terima kasih, obrolan \
-ringan, atau pertanyaan yang belum cukup untuk merekomendasikan (mis. "aku \
-bingung mau baca apa"). Pakai `ready_to_recommend` bila pengguna meminta \
-rekomendasi sekarang atau sudah cukup jelas seleranya.
+ringan, candaan, keluhan, atau pertanyaan di luar soal buku (mis. soal toko, \
+pengiriman, atau hal umum lainnya), atau pertanyaan yang belum cukup untuk \
+merekomendasikan (mis. "aku bingung mau baca apa"). Pertanyaan di luar topik \
+tetap `chit_chat` walau preferensi pengguna dari percakapan sebelumnya sudah \
+lengkap — jangan menyodorkan rekomendasi yang tidak diminta. Pakai \
+`ready_to_recommend` hanya bila pesan ini meminta rekomendasi atau menyebut \
+topik/selera baru yang jelas.
 Field preferensi yang boleh diisi (selain yang disebut, jangan diisi):
 interests (list string), genres (list string), reading_level \
 (beginner|intermediate|advanced), reading_goals (list string), \
@@ -126,6 +133,7 @@ class GeminiClient:
         base_url: str | None = None,
         timeout_seconds: float | None = None,
         max_output_tokens: int | None = None,
+        thinking_budget: int | None = None,
         max_retries: int = 1,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
@@ -134,6 +142,9 @@ class GeminiClient:
         self._base_url = (base_url or settings.GEMINI_BASE_URL).rstrip("/")
         self._timeout = timeout_seconds or settings.GEMINI_TIMEOUT_SECONDS
         self._max_tokens = max_output_tokens or settings.GEMINI_MAX_OUTPUT_TOKENS
+        self._thinking_budget = (
+            thinking_budget if thinking_budget is not None else settings.GEMINI_THINKING_BUDGET
+        )
         self._max_retries = max_retries
         self._transport = transport
         self._client: httpx.AsyncClient | None = None
@@ -180,6 +191,11 @@ class GeminiClient:
                 "temperature": 0.6,
                 "maxOutputTokens": self._max_tokens,
                 "responseMimeType": "application/json",
+                **(
+                    {"thinkingConfig": {"thinkingBudget": self._thinking_budget}}
+                    if self._thinking_budget is not None
+                    else {}
+                ),
             },
         }
         path = f"/models/{self._model}:generateContent"
@@ -235,6 +251,8 @@ class GeminiClient:
         if not content.strip():
             # Respons kosong biasanya karena diblokir filter keamanan.
             raise AdvisorModelError("Model mengembalikan respons kosong.")
+        if _truncated(response):
+            raise AdvisorModelError("Keluaran model terpotong sebelum JSON selesai.")
         stripped = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         try:
             parsed = json.loads(stripped)
@@ -245,8 +263,22 @@ class GeminiClient:
         return parsed
 
 
-_SHARED_CLIENT: GeminiClient | None = None
+def _truncated(response: httpx.Response) -> bool:
+    """Apakah model berhenti karena kehabisan token, bukan karena selesai.
 
+    `gemini-3.5-flash` menghitung token "berpikir" ke dalam `maxOutputTokens`;
+    dengan 900 token, JSON balasan bisa terpotong di tengah dan `json.loads`
+    gagal. Bedanya penting: ini bukan gangguan provider, jadi pesannya harus
+    membedakan "coba lagi" dari "naikkan batas token".
+    """
+    try:
+        candidate = response.json()["candidates"][0]
+    except (ValueError, KeyError, IndexError, TypeError):
+        return False
+    return candidate.get("finishReason") == "MAX_TOKENS"
+
+
+_SHARED_CLIENT: GeminiClient | None = None
 
 def get_gemini_client() -> GeminiClient:
     """Klien bersama; dibuat sekali dan dapat diganti pengujian lewat monkeypatch."""
