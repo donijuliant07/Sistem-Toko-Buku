@@ -20,7 +20,8 @@ import type { Book } from "@/lib/types";
 type BookShareDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPick: (bookId: string) => Promise<void>;
+  /** `false` = pengiriman gagal; `ChatRoom` sudah menampilkan galatnya sendiri. */
+  onPick: (bookId: string) => Promise<boolean>;
 };
 
 type Result = { term: string; books: Book[]; error: string };
@@ -64,7 +65,8 @@ export function BookShareDialog({ open, onOpenChange, onPick }: BookShareDialogP
   const handlePick = async (book: Book) => {
     setPickingId(book.id);
     try {
-      await onPick(book.id);
+      // `false` = pengiriman gagal; ChatRoom sudah menampilkan galatnya.
+      if (!(await onPick(book.id))) return;
       toast.success(`"${book.title}" dibagikan.`);
       onOpenChange(false);
       setQuery("");
@@ -77,7 +79,7 @@ export function BookShareDialog({ open, onOpenChange, onPick }: BookShareDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="font-community max-w-md">
         <DialogHeader>
           <DialogTitle>Bagikan buku</DialogTitle>
           <DialogDescription>Pilih buku dari katalog untuk dikirim ke percakapan.</DialogDescription>
@@ -134,7 +136,7 @@ export function BookShareDialog({ open, onOpenChange, onPick }: BookShareDialogP
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-1 text-sm font-medium text-gray-900">{book.title}</span>
                       <span className="block text-xs text-gray-500">{book.author}</span>
-                      <span className="block text-xs font-semibold text-[var(--primary)]">
+                      <span className="block text-xs font-semibold text-[var(--primary-deep)] tabular-nums">
                         {formatRupiah(book.price)}
                       </span>
                     </span>

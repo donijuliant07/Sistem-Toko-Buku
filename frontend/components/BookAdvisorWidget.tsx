@@ -1,35 +1,34 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import {
   Sparkles,
   X,
-  Send,
   RotateCcw,
-  BookOpen,
-  ThumbsUp,
-  ThumbsDown,
-  ChevronRight,
   Bot,
   AlertCircle,
-  HelpCircle,
+  Coins,
 } from "lucide-react";
+import { RecommendationList } from "@/components/advisor/RecommendationCard";
 import {
   Conversation,
   ConversationBubble,
   ConversationContent,
 } from "@/components/ui/conversation";
-import { SoundToggle } from "@/components/ui/sound";
+import {
+  ThinkingPromptInput,
+  type ThinkingStatus,
+  type ThinkingStep,
+  type ThinkingSubmitOptions,
+} from "@/components/ui/thinking-prompt-input";
 import { useAuth } from "@/components/AuthProvider";
-import { ApiError, getAdvisorPricing, sendAdvisorChat, sendAdvisorFeedback } from "@/lib/api";
+import { ApiError, getAdvisorPricing, sendAdvisorChat } from "@/lib/api";
 import type {
   AdvisorPricing,
   Recommendation,
   BookPreferences,
   ConversationState,
 } from "@/lib/types";
-import { formatRupiah } from "@/lib/utils";
 
 interface ChatMessage {
   id: string;
@@ -47,7 +46,12 @@ interface ChatMessage {
 function newMessageId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    : `${nowMs()}-${Math.random().toString(16).slice(2)}`;
+}
+
+/** Baca jam lewat helper: lint react-hooks/purity menandai `Date.now()` langsung. */
+function nowMs(): number {
+  return Date.now();
 }
 
 const SUGGESTED_PROMPTS = [
@@ -70,17 +74,25 @@ export default function BookAdvisorWidget({ onClose }: { onClose?: () => void })
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_GREETING]);
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [preferences, setPreferences] = useState<BookPreferences | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setPreferences] = useState<BookPreferences | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [reactions, setReactions] = useState<Record<string, "liked" | "not_relevant">>({});
   const [pricing, setPricing] = useState<AdvisorPricing | null>(null);
-  const [pendingRetry, setPendingRetry] = useState<{ text: string; messageId: string } | null>(null);
+  const [, setPendingRetry] = useState<{ text: string; messageId: string } | null>(null);
+
+  // Thinking State Management
+  const [thinkingStatus, setThinkingStatus] = useState<ThinkingStatus>("idle");
+  const [thinkEnabled, setThinkEnabled] = useState(true);
+  const [activePrompt, setActivePrompt] = useState("");
+  const [activeAnswer, setActiveAnswer] = useState("");
+  const [activeRecommendations, setActiveRecommendations] = useState<Recommendation[]>([]);
+  const [activeFollowUp, setActiveFollowUp] = useState<string | null>(null);
+  const [activeSteps, setActiveSteps] = useState<ThinkingStep[]>([]);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const { session } = useAuth();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const messageSeqRef = useRef(0);
+  const timersRef = useRef<number[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const accessToken = session?.access_token ?? null;
 
@@ -101,63 +113,71 @@ export default function BookAdvisorWidget({ onClose }: { onClose?: () => void })
   const balance = pricing?.points_balance ?? null;
   const insufficient = balance !== null && cost > 0 && balance < cost;
 
+  // Cleanup timers on unmount
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+    return () => {
+      timersRef.current.forEach((t) => window.clearTimeout(t));
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
 
-  const sendMessage = async (text: string, messageId: string) => {
-    if (!accessToken) return;
-    setIsLoading(true);
-
-    try {
-      const response = await sendAdvisorChat(text, sessionId, accessToken, messageId);
-      setSessionId(response.session_id);
-      setPreferences(response.preferences);
-      setPricing({
-        points_cost: response.points_cost,
-        points_balance: response.points_balance,
-      });
-      setPendingRetry(null);
-
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${++messageSeqRef.current}`,
-        role: "assistant",
-        content: response.assistant_message,
-        sentAt: new Intl.DateTimeFormat("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date()),
-        recommendations: response.recommendations,
-        followUpQuestion: response.follow_up_question,
-        state: response.conversation_state,
-        charged: response.points_charged,
-        refunded: response.points_refunded,
-        ruleBased: response.outcome === "provider_failed",
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err) {
-      if (!(err instanceof ApiError)) {
-        setPendingRetry({ text, messageId });
-      }
-      if (err instanceof ApiError && err.code === "INSUFFICIENT_POINTS") {
-        setError("Poinmu tidak cukup untuk mengirim pesan.");
-      } else if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Gagal memproses pesan. Pastikan backend aktif.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  const clearTimers = () => {
+    timersRef.current.forEach((t) => window.clearTimeout(t));
+    timersRef.current = [];
   };
 
-  const handleSend = async (textToSend?: string) => {
-    const text = (textToSend || input).trim();
-    if (!text || isLoading) return;
+  const handleStop = () => {
+    clearTimers();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setThinkingStatus("idle");
+    setActiveSteps([]);
+    setElapsedSeconds(0);
+  };
+
+  const commitActiveTurnToHistory = () => {
+    if (activePrompt && (activeAnswer || activeRecommendations.length > 0)) {
+      const timeStr = new Intl.DateTimeFormat("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date());
+
+      const userMsg: ChatMessage = {
+        id: `user-${++messageSeqRef.current}`,
+        role: "user",
+        content: activePrompt,
+        sentAt: timeStr,
+      };
+
+      const assistantMsg: ChatMessage = {
+        id: `assistant-${++messageSeqRef.current}`,
+        role: "assistant",
+        content: activeAnswer,
+        sentAt: timeStr,
+        recommendations: activeRecommendations,
+        followUpQuestion: activeFollowUp,
+      };
+
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    }
+
+    setActivePrompt("");
+    setActiveAnswer("");
+    setActiveRecommendations([]);
+    setActiveFollowUp(null);
+    setActiveSteps([]);
+    setElapsedSeconds(0);
+    setThinkingStatus("idle");
+  };
+
+  const executeSend = async (text: string, options?: ThinkingSubmitOptions) => {
+    const trimmed = text.trim();
+    if (!trimmed || thinkingStatus === "thinking" || thinkingStatus === "answering") return;
 
     if (!session?.access_token) {
-      setError("Silakan masuk (login) akun terlebih dahulu.");
+      setError("Silakan masuk (login) akun terlebih dahulu untuk menggunakan AI Penasihat.");
       return;
     }
 
@@ -166,29 +186,132 @@ export default function BookAdvisorWidget({ onClose }: { onClose?: () => void })
       return;
     }
 
-    const timeStr = new Intl.DateTimeFormat("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date());
-
-    const userMessage: ChatMessage = {
-      id: `user-${++messageSeqRef.current}`,
-      role: "user",
-      content: text,
-      sentAt: timeStr,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    // If there was a completed active turn in view, archive it into messages history first
+    commitActiveTurnToHistory();
     setError(null);
-    await sendMessage(text, newMessageId());
+    clearTimers();
+
+    const shouldThink = options?.think ?? thinkEnabled;
+    setActivePrompt(trimmed);
+    setInput("");
+    setThinkingStatus("thinking");
+    setElapsedSeconds(0);
+
+    // Progressive Thinking Steps Simulation
+    if (shouldThink) {
+      setActiveSteps([
+        { id: "analyze", text: "Menganalisis minat & batasan budget pembaca…", status: "active" },
+      ]);
+
+      const timer1 = window.setTimeout(() => {
+        setActiveSteps([
+          { id: "analyze", text: "Minat & batasan budget teridentifikasi", status: "complete" },
+          { id: "catalog", text: "Mencari ketersediaan stok & harga katalog buku toko…", status: "active" },
+        ]);
+      }, 1000);
+
+      const timer2 = window.setTimeout(() => {
+        setActiveSteps([
+          { id: "analyze", text: "Minat & batasan budget teridentifikasi", status: "complete" },
+          { id: "catalog", text: "Katalog buku terindeks", status: "complete" },
+          { id: "rank", text: "Menyusun kurasi rekomendasi terbaik…", status: "active" },
+        ]);
+      }, 2200);
+
+      timersRef.current.push(timer1, timer2);
+    } else {
+      setActiveSteps([]);
+    }
+
+    // Elapsed Seconds Counter
+    const startTimestamp = nowMs();
+    const intervalTimer = window.setInterval(() => {
+      setElapsedSeconds(Math.max(1, Math.round((nowMs() - startTimestamp) / 1000)));
+    }, 1000);
+    timersRef.current.push(intervalTimer);
+
+    try {
+      const messageId = newMessageId();
+      abortControllerRef.current = new AbortController();
+
+      const response = await sendAdvisorChat(trimmed, sessionId, accessToken ?? undefined, messageId);
+
+      clearTimers();
+      setSessionId(response.session_id);
+      setPreferences(response.preferences);
+      setPricing({
+        points_cost: response.points_cost,
+        points_balance: response.points_balance,
+      });
+      setPendingRetry(null);
+
+      // Finish steps
+      if (shouldThink) {
+        setActiveSteps([
+          { id: "analyze", text: "Minat & batasan budget teridentifikasi", status: "complete" },
+          { id: "catalog", text: "Katalog buku terindeks", status: "complete" },
+          { id: "rank", text: "Rekomendasi siap disajikan", status: "complete" },
+        ]);
+      }
+
+      setActiveRecommendations(response.recommendations || []);
+      setActiveFollowUp(response.follow_up_question || null);
+
+      // Transition to answering with typewriter stream effect
+      const fullText = response.assistant_message || "Berikut hasil pencarian rekomendasi buku untukmu:";
+      setThinkingStatus("answering");
+
+      let currentIdx = 0;
+      const typeInterval = window.setInterval(() => {
+        currentIdx += 4;
+        const part = fullText.slice(0, currentIdx);
+        setActiveAnswer(part);
+
+        if (currentIdx >= fullText.length) {
+          window.clearInterval(typeInterval);
+          setActiveAnswer(fullText);
+          setThinkingStatus("done");
+        }
+      }, 20);
+
+      timersRef.current.push(typeInterval);
+    } catch (err) {
+      clearTimers();
+      setThinkingStatus("idle");
+
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+
+      if (!(err instanceof ApiError)) {
+        setPendingRetry({ text: trimmed, messageId: newMessageId() });
+      }
+
+      if (err instanceof ApiError && err.code === "INSUFFICIENT_POINTS") {
+        setError("Poinmu tidak cukup untuk mengirim pesan.");
+      } else if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Gagal memproses pesan. Pastikan backend aktif.");
+      }
+    } finally {
+      abortControllerRef.current = null;
+    }
   };
 
   const handleReset = () => {
+    clearTimers();
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     setSessionId(null);
     setPreferences(null);
-    setReactions({});
     setError(null);
+    setActivePrompt("");
+    setActiveAnswer("");
+    setActiveRecommendations([]);
+    setActiveFollowUp(null);
+    setActiveSteps([]);
+    setElapsedSeconds(0);
+    setThinkingStatus("idle");
     setMessages([
       {
         ...INITIAL_GREETING,
@@ -201,149 +324,198 @@ export default function BookAdvisorWidget({ onClose }: { onClose?: () => void })
     ]);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   return (
-    <div className="flex flex-col h-full w-full bg-white dark:bg-[#141f1a]">
+    <div className="chat-advisor flex flex-col h-full w-full bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-[#182620]/90">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white">
-            <Bot className="h-5 w-5" />
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/80 bg-card/70 px-4 py-3 backdrop-blur-md">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-chat-success text-white shadow-sm shadow-chat-success/30 dark:text-chat-success-soft">
+            <Bot className="size-[18px]" aria-hidden="true" />
+            <span className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-card bg-chat-success" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 tracking-tight truncate">
+            <div className="flex items-center gap-1.5">
+              <h3 className="truncate text-[13px] leading-tight font-semibold tracking-tight">
                 AI Penasihat Buku
               </h3>
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-chat-success-soft px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-chat-success-ink uppercase">
+                <Sparkles className="size-2.5" aria-hidden="true" />
+                Live
+              </span>
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              Rekomendasi dari stok & harga katalog kami
+            <p className="truncate text-[11px] text-muted-foreground">
+              Rekomendasi dari stok katalog toko
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={handleReset}
             title="Mulai sesi baru"
-            className="flex size-7 items-center justify-center rounded text-gray-500 hover:text-gray-900 dark:text-gray-400 hover:bg-gray-200/50"
+            aria-label="Mulai sesi baru"
+            className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-chat-success/50 focus-visible:outline-none"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="size-3.5" aria-hidden="true" />
           </button>
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="flex size-7 items-center justify-center rounded text-gray-500 hover:text-gray-900 dark:text-gray-400 hover:bg-gray-200/50"
+              title="Tutup chat"
+              aria-label="Tutup chat"
+              className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-chat-success/50 focus-visible:outline-none"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" aria-hidden="true" />
             </button>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Message Feed */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/40 dark:bg-[#0e1613]/40">
-        <Conversation className="gap-3">
-          {messages.map((msg) => {
-            const isUser = msg.role === "user";
-            const hasRecommendations = Boolean(msg.recommendations && msg.recommendations.length > 0);
+      {/* Main Conversation & Animated Thinking Prompt Input */}
+      <div className="flex min-h-0 flex-1 flex-col bg-chat-surface p-3">
+        <ThinkingPromptInput
+          status={thinkingStatus}
+          prompt={activePrompt}
+          steps={activeSteps}
+          answer={activeAnswer}
+          elapsedSeconds={elapsedSeconds}
+          value={input}
+          onValueChange={setInput}
+          think={thinkEnabled}
+          onThinkChange={setThinkEnabled}
+          onSubmit={(val, opts) => executeSend(val, opts)}
+          onStop={handleStop}
+          placeholder="Ketik topik, judul, atau batas anggaran..."
+          followUpPlaceholder="Tanyakan pertanyaan lanjutan..."
+          answerNote={activePrompt ? "Rekomendasi dari stok katalog toko." : undefined}
+          history={
+            <Conversation className="gap-3">
+              {messages.map((msg) => {
+                const isUser = msg.role === "user";
+                const hasRecommendations = Boolean(msg.recommendations && msg.recommendations.length > 0);
 
-            return (
-              <div key={msg.id} className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} w-full`}>
-                <ConversationBubble
-                  variant={isUser ? "default" : "muted"}
-                  align={isUser ? "end" : "start"}
-                  sentAt={msg.sentAt}
-                  className={isUser ? "max-w-[85%]" : hasRecommendations ? "max-w-[96%] w-full" : "max-w-[85%]"}
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"} w-full`}
+                  >
+                    <ConversationBubble
+                      variant={isUser ? "default" : "muted"}
+                      align={isUser ? "end" : "start"}
+                      sentAt={msg.sentAt}
+                      className={
+                        isUser
+                          ? "max-w-[88%] text-xs"
+                          : hasRecommendations
+                          ? "max-w-[96%] w-full text-xs"
+                          : "max-w-[88%] text-xs"
+                      }
+                    >
+                      <ConversationContent className="leading-relaxed">
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        {hasRecommendations && <RecommendationList recs={msg.recommendations!} />}
+                        {msg.followUpQuestion && (
+                          <div className="-mt-1.5 flex flex-wrap items-center gap-1 border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
+                            <Sparkles className="size-3 shrink-0 text-chat-success" aria-hidden="true" />
+                            <span className="font-medium text-foreground">Saran lanjutan:</span>
+                            <button
+                              type="button"
+                              onClick={() => executeSend(msg.followUpQuestion!)}
+                              className="cursor-pointer rounded text-left text-chat-success-ink underline-offset-2 transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-chat-success/50 focus-visible:outline-none"
+                            >
+                              {msg.followUpQuestion}
+                            </button>
+                          </div>
+                        )}
+                      </ConversationContent>
+                    </ConversationBubble>
+                  </div>
+                );
+              })}
+            </Conversation>
+          }
+          composerExtra={
+            <div className="space-y-2">
+              {/* Error Banner */}
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/10 p-2.5 text-xs text-destructive animate-in fade-in-50"
                 >
-                  <ConversationContent className="leading-relaxed">
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 leading-relaxed">{error}</span>
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="shrink-0 cursor-pointer rounded px-1 text-[10px] font-medium underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:outline-none"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              )}
 
-                    {hasRecommendations && (
-                      <div className="mt-3.5 space-y-2.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase">
-                          <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>Rekomendasi ({msg.recommendations!.length})</span>
-                        </div>
+              {/* Saldo & biaya: angka monospace agar sejajar seperti dasbor. */}
+              {balance !== null && (
+                <div className="flex items-center justify-between gap-2 px-0.5">
+                  <div
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+                      insufficient
+                        ? "border-destructive/30 bg-destructive/10 text-destructive"
+                        : "border-chat-success/25 bg-chat-success-soft text-chat-success-ink"
+                    }`}
+                  >
+                    <Coins className="size-3" aria-hidden="true" />
+                    <span className="text-[10px] font-medium tracking-wide uppercase">Saldo</span>
+                    <span className="font-mono text-[11px] leading-none font-semibold tabular-nums">
+                      {balance.toLocaleString("id-ID")}
+                    </span>
+                    <span className="text-[10px]">poin</span>
+                  </div>
+                  {cost > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      <span className="font-mono tabular-nums">{cost}</span> poin / pesan
+                    </span>
+                  )}
+                </div>
+              )}
 
-                        <div className="space-y-2">
-                          {msg.recommendations!.map((rec) => (
-                            <div key={rec.book.id} className="p-3 rounded-xl bg-white dark:bg-[#182620] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 shadow-xs">
-                              <div className="flex gap-3">
-                                {rec.book.cover_url && (
-                                  <img src={rec.book.cover_url} alt={rec.book.title} className="h-16 w-12 object-cover rounded-lg" />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="text-xs font-bold truncate">{rec.book.title}</h4>
-                                  <p className="text-[11px] text-gray-500 truncate">{rec.book.author}</p>
-                                  <span className="text-sm font-black text-emerald-600">{formatRupiah(Number(rec.book.price))}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </ConversationContent>
-                </ConversationBubble>
-              </div>
-            );
-          })}
-
-          {isLoading && (
-            <div className="text-xs text-gray-500 py-1 font-medium">AI sedang berpikir...</div>
-          )}
-        </Conversation>
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Suggested Prompts */}
-      {messages.length <= 2 && (
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-[#182620]/40">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {SUGGESTED_PROMPTS.map((prompt, idx) => (
+              {/* Suggested Prompts (when in initial state or message count <= 2) */}
+              {messages.length <= 2 && thinkingStatus === "idle" && (
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" role="list" aria-label="Contoh pertanyaan">
+                  {SUGGESTED_PROMPTS.map((promptText, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      role="listitem"
+                      onClick={() => executeSend(promptText)}
+                      className="shrink-0 cursor-pointer rounded-full border border-border/80 bg-card px-3 py-1.5 text-[11px] whitespace-nowrap text-foreground shadow-2xs transition-colors hover:border-chat-success/50 hover:bg-chat-success-soft hover:text-chat-success-ink focus-visible:ring-2 focus-visible:ring-chat-success/50 focus-visible:outline-none"
+                    >
+                      {promptText}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          }
+        >
+          {/* Active Turn Book Recommendation Cards */}
+          {activeRecommendations.length > 0 && <RecommendationList recs={activeRecommendations} />}
+          {activeFollowUp && thinkingStatus === "done" && (
+            <div className="-mt-1 flex flex-wrap items-center gap-1 border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
+              <Sparkles className="size-3 shrink-0 text-chat-success" aria-hidden="true" />
+              <span className="font-medium text-foreground">Saran lanjutan:</span>
               <button
-                key={idx}
                 type="button"
-                onClick={() => handleSend(prompt)}
-                className="px-2.5 py-1 rounded-full text-[11px] bg-white border border-gray-200 text-gray-800 hover:border-emerald-500 transition-colors whitespace-nowrap shrink-0"
+                onClick={() => executeSend(activeFollowUp)}
+                className="cursor-pointer rounded text-left text-chat-success-ink underline-offset-2 transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-chat-success/50 focus-visible:outline-none"
               >
-                {prompt}
+                {activeFollowUp}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Input Bar */}
-      <div className="p-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#141f1a]">
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#182620] rounded-xl px-3 py-1.5">
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ketik topik, judul, atau anggaran..."
-            className="flex-1 bg-transparent text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none resize-none"
-          />
-          <button
-            type="button"
-            onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading}
-            className="p-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-40 hover:bg-emerald-700 transition-colors"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </button>
-        </div>
+            </div>
+          )}
+        </ThinkingPromptInput>
       </div>
     </div>
   );

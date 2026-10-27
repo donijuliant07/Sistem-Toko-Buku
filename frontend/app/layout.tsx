@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Fraunces, Inter } from "next/font/google";
+import { DM_Sans, Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
@@ -11,6 +11,8 @@ import "./globals.css";
 const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"] });
 const display = Fraunces({ variable: "--font-display", subsets: ["latin"], style: ["normal", "italic"] });
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
+// Dipakai khusus area /komunitas; dimuat sebagai variable font agar tidak memilih bobot per bagian.
+const mono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   // Setiap halaman menetapkan judulnya sendiri dan otomatis diberi akhiran
@@ -25,13 +27,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" className={`${sans.variable} ${display.variable} ${inter.variable}`} suppressHydrationWarning>
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/jetbrains-mono.css"
-        />
-      </head>
+    <html
+      lang="id"
+      className={`${sans.variable} ${display.variable} ${inter.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
       <body suppressHydrationWarning>
         <SoundEffects>
           <AuthProvider>

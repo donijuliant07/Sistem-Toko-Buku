@@ -167,10 +167,11 @@ sesi itu.
 | Variabel | Default | Keterangan |
 | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | kosong | Kunci Google AI Studio. Tanpa kunci: fallback aturan (kata kunci minat & anggaran), tidak ada panggilan jaringan |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Model Gemini yang dipakai Penasihat Buku |
+| `GEMINI_MODEL` | `gemini-3.5-flash` | Model Gemini yang dipakai Penasihat Buku |
 | `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta` | Endpoint `generateContent` |
 | `GEMINI_TIMEOUT_SECONDS` | `30` | Batas satu panggilan |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `900` | Batas token keluaran per giliran |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `2048` | Batas token keluaran per giliran (termasuk token "berpikir" Gemini 3) |
+| `GEMINI_THINKING_BUDGET` | `0` | Token berpikir Gemini 3; `0` = mati, kosong = default provider |
 
 Kunci dikirim lewat header `x-goog-api-key`, bukan query string, agar tidak
 tercatat di URL/log. Ulasan AI dan validator harga marketplace tetap memakai

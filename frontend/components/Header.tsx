@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { createPortal } from "react-dom";
 import { siteConfig } from "@/config/site";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/components/AuthProvider";
@@ -155,21 +156,26 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
         </nav>
       </div>
 
-      {/* AI Chat Sidebar */}
-      {isAiSidebarOpen && (
-        <>
-          {/* Overlay transparan */}
-          <div 
-            className="fixed inset-0 bg-black/20 z-[60]"
-            onClick={() => setIsAiSidebarOpen(false)}
-          />
-          
-          {/* Panel Sidebar Kanan */}
-          <div className="fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-2xl z-[70] flex flex-col transform transition-transform duration-300">
-            <BookAdvisorWidget onClose={() => setIsAiSidebarOpen(false)} />
-          </div>
-        </>
-      )}
+      {/* AI Chat Sidebar — di-portal ke <body>: `backdrop-blur-md` pada
+          <header> menjadikannya containing block bagi `position: fixed`,
+          sehingga overlay/panel di dalamnya hanya menutupi tinggi header. */}
+      {isAiSidebarOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <>
+            {/* Overlay transparan */}
+            <div
+              className="fixed inset-0 bg-black/20 z-[60]"
+              onClick={() => setIsAiSidebarOpen(false)}
+            />
+
+            {/* Panel Sidebar Kanan */}
+            <div className="fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-2xl z-[70] flex flex-col transform transition-transform duration-300">
+              <BookAdvisorWidget onClose={() => setIsAiSidebarOpen(false)} />
+            </div>
+          </>,
+          document.body
+        )}
     </header>
   );
 }
