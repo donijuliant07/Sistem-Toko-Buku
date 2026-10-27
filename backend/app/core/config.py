@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     ENVIRONMENT: str = "development"
 
+    #: Alamat bind Uvicorn. `0.0.0.0` = dapat dihubungi dari perangkat lain di
+    #: jaringan lokal; `127.0.0.1` = hanya mesin ini.
+    HOST: str = Field(default="0.0.0.0", description="Host bind server Uvicorn")
+    PORT: int = Field(default=8000, description="Port server Uvicorn")
+
     SUPABASE_URL: str = Field(default="https://your-project.supabase.co", description="URL Project Supabase")
     SUPABASE_ANON_KEY: str = Field(default="your-anon-key", description="Anon Key Supabase")
     SUPABASE_SERVICE_ROLE_KEY: str = Field(default="your-service-role-key", description="Service Role Key Supabase")
@@ -150,6 +155,8 @@ class Settings(BaseSettings):
         di `development` kita memakai `allow_origin_regex` untuk jaringan privat
         (127.0.0.0/8, 10/8, 172.16/12, 192.168/16) pada port 3000. Di
         production regex tidak dipakai sama sekali — hanya daftar eksplisit.
+
+        Port frontend selain 3000 tetap harus didaftarkan di `FRONTEND_ORIGINS`.
         """
         return self.ENVIRONMENT == "development"
 

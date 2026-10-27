@@ -1,8 +1,12 @@
+"""Menjalankan server pengembangan dengan alamat dari `.env` (`HOST`/`PORT`)."""
+
 import uvicorn
+
+from app.core.config import settings
 
 
 def run() -> None:
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
 
 
 if __name__ == "__main__":
