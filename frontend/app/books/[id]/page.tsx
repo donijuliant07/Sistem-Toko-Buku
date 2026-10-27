@@ -13,6 +13,7 @@ import { formatRupiah } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/components/AuthProvider";
 import SpoilerSelectorModal from "@/components/books/SpoilerSelectorModal";
+import AiReviewButton from "@/components/books/AiReviewButton";
 import AIReviewResult from "@/components/books/AIReviewResult";
 import ComparePriceModal from "@/components/books/ComparePriceModal";
 
@@ -206,24 +207,10 @@ export default function BookDetailPage() {
 
             {/* AI Review Button below Cover (Desktop/Mobile accessible) */}
             <div className="w-full max-w-[260px] mt-4">
-              <button
-                type="button"
+              <AiReviewButton
                 onClick={() => setIsModalOpen(true)}
-                disabled={aiState === "generating"}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              >
-                {aiState === "generating" ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
-                    <span>⏳ Generating Review...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                    <span>✨ AI Review</span>
-                  </>
-                )}
-              </button>
+                busy={aiState === "generating"}
+              />
             </div>
           </div>
 
