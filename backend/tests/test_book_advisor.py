@@ -452,6 +452,7 @@ async def test_client_parses_json_and_strips_markdown_fence():
     requests: list[httpx.Request] = []
     client = gemini.GeminiClient(
         api_key="test-key",
+        model="gemini-2.5-flash",
         transport=httpx.MockTransport(
             lambda request: (requests.append(request), chat_response('```json\n{"ok": true}\n```'))[1]
         ),
@@ -465,6 +466,28 @@ async def test_client_parses_json_and_strips_markdown_fence():
     # Kunci tidak boleh ada di URL (bisa tercatat di log), hanya di header.
     assert "key=" not in str(request.url)
     assert request.headers["x-goog-api-key"] == "test-key"
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_client_raises_clear_error_when_output_is_truncated():
+    """`MAX_TOKENS` memotong JSON di tengah; penyebabnya harus jelas, bukan "JSON tidak valid"."""
+    truncated = httpx.Response(
+        200,
+        json={
+            "candidates": [
+                {
+                    "content": {"parts": [{"text": '{"assistant_message": "Wah, topik bisnis'}]},
+                    "finishReason": "MAX_TOKENS",
+                }
+            ]
+        },
+    )
+    client = gemini.GeminiClient(api_key="test-key", transport=httpx.MockTransport(lambda r: truncated))
+
+    with pytest.raises(gemini.AdvisorModelError, match="terpotong"):
+        await client.complete_json([{"role": "user", "content": "hai"}])
+
     await client.aclose()
 
 
@@ -492,6 +515,31 @@ async def test_client_maps_system_prompt_and_roles_to_gemini_shape():
     assert [c["role"] for c in payload["contents"]] == ["user", "model", "user"]
     assert payload["generationConfig"]["responseMimeType"] == "application/json"
     await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_client_sends_thinking_budget_only_when_configured():
+    """Token berpikir dihitung ke `maxOutputTokens`; advisor mematikan/membatasinya lewat config."""
+    captured: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(json.loads(request.content))
+        return chat_response('{"ok": true}')
+
+    transport = httpx.MockTransport(handler)
+    off = gemini.GeminiClient(api_key="test-key", thinking_budget=0, transport=transport)
+    # `thinking_budget=None` berarti "pakai settings"; None pada instance berarti
+    # biarkan default provider — tanpa kunci `thinkingConfig` di payload.
+    default = gemini.GeminiClient(api_key="test-key", transport=transport)
+    default._thinking_budget = None  # type: ignore[attr-defined]
+
+    await off.complete_json([{"role": "user", "content": "hai"}])
+    await default.complete_json([{"role": "user", "content": "hai"}])
+
+    assert captured[0]["generationConfig"]["thinkingConfig"] == {"thinkingBudget": 0}
+    assert "thinkingConfig" not in captured[1]["generationConfig"]
+    await off.aclose()
+    await default.aclose()
 
 
 @pytest.mark.asyncio
@@ -684,6 +732,44 @@ async def test_small_talk_does_not_force_recommendations_when_preferences_are_re
     assert result.recommendations == []
     assert "Haha iya" in result.assistant_message
     assert catalog.calls == 1
+
+@pytest.mark.asyncio
+async def test_off_topic_question_after_preferences_ready_skips_catalog():
+    """Pertanyaan di luar katalog dijawab apa adanya, bukan disodori daftar buku."""
+    service, catalog, _ = make_service(
+        responses=[
+            {"assistant_message": "Siap!", "conversation_intent": "ready_to_recommend", "extracted_preferences": {"interests": ["bisnis"]}},
+            {"assistant_message": "Toko buka tiap hari jam 09.00–21.00 ya.", "conversation_intent": "chit_chat"},
+        ]
+    )
+    first = await service.chat(USER_ID, AdvisorChatRequest(message="aku suka buku bisnis"))
+
+    result = await service.chat(
+        USER_ID, AdvisorChatRequest(session_id=first.session_id, message="toko buka jam berapa?")
+    )
+
+    assert result.recommendations == []
+    assert result.assistant_message == "Toko buka tiap hari jam 09.00–21.00 ya."
+    assert catalog.calls == 1
+
+@pytest.mark.asyncio
+async def test_chit_chat_without_reply_text_does_not_fall_back_to_recommendations():
+    """`chit_chat` tetap dihormati walau model tidak mengirim `assistant_message`."""
+    service, catalog, _ = make_service(
+        responses=[
+            {"assistant_message": "Siap!", "conversation_intent": "ready_to_recommend", "extracted_preferences": {"interests": ["bisnis"]}},
+            {"conversation_intent": "chit_chat"},
+        ]
+    )
+    first = await service.chat(USER_ID, AdvisorChatRequest(message="aku suka buku bisnis"))
+
+    result = await service.chat(
+        USER_ID, AdvisorChatRequest(session_id=first.session_id, message="makasih ya")
+    )
+
+    assert result.recommendations == []
+    assert catalog.calls == 1
+    assert result.assistant_message
 
 @pytest.mark.asyncio
 async def test_offline_mode_greets_naturally_instead_of_asking_question():
