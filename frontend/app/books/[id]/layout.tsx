@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { resolveApiUrl } from "@/lib/apiUrl";
+
 type Props = { params: Promise<{ id: string }> };
 
 /**
@@ -9,7 +11,7 @@ type Props = { params: Promise<{ id: string }> };
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+  const base = resolveApiUrl();
 
   try {
     const response = await fetch(`${base}/books/${encodeURIComponent(id)}`, {

@@ -57,8 +57,7 @@ import type {
   SpoilerAccess,
 } from "./types";
 import { supabase } from "./supabase";
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+import { resolveApiUrl } from "./apiUrl";
 
 /** Host API untuk pesan error: banyak runtime Windows me-resolve `localhost`
  * ke IPv6 (`::1`), sedangkan uvicorn sering hanya listen di `0.0.0.0` (IPv4). */
@@ -123,6 +122,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestOptions): Promise<T> {
   const { accessToken, headers, signal, timeoutMs, ...requestInit } = init ?? {};
+  const apiUrl = resolveApiUrl();
   const signals: AbortSignal[] = [timeoutSignal(timeoutMs ?? DEFAULT_TIMEOUT_MS)];
   if (signal) signals.push(signal);
 
