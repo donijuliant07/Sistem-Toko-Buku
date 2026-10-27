@@ -62,9 +62,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_origin_regex=_DEV_LAN_ORIGIN_REGEX if settings.dev_lan_origins_trusted else None,
+    # Autentikasi memakai header Bearer, bukan cookie; `allow_credentials`
+    # dibiarkan aktif tanpa wildcard origin agar tetap sah bila kelak ada cookie.
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
