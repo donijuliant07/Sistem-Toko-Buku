@@ -29,19 +29,41 @@ UPDATE public.profiles SET role = 'admin' WHERE id = 'SUPABASE_USER_UUID';
 uv run main.py
 ```
 
-Alternative direct command:
+`main.py` membaca `HOST`/`PORT` dari `.env` (default `0.0.0.0:8000`) dan membuka
+`--reload`. Padanan perintah langsung:
 
 ```powershell
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-> Windows: `main.py` sudah memakai `--host 0.0.0.0` (IPv4). Browser yang
-> me-resolve `localhost` ke IPv6 (`::1`) bisa gagal menghubungi backend, jadi
-> buka frontend lewat `http://localhost:3000` **atau** `http://127.0.0.1:3000`
-> — keduanya sudah ada di `FRONTEND_ORIGINS`. `--host ::` **tidak** dipakai:
-> di Windows socket IPv6 bersifat v6-only, sehingga IPv4 ikut mati. Untuk
-> pengembangan, `app/main.py` juga menerima origin LAN `:3000` (IP privat)
-> agar dev server Next bisa dibuka dari mesin lain.
+> Windows: `--host 0.0.0.0` (IPv4) membuat backend dapat dihubungi dari perangkat
+> lain di Wi-Fi yang sama. Browser yang me-resolve `localhost` ke IPv6 (`::1`)
+> bisa gagal menghubungi backend, jadi buka frontend lewat
+> `http://localhost:3000` **atau** `http://127.0.0.1:3000` — keduanya sudah ada di
+> `FRONTEND_ORIGINS`. `--host ::` **tidak** dipakai: di Windows socket IPv6
+> bersifat v6-only, sehingga IPv4 ikut mati. Untuk pengembangan, `app/main.py`
+> juga menerima origin LAN `:3000` (IP privat) agar dev server Next bisa dibuka
+> dari mesin lain; port frontend lain didaftarkan di `FRONTEND_ORIGINS`.
+
+### Akses dari perangkat lain (Wi-Fi/LAN)
+
+1. Lihat IP komputer: `ipconfig` → **IPv4 Address** pada adapter Wi-Fi
+   (mis. `192.168.1.10`).
+2. Jalankan backend (`uv run main.py`) dan frontend (`bun run dev` di `frontend/`;
+   Next `next dev` sudah listen di `0.0.0.0`).
+3. Dari HP/laptop lain di jaringan yang sama, buka `http://192.168.1.10:3000`.
+   Frontend otomatis memanggil backend di `http://192.168.1.10:8000` (atau
+   `NEXT_PUBLIC_API_URL` bila diisi).
+4. Bila koneksi ditolak padahal backend jalan, izinkan port di Windows Firewall
+   (PowerShell **sebagai Administrator**; jaringan privat saja):
+   ```powershell
+   New-NetFirewallRule -DisplayName "Readr API 8000" -Direction Inbound `
+     -Protocol TCP -LocalPort 8000 -Profile Private -Action Allow
+   ```
+   Firewall bukan urusan CORS: keduanya harus benar agar request sampai.
+5. Jangan buka `-Profile Public` atau port-forward router kecuali memang perlu;
+   autentikasi tetap berlaku, tetapi backend tidak dirancang untuk internet publik.
+
 
 Health endpoint: `http://localhost:8000/health`  
 Current-user endpoint: `http://localhost:8000/api/v1/me`  
