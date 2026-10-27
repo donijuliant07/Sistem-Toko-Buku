@@ -47,6 +47,8 @@ export default function FreepikCategoryIcon({
     
     "fiksi": "/images/fiksi-icon.jpg",
     "fiction": "/images/fiksi-icon.jpg",
+    "fiksi-sastra": "/images/fiksi-icon.jpg",
+    "sastra": "/images/fiksi-icon.jpg",
     
     "self-dev": "/images/self-icon.jpg", // Sesuai nama file di screenshot
     "self-development": "/images/self-icon.jpg",

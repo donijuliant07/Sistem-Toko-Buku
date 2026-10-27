@@ -1,34 +1,31 @@
 export const siteConfig = {
-  name: "PustakaGram",
-  shortName: "Pustaka",
+  name: "Readr",
+  shortName: "Readr",
   description: "Platform Toko Buku Online Modern Terlengkap",
-  url: "https://pustakagram.local",
-  author: "PustakaGram Team",
+  url: "https://readr.local",
+  author: "Readr Team",
   whatsappNumber: "6281234567890",
-  adminEmail: "admin@pustakagram.com",
+  adminEmail: "admin@readr.com",
   adminUser: {
     name: "Rendy Pratama",
-    email: "rendy@pustakagram.com",
+    email: "rendy@readr.com",
     role: "Super Admin",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
   },
   brandName: "Readr",
   tagline: "Toko Buku Online Terbesar, Terlengkap dan Terpercaya di Indonesia",
-  // Anchor harus menunjuk ke `id` yang benar-benar ada di beranda. Tautan tanpa
-  // halaman tujuan ("Tentang Kami", "Voucher Diskon") dihapus: sebelumnya
-  // berakhir di `href="#"` / `#promo` yang tidak membawa ke mana pun.
+  // Tautan navigasi cepat di bawah kolom pencarian header
   promoTags: [
-    { label: "Buku Pilihan", href: "/#katalog" },
     { label: "Buku Terlaris", href: "/#buku-terlaris" },
-    { label: "Back to Campus", href: "/#edukasi" },
-    { label: "Brand Pilihan", href: "/#buku-unggulan" },
+    { label: "Rekomendasi Pilihan", href: "/#edukasi" },
+    { label: "Buku Baru & Unggulan", href: "/#buku-unggulan" },
+    { label: "Katalog Lengkap", href: "/#katalog" },
     { label: "Komunitas", href: "/komunitas" },
+    { label: "Poin Reward", href: "/poin" },
   ],
   socials: {
-    facebook: "https://facebook.com/inforbook",
-    twitter: "https://twitter.com/inforbook",
-    instagram: "https://instagram.com/inforbook",
-    tiktok: "https://tiktok.com/@inforbook",
+    discord: "https://discord.gg/KJW3aHGVZ",
+    github: "https://github.com/r3nddy/Sistem-Toko-Buku",
   },
   // Hanya tautan yang punya halaman ("Lacak Pesanan"). "Tentang Kami" dan
   // "Bantuan & FAQ" belum punya halaman, jadi tidak dipasang sebagai `#`.
