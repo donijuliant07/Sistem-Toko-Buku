@@ -280,7 +280,7 @@ export default function Home() {
                 </h3>
                 {activeCategory !== SEMUA_CATEGORY_ID && selectedCategoryObj && (
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0052cc] border border-blue-200 shadow-2xs">
-                    <FreepikCategoryIcon id={activeCategory} size={16} className="w-4 h-4" />
+                    <FreepikCategoryIcon id={activeCategory} size={16} sizes="16px" className="w-4 h-4" />
                     <span>Kategori: {selectedCategoryObj.name}</span>
                     <button
                       type="button"

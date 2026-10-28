@@ -21,7 +21,6 @@ type AuthContextValue = {
   roleLoading: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithOAuth: (provider: "google" | "facebook" | "github" | "apple") => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<{ user: User | null; session: Session | null }>;
   signOut: () => Promise<void>;
 };
@@ -32,7 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
-  const [loading, setLoading] = useState(!supabaseConfigError);
+  // Server dan klien sama-sama mulai dengan `true` (markup SSR & hydration identik).
+  // Setelah mount, `getSession()` memperbarui nilainya; saat dev, StrictMode sengaja
+  // menjalankan ulang effect ini sekali (alasan komentar eslint di bawah).
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -104,17 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
-  async function signInWithOAuth(provider: "google" | "facebook" | "github" | "apple") {
-    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-      },
-    });
-    if (error) throw error;
-  }
-
   async function signUp(email: string, password: string, name?: string) {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -131,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, role, roleLoading, loading, signIn, signInWithOAuth, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, role, roleLoading, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
