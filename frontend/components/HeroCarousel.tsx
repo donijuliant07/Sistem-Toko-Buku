@@ -58,7 +58,7 @@ export default function HeroCarousel() {
             type="button"
             onClick={handlePrev}
             aria-label="Slide Sebelumnya"
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 focus:outline-none cursor-pointer"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:outline-none cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -68,7 +68,7 @@ export default function HeroCarousel() {
             type="button"
             onClick={handleNext}
             aria-label="Slide Selanjutnya"
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 focus:outline-none cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:outline-none cursor-pointer"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -90,7 +90,7 @@ export default function HeroCarousel() {
         </div>
 
         {/* Side Banners (Lebar 4 Kolom, Flex Col dengan Spacing yang Seimbang) */}
-        <div className="lg:col-span-4 flex flex-col justify-between gap-4 lg:gap-5">
+        <div className="lg:col-span-4 grid grid-cols-2 gap-3 sm:gap-4 lg:flex lg:flex-col lg:justify-between lg:gap-5">
           {HERO_SIDE_BANNERS.map((side) => (
             <a
               key={side.id}
