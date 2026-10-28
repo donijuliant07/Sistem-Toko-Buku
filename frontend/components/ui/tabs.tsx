@@ -51,7 +51,9 @@ export function TabsList({
   return (
     <div
       className={cn(
-        "inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+        // `max-w-full overflow-x-auto`: tiga tab berlabel tidak muat selebar
+        // ponsel; biarkan barisnya bergulir sendiri, bukan melebarkan halaman.
+        "inline-flex h-9 max-w-full items-center justify-center overflow-x-auto rounded-lg bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
         className
       )}
       {...props}

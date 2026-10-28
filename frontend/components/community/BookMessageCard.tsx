@@ -25,7 +25,7 @@ export function BookMessageCard({ book }: BookMessageCardProps) {
   return (
     <Link
       href={`/books/${book.id}`}
-      className="group/book flex w-56 items-center gap-2.5 rounded-lg bg-white/80 p-2 transition-[background-color,box-shadow] duration-150 hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+      className="group/book flex w-full max-w-56 items-center gap-2.5 rounded-lg bg-white/80 p-2 transition-[background-color,box-shadow] duration-150 hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
       aria-label={`Lihat buku ${book.title}`}
     >
       {book.cover_url ? (

@@ -172,7 +172,7 @@ export default function BookDetailModal({
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
         <div
-          className="bg-white rounded-2xl shadow-xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[92vh] relative"
+          className="bg-white rounded-2xl shadow-xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[92dvh] relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close Button */}

@@ -53,7 +53,7 @@ export default function ProductSection({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Side Thematic Banner */}
           <div
-            className={`lg:col-span-3 rounded-2xl p-6 text-white bg-gradient-to-br ${sideBanner.bgGradient} flex flex-col justify-between shadow-sm min-h-[220px] lg:min-h-auto relative overflow-hidden`}
+            className={`order-last lg:order-none lg:col-span-3 rounded-2xl p-6 text-white bg-gradient-to-br ${sideBanner.bgGradient} flex flex-col justify-between shadow-sm min-h-[220px] lg:min-h-auto relative overflow-hidden`}
           >
             {/* Background Image if available */}
             {sideBanner.imageUrl && (
@@ -82,7 +82,7 @@ export default function ProductSection({
           </div>
 
           {/* Product Grid / Row */}
-          <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 items-start gap-3 sm:gap-4">
             {products.slice(0, 4).map((item) => (
               <ProductCard
                 key={item.id}
@@ -95,7 +95,7 @@ export default function ProductSection({
         </div>
       ) : (
         /* Regular Scrollable / Grid Section */
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 items-start gap-3 sm:gap-4">
           {products.map((item) => (
             <ProductCard
               key={item.id}

@@ -236,7 +236,7 @@ function AdminOrdersContent() {
                 <TableRow className="border-b border-zinc-200/80 hover:bg-transparent">
                   <TableHead className="w-36 font-semibold text-xs text-zinc-600">No. Pesanan</TableHead>
                   <TableHead className="font-semibold text-xs text-zinc-600">Pelanggan</TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">
                     <button
                       onClick={() => setSortOrder((s) => (s === "asc" ? "desc" : "asc"))}
                       className="flex items-center gap-1 font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer"
@@ -245,8 +245,8 @@ function AdminOrdersContent() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">Items</TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">Metode Bayar</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">Items</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">Metode Bayar</TableHead>
                   <TableHead className="font-semibold text-xs text-zinc-600">Total Tagihan</TableHead>
                   <TableHead className="font-semibold text-xs text-zinc-600">Status</TableHead>
                   <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi</TableHead>
@@ -285,15 +285,15 @@ function AdminOrdersContent() {
                         <div className="text-xs font-semibold text-zinc-900">
                           {order.customerName}
                         </div>
-                        <div className="text-[11px] text-zinc-500">{order.customerEmail}</div>
+                        <div className="text-[11px] text-zinc-500 truncate max-w-[160px]">{order.customerEmail}</div>
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-500 whitespace-nowrap">
+                      <TableCell className="hidden sm:table-cell text-xs text-zinc-500">
                         {formatTanggalJam(order.createdAt)}
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-600">
+                      <TableCell className="hidden sm:table-cell text-xs text-zinc-600">
                         {order.items.length} item ({order.items.reduce((a, b) => a + b.quantity, 0)} eks)
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-600">
+                      <TableCell className="hidden sm:table-cell text-xs text-zinc-600">
                         {order.paymentMethod}
                       </TableCell>
                       <TableCell className="text-xs font-bold text-zinc-900 tabular-nums">

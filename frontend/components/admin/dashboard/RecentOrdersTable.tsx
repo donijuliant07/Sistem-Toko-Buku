@@ -303,7 +303,7 @@ export function RecentOrdersTable() {
         </div>
 
         {/* Footer Link ke Halaman Pesanan */}
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500">
           <span>Menampilkan 7 dari {orders.length} pesanan</span>
           <Button asChild variant="outline" size="sm" className="text-xs">
             <Link href="/admin/pesanan">Lihat Seluruh Pesanan ({orders.length})</Link>

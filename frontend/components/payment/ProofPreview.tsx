@@ -48,7 +48,7 @@ export function ProofPreview({ proof }: { proof: PaymentProof }) {
           alt={`Bukti pembayaran ${proof.original_filename ?? ""}`.trim()}
           className="h-40 w-full bg-gray-50 object-contain"
         />
-        <span className="absolute right-2 top-2 rounded-lg bg-black/60 px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="absolute right-2 top-2 rounded-lg bg-black/60 px-2 py-1 text-[10px] font-bold text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
           <Maximize2 className="mr-1 inline h-3 w-3" />
           Perbesar
         </span>

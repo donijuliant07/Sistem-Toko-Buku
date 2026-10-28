@@ -38,7 +38,7 @@ export function OrderDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white border border-zinc-200/80 text-zinc-900 shadow-xl">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white border border-zinc-200/80 text-zinc-900 shadow-xl">
         <DialogHeader className="border-b border-zinc-100 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
@@ -118,8 +118,8 @@ export function OrderDetailDialog({
             </h4>
             <div className="rounded-xl border border-zinc-200/80 overflow-hidden divide-y divide-zinc-100 bg-white">
               {order.items.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3">
-                  <div className="flex items-center gap-3">
+                <div key={idx} className="flex items-center justify-between gap-3 p-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="relative h-12 w-9 rounded-lg bg-zinc-100 overflow-hidden shrink-0 border border-zinc-200/80">
                       {item.coverUrl && (
                         <Image src={item.coverUrl} alt={item.productTitle} fill className="object-cover" unoptimized />
@@ -134,7 +134,7 @@ export function OrderDetailDialog({
                       </p>
                     </div>
                   </div>
-                  <div className="font-bold text-zinc-900 tabular-nums">
+                  <div className="font-bold text-zinc-900 tabular-nums shrink-0">
                     {formatRupiah(item.subtotal)}
                   </div>
                 </div>

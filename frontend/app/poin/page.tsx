@@ -187,7 +187,7 @@ function PointsContent() {
               )}
 
               {page && page.total_pages > 1 && (
-                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                <div className="px-4 sm:px-5 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500">
                   <button
                     type="button"
                     disabled={pageNo <= 1}

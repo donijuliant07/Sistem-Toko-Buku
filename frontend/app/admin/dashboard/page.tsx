@@ -86,7 +86,7 @@ export default function DashboardPage() {
             pesanan hari ini.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 flex-wrap sm:shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -255,18 +255,18 @@ export default function DashboardPage() {
                       key={order.id}
                       className="p-4 flex items-center justify-between hover:bg-zinc-50/70 transition-colors"
                     >
-                      <div className="flex items-center gap-3.5">
+                      <div className="flex items-center gap-3.5 min-w-0">
                         <div className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-800 font-bold text-xs flex items-center justify-center shrink-0 border border-zinc-200/80 shadow-2xs">
                           {initials}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-xs text-zinc-900 font-mono">
                               {order.orderNumber}
                             </span>
                             <OrderStatusBadge status={order.status} />
                           </div>
-                          <p className="text-xs text-zinc-600 mt-1 font-medium">
+                          <p className="text-xs text-zinc-600 mt-1 font-medium truncate">
                             <span className="text-zinc-800 font-semibold">
                               {order.customerName}
                             </span>

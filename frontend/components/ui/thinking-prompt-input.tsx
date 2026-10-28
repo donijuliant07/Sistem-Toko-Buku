@@ -213,7 +213,7 @@ export function ThinkingPromptInput({
   const showTranscript = status !== "idle" || Boolean(history);
 
   return (
-    <div data-slot="thinking-prompt-input" data-state={status} className={`flex h-full min-h-0 w-full flex-col text-foreground ${className}`}>
+    <div data-slot="thinking-prompt-input" data-state={status} className={`flex h-full min-h-0 w-full flex-col pb-[env(safe-area-inset-bottom)] text-foreground ${className}`}>
       {showTranscript && (
         <div ref={transcript} data-transcript role="region" aria-label="Conversation" tabIndex={0} className="mb-3 min-h-0 flex-1 overflow-y-auto px-1 outline-none [overflow-anchor:none] focus-visible:ring-2 focus-visible:ring-chat-success/50 focus-visible:ring-inset">
           <div ref={transcriptBody} className="space-y-4 py-2">

@@ -60,14 +60,15 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-xs border-b border-gray-100 transition-all">
       <div className="max-w-[1200px] mx-auto px-4 py-2.5">
-        <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
           {/* Logo */}
           <ReadrLogo href="/" size="md" showTagline />
 
-          {/* Search Bar */}
+          {/* Search Bar — di ponsel pindah ke baris sendiri agar tidak menyusut
+              sampai tak bisa dipakai saat kolom kanan ikut terisi. */}
           <form
             onSubmit={handleSubmit}
-            className="flex-1 max-w-2xl mx-1 sm:mx-6"
+            className="order-last w-full sm:order-none sm:flex-1 sm:w-auto sm:max-w-2xl sm:mx-6"
           >
             <div className="relative flex items-center">
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
@@ -104,8 +105,9 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
             <button
               type="button"
               onClick={() => setIsAiSidebarOpen(true)}
-              className="p-2 text-emerald-600 bg-transparent hover:bg-gray-100 rounded-full transition-colors relative hidden md:flex items-center justify-center cursor-pointer"
+              className="p-2 text-emerald-600 bg-transparent hover:bg-gray-100 rounded-full transition-colors relative flex items-center justify-center cursor-pointer"
               title="AI Advisor"
+              aria-label="Buka AI Penasihat Buku"
             >
               <Sparkles className="w-5 h-5" />
             </button>
@@ -170,7 +172,7 @@ export default function Header({ query, onSearchSubmit }: HeaderProps) {
             />
 
             {/* Panel Sidebar Kanan */}
-            <div className="fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-2xl z-[70] flex flex-col transform transition-transform duration-300">
+            <div className="fixed top-0 right-0 h-dvh w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-2xl z-[70] flex flex-col transform transition-transform duration-300">
               <BookAdvisorWidget onClose={() => setIsAiSidebarOpen(false)} />
             </div>
           </>,

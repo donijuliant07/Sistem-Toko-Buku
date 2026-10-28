@@ -88,9 +88,10 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Quick View Button on Hover */}
+          {/* Quick View Button on Hover — disembunyikan di perangkat sentuh
+              karena tidak ada hover; mengetuk kartu sudah membuka detail. */}
           {!isOutOfStock && (
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity [@media(hover:none)]:hidden flex items-center justify-center pointer-events-none">
               <span className="bg-white/95 text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform">
                 <Eye className="w-3.5 h-3.5 text-[#0052cc]" />
                 Lihat Buku

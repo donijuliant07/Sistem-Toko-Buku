@@ -19,8 +19,11 @@ export default function CategoryShortcuts({
 
   return (
     <section className="max-w-[1240px] mx-auto px-4 py-6">
-      {/* Marquee Track Container with Gradient Edge Fades */}
-      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-gray-50/80 to-slate-50/40 p-2 sm:p-3 border border-gray-100/80 shadow-2xs">
+      {/* Marquee dengan kontrol ganda: baris ikon yang berjalan otomatis untuk
+          layar lebar, dan kisi ikon yang bisa digulir di ponsel. Marquee tidak
+          berhenti saat disentuh sehingga ikon yang lewat sulit ditekan; di
+          ponsel orang juga lebih sering memilih dari daftar yang diam. */}
+      <div className="hidden sm:relative sm:block w-full overflow-hidden rounded-2xl bg-gradient-to-b from-gray-50/80 to-slate-50/40 p-2 sm:p-3 border border-gray-100/80 shadow-2xs">
         {/* Left Fading Edge Mask */}
         <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-20 bg-gradient-to-r from-gray-50 via-gray-50/80 to-transparent z-10" />
 
@@ -88,6 +91,36 @@ export default function CategoryShortcuts({
             );
           })}
         </div>
+      </div>
+
+      {/* Ponsel: daftar diam, tiga kolom, gulir vertikal pendek. */}
+      <div className="sm:hidden grid grid-cols-3 gap-2 rounded-2xl bg-gradient-to-b from-gray-50/80 to-slate-50/40 p-2 border border-gray-100/80 shadow-2xs max-h-[330px] overflow-y-auto">
+        {CATEGORIES.map((cat) => {
+          const isActive = activeId === cat.id;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => handleCardClick(cat.id)}
+              aria-pressed={isActive}
+              className={`flex flex-col items-center min-w-0 p-2 rounded-xl border transition-colors ${
+                isActive
+                  ? "bg-white border-[#0052cc] ring-2 ring-[#0052cc]/15"
+                  : "bg-white/90 border-gray-100 active:bg-blue-50"
+              }`}
+              title={`Kategori ${cat.name}`}
+            >
+              <FreepikCategoryIcon id={cat.id} size={46} className="w-9 h-9" />
+              <span
+                className={`mt-1 w-full truncate text-center text-[11px] font-bold ${
+                  isActive ? "text-[#0052cc]" : "text-gray-800"
+                }`}
+              >
+                {cat.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

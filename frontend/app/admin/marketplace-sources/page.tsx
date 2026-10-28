@@ -361,7 +361,7 @@ export default function AdminMarketplaceSourcesPage() {
               </p>
             ) : (
               <>
-                <div className="flex items-start justify-between gap-3 border-b border-zinc-200/80 px-4 py-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 border-b border-zinc-200/80 px-4 py-3">
                   <div>
                     <p className="text-sm font-bold text-zinc-900">{selected.title}</p>
                     <p className="text-[11px] text-zinc-500">
@@ -405,7 +405,7 @@ export default function AdminMarketplaceSourcesPage() {
                       <TableRow>
                         <TableHead className="text-xs">Marketplace</TableHead>
                         <TableHead className="text-xs">Link produk</TableHead>
-                        <TableHead className="text-xs">Kata kunci</TableHead>
+                        <TableHead className="hidden sm:table-cell text-xs">Kata kunci</TableHead>
                         <TableHead className="text-xs">Aktif</TableHead>
                         <TableHead className="text-right text-xs">Aksi</TableHead>
                       </TableRow>
@@ -432,7 +432,7 @@ export default function AdminMarketplaceSourcesPage() {
                               <span className="text-zinc-400">— cari otomatis</span>
                             )}
                           </TableCell>
-                          <TableCell className="max-w-[180px] truncate text-xs text-zinc-500">
+                          <TableCell className="hidden sm:table-cell max-w-[180px] truncate text-xs text-zinc-500">
                             {source.search_keyword || "—"}
                           </TableCell>
                           <TableCell>

@@ -193,11 +193,11 @@ export default function AdminInventoryPage() {
               <TableHeader className="bg-zinc-50/75">
                 <TableRow className="border-b border-zinc-200/80 hover:bg-transparent">
                   <TableHead className="font-semibold text-xs text-zinc-600">Judul & SKU</TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">Kategori</TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">Tipe</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">Kategori</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">Tipe</TableHead>
                   <TableHead className="font-semibold text-xs text-zinc-600">Stok Saat Ini</TableHead>
                   <TableHead className="font-semibold text-xs text-zinc-600">Status</TableHead>
-                  <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi Penyesuaian</TableHead>
+                  <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -224,10 +224,10 @@ export default function AdminInventoryPage() {
                         </div>
                         <div className="text-[11px] text-zinc-500">SKU: {prod.isbn}</div>
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-600">
+                      <TableCell className="hidden sm:table-cell text-xs text-zinc-600">
                         {prod.category}
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-500">{prod.type}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs text-zinc-500">{prod.type}</TableCell>
                       <TableCell className="font-bold text-xs tabular-nums text-zinc-900">
                         {prod.stock} unit
                       </TableCell>
@@ -261,7 +261,7 @@ export default function AdminInventoryPage() {
                           }}
                         >
                           <PackagePlus className="h-3.5 w-3.5 text-zinc-600" />
-                          <span>Sesuaikan Stok</span>
+                          <span className="hidden sm:inline">Sesuaikan Stok</span><span className="sm:hidden">Stok</span>
                         </Button>
                       </TableCell>
                     </TableRow>

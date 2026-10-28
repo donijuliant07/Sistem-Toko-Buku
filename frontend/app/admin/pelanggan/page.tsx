@@ -91,8 +91,8 @@ export default function AdminCustomersPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">Bergabung</TableHead>
-                  <TableHead className="font-semibold text-xs text-zinc-600">Status</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">Bergabung</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold text-xs text-zinc-600">Status</TableHead>
                   <TableHead className="text-right font-semibold text-xs text-zinc-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -125,7 +125,7 @@ export default function AdminCustomersPage() {
                         <div className="font-semibold text-xs text-zinc-900">
                           {c.name}
                         </div>
-                        <div className="text-[11px] text-zinc-500">{c.email}</div>
+                        <div className="text-[11px] text-zinc-500 truncate max-w-[150px]">{c.email}</div>
                       </TableCell>
                       <TableCell className="text-xs text-zinc-600">
                         <div>{c.phone}</div>
@@ -137,10 +137,10 @@ export default function AdminCustomersPage() {
                       <TableCell className="text-xs font-bold text-zinc-900 tabular-nums">
                         {formatRupiah(c.totalSpent)}
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-500">
+                      <TableCell className="hidden sm:table-cell text-xs text-zinc-500">
                         {formatTanggal(c.joinedAt)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
                           c.status === "Aktif"
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
@@ -189,11 +189,11 @@ export default function AdminCustomersPage() {
                     {selectedCustomer.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-bold text-sm text-zinc-900">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-zinc-900 truncate">
                     {selectedCustomer.name}
                   </p>
-                  <p className="text-zinc-500 text-xs">{selectedCustomer.email}</p>
+                  <p className="text-zinc-500 text-xs truncate">{selectedCustomer.email}</p>
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-1 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     Member Sejak {formatTanggal(selectedCustomer.joinedAt)}

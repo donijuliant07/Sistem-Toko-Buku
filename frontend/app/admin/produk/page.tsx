@@ -258,7 +258,7 @@ function AdminProductsContent() {
               <TableHeader className="bg-zinc-50/75">
                 <TableRow className="border-b border-zinc-200/80">
                   <TableHead className="w-16 text-xs font-semibold uppercase tracking-wider text-zinc-600">Cover</TableHead>
-                  <TableHead className="min-w-[200px] text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <TableHead className="min-w-[140px] sm:min-w-[200px] text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     <button
                       onClick={() => {
                         setSortField("title")
@@ -270,7 +270,7 @@ function AdminProductsContent() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-zinc-600">Kategori</TableHead>
+                  <TableHead className="hidden md:table-cell text-xs font-semibold uppercase tracking-wider text-zinc-600">Kategori</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     <button
                       onClick={() => {
@@ -295,7 +295,7 @@ function AdminProductsContent() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <TableHead className="hidden md:table-cell text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     <button
                       onClick={() => {
                         setSortField("sold")
@@ -350,11 +350,11 @@ function AdminProductsContent() {
                         <div className="font-semibold text-sm text-zinc-900 line-clamp-1">
                           {prod.title}
                         </div>
-                        <div className="text-xs text-zinc-500">
+                        <div className="text-xs text-zinc-500 truncate max-w-[160px] sm:max-w-none">
                           {prod.author} • SKU: {prod.isbn}
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="hidden md:table-cell text-xs">
                         <span className="rounded-lg bg-zinc-100 border border-zinc-200/60 px-2 py-0.5 text-[11px] font-medium text-zinc-700">
                           {prod.category}
                         </span>
@@ -385,7 +385,7 @@ function AdminProductsContent() {
                           {prod.stock} unit
                         </span>
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-500 tabular-nums">
+                      <TableCell className="hidden md:table-cell text-xs text-zinc-500 tabular-nums">
                         {prod.sold.toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell>

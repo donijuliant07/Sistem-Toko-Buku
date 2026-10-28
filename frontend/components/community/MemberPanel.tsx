@@ -163,7 +163,7 @@ export function MemberPanel({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="font-community max-w-md">
+        <DialogContent className="font-community max-w-md max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Anggota grup</DialogTitle>
             <DialogDescription>
@@ -189,7 +189,7 @@ export function MemberPanel({
               ))}
             </div>
           ) : (
-            <ul className="max-h-80 space-y-1 overflow-y-auto pr-1">
+            <ul className="max-h-[45dvh] space-y-1 overflow-y-auto pr-1">
               {members.map((member) => {
                 const name = memberDisplayName(member.user);
                 const isSelf = member.user.id === currentUserId;

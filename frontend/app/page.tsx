@@ -307,8 +307,9 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Catalog Controls: Sorting & Filter */}
-            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            {/* Catalog Controls: Sorting & Filter — dua kolom di ponsel supaya
+                label "Harga: Rendah ke Tinggi" tidak memaksa lebar halaman. */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5">
               {/* Ready Stock Filter Toggle */}
               <button
                 type="button"
@@ -332,7 +333,7 @@ export default function Home() {
               </button>
 
               {/* Sort By Dropdown */}
-              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-700 shadow-2xs">
+              <div className="flex items-center gap-1 min-w-0 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-700 shadow-2xs">
                 <ArrowDownUp className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                 <span className="text-gray-400 text-[11px] hidden sm:inline">
                   Urutkan:
@@ -340,7 +341,7 @@ export default function Home() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="bg-transparent text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer py-0.5"
+                  className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer py-0.5"
                 >
                   <option value="relevance">Paling Relevan</option>
                   <option value="price_asc">Harga: Rendah ke Tinggi</option>
@@ -387,7 +388,7 @@ export default function Home() {
               ))}
             </div>
           ) : processedProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 items-start gap-4">
               {processedProducts.map((prod) => (
                 <ProductCard
                   key={prod.id}

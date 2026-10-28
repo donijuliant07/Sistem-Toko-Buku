@@ -39,7 +39,7 @@ function CommunityContent() {
     <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-4">
       <aside
         className={cn(
-          "rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 lg:sticky lg:top-[104px] lg:h-[calc(100vh-136px)] lg:overflow-y-auto",
+          "rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 lg:sticky lg:top-[104px] lg:h-[calc(100dvh-136px)] lg:overflow-y-auto",
           selectedId ? "hidden lg:block" : "block",
         )}
         aria-label="Daftar grup komunitas"
@@ -55,7 +55,12 @@ function CommunityContent() {
       </aside>
 
       <section
-        className={cn("h-[calc(100vh-136px)] min-h-[520px]", selectedId ? "block" : "hidden lg:block")}
+        className={cn(
+          // 100dvh mengikuti tinggi viewport yang benar-benar terlihat setelah
+          // bilah alamat ponsel mengecil; 100vh membuat kolom pesan terpotong.
+          "h-[calc(100dvh-152px)] min-h-[420px] sm:h-[calc(100dvh-136px)] sm:min-h-[520px]",
+          selectedId ? "block" : "hidden lg:block",
+        )}
         aria-label="Ruang diskusi"
       >
         {selectedId ? (

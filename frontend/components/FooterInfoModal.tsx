@@ -43,7 +43,7 @@ export default function FooterInfoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-hidden flex flex-col p-0 rounded-2xl bg-white border border-gray-100 shadow-2xl">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col p-0 rounded-2xl bg-white border border-gray-100 shadow-2xl">
         {/* Modal Header */}
         <DialogHeader className="p-6 pb-4 border-b border-gray-100 bg-gradient-to-r from-blue-50/60 to-indigo-50/40">
           <div className="flex items-center gap-2.5">
@@ -115,7 +115,7 @@ export default function FooterInfoModal({
         </DialogHeader>
 
         {/* Tab Content Body */}
-        <div className="p-6 overflow-y-auto space-y-4 max-h-[50vh] text-sm">
+        <div className="min-h-0 flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-sm">
           {/* 1. Cara Belanja */}
           {activeTab === "cara-belanja" && (
             <div className="space-y-4">

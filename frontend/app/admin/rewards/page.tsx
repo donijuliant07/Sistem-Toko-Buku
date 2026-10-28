@@ -421,7 +421,7 @@ export default function AdminRewardsPage() {
         {/* Aktivitas */}
         <TabsContent value="aktivitas">
           <Card className="rounded-2xl border-zinc-200/80 bg-white shadow-xs">
-            <CardHeader className="flex-row items-center justify-between gap-3">
+            <CardHeader className="flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div>
                 <CardTitle className="text-base font-bold tracking-tight text-zinc-900">
                   Aktivitas Reward
@@ -430,7 +430,7 @@ export default function AdminRewardsPage() {
                   Jejak ulasan dan kontribusi komunitas yang sudah diberi poin.
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={activityFilter}
                   onChange={(event) => setActivityFilter(event.target.value)}
