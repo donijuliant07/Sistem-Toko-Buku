@@ -20,8 +20,11 @@ function AuthCallbackContent() {
       const errorCode = searchParams.get("error_code");
 
       if (errorParam || errorDesc || errorCode) {
+        // `otp_expired` = tautan reset/konfirmasi sudah lewat masa berlaku.
         const readableError =
-          errorDesc || errorParam || "Autentikasi pihak ketiga dibatalkan atau gagal.";
+          errorCode === "otp_expired"
+            ? "Tautan sudah kedaluwarsa atau sudah dipakai. Silakan minta tautan baru."
+            : errorDesc || errorParam || "Autentikasi pihak ketiga dibatalkan atau gagal.";
         if (active) {
           setErrorMessage(readableError);
           router.replace(`/login?error=${encodeURIComponent(readableError)}`);

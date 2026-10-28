@@ -29,6 +29,11 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState(
     errorFromUrl ? decodeURIComponent(errorFromUrl) : ""
   );
+  // Pesan sukses (mis. setelah reset kata sandi): `?message=...`
+  const messageFromUrl = searchParams.get("message");
+  const [successMessage, setSuccessMessage] = useState(
+    messageFromUrl ? decodeURIComponent(messageFromUrl) : ""
+  );
   const [pending, setPending] = useState(false);
   const [characterStatus, setCharacterStatus] = useState<{ type: "nope" | "yay" } | null>(
     errorFromUrl ? { type: "nope" } : null
@@ -75,6 +80,7 @@ function LoginForm() {
 
     setPending(true);
     setErrorMessage("");
+    setSuccessMessage("");
     setCharacterStatus(null);
     try {
       await signIn(email.trim(), password);
@@ -240,6 +246,16 @@ function LoginForm() {
                     <span>Masuk</span>
                   )}
                 </button>
+
+                {/* Success Status Banner (mis. setelah reset kata sandi) */}
+                {successMessage && (
+                  <p
+                    role="status"
+                    className="min-h-5 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in"
+                  >
+                    {successMessage}
+                  </p>
+                )}
 
                 {/* Error Status Banner */}
                 {errorMessage && (
