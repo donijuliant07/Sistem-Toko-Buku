@@ -1,0 +1,46 @@
+# Blueprint Render untuk scraper-service (Web Service Docker).
+#
+# File ini WAJIB di root repo: Render selalu membaca `render.yaml` dari root
+# branch, dan `dockerfilePath`/`dockerContext` di bawah relatif terhadap root
+# itu. Membiarkannya di `scraper-service/` membuat dashboard tidak menemukannya,
+# dan mengarahkan Dockerfile Path ke folder (bukan file) menghasilkan:
+#   error: failed to read dockerfile: ... is a directory
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pilih repo ini -> Apply.
+# Hanya service ini yang dideploy lewat Render; backend & frontend tetap di
+# tempatnya masing-masing.
+#
+# Catatan sumber daya (lihat scraper-service/README.md):
+# - Chromium + MAX_CONCURRENT_SCRAPES=2 butuh >= 1 GB RAM. `starter` (512 MB)
+#   kemungkinan OOM; minimal `standard` (2 GB).
+# - Plan `free` tidur setelah 15 menit idle. Cold start Chromium +/- 50 detik,
+#   sementara backend memakai SCRAPER_TIMEOUT_SECONDS=20 -> request pertama
+#   gagal. Jangan pakai plan `free` untuk melayani backend.
+#
+# `sync: false` = nilai diisi manual di dashboard Render (jangan di-commit).
+
+services:
+  - type: web
+    name: scraper-service
+    runtime: docker
+    plan: standard
+    region: singapore
+    dockerfilePath: ./scraper-service/Dockerfile
+    dockerContext: ./scraper-service
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Harus sama dengan SCRAPER_API_TOKEN di backend/.env.
+      # Kosong = endpoint /scrape tidak memeriksa token -> wajib diisi.
+      - key: SCRAPER_API_TOKEN
+        sync: false
+      # Hanya dipakai mode cron (python -m src.main), tidak dipakai server API.
+      - key: DATABASE_URL
+        sync: false
+      - key: MAX_CONCURRENT_SCRAPES
+        value: "2"
+      - key: HEADLESS
+        value: "true"
+      - key: BROWSER_CHANNEL
+        value: chromium
+      # PORT TIDAK di-set: Render menyuntikkan sendiri dan src/config.py membacanya.
