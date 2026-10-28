@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fraunces, Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
@@ -25,6 +25,16 @@ export const metadata: Metadata = {
   },
   description:
     "Beli buku pilihan, bandingkan harga di marketplace, kumpulkan poin Rewards, dan berdiskusi di komunitas Readr.",
+};
+
+// `viewportFit: "cover"` memberi tahu Safari iOS bahwa layar penuh boleh dipakai;
+// `env(safe-area-inset-*)` di globals.css lalu menjaga tombol keranjang, tombol
+// kirim chat, dan bilah bawah tetap di area yang bisa disentuh, bukan di bawah
+// home indicator. Nilai zoom sengaja tidak dikunci: pengguna tetap bisa pinch.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

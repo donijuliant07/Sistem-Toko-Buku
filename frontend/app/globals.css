@@ -335,6 +335,21 @@
 
 html {
   scroll-behavior: smooth;
+  /* Safari iOS memperbesar teks sendiri saat perangkat diputar; matikan supaya
+     skala tetap sama dengan yang diuji di layar tegak. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* iOS Safari memperbesar seluruh halaman saat kontrol form berfokus bila
+   ukuran hurufnya di bawah 16px. Aturan ini berada di luar @layer supaya
+   menang atas utility `text-xs`/`text-sm`; batasnya hanya layar sempit. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 body {
@@ -512,6 +527,13 @@ body {
   .community-enter,
   .community-pulse {
     animation: none;
+  }
+
+  /* Marquee kategori berhenti berjalan; barisnya bisa digulir manual. */
+  .animate-marquee-scroll {
+    animation: none;
+    width: auto;
+    overflow-x: auto;
   }
 
   /* Micro interaction komunitas hanya dekoratif: hilangkan geraknya,
