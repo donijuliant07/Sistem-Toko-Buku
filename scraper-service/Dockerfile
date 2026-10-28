@@ -1,8 +1,7 @@
 # Base image resmi Microsoft Playwright: sudah berisi dependensi OS untuk Chromium.
-# Tag dipin ke versi stabil terbaru yang tersedia; versi paket `playwright` di
-# `uv.lock` (1.64) tetap memasang Chromium miliknya sendiri lewat
-# `playwright install chromium` di bawah, sehingga binary selalu cocok dengan paket.
-FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
+# Versi image disamakan dengan paket `playwright` di `uv.lock` (1.64.0) supaya
+# library sistem cocok dengan Chromium yang dipasang di bawah.
+FROM mcr.microsoft.com/playwright/python:v1.64.0-noble
 
 # Pasang binary uv resmi dari Astral
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -15,8 +14,11 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    # Browser disimpan di lokasi default image agar tidak hilang bila user berubah
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    # Browser dipasang ke path milik root di dalam WORKDIR, bukan `/ms-playwright`
+    # bawaan image: folder itu dimiliki user `pwuser`, sehingga `playwright install`
+    # sebagai root bisa gagal EACCES di sebagian builder. Path ini menjamin
+    # `install` dan runtime memakai lokasi yang sama dan writable.
+    PLAYWRIGHT_BROWSERS_PATH=/app/.ms-playwright \
     # Mode API dipakai backend; cron worker cukup mengganti start command
     BROWSER_CHANNEL=chromium \
     HEADLESS=true
@@ -29,8 +31,13 @@ COPY pyproject.toml uv.lock ./
 # Install dependensi proyek via uv (tanpa dev dependency, sesuai uv.lock)
 RUN uv sync --frozen --no-dev
 
-# Pastikan Chromium versi paket `playwright` terpasang (bukan versi image)
-RUN uv run playwright install chromium
+# Pastikan Chromium versi paket `playwright` terpasang, bukan versi image.
+# Base image Playwright sudah membawa library sistem yang dibutuhkan, jadi
+# tidak perlu `--with-deps` (yang akan menjalankan apt dan memperlambat build).
+# Baris `find` membuat build gagal di sini — bukan saat request pertama — bila
+# binary tidak benar-benar mendarat di PLAYWRIGHT_BROWSERS_PATH.
+RUN uv run playwright install chromium \
+    && find "$PLAYWRIGHT_BROWSERS_PATH" -maxdepth 4 -name chrome -type f -print -quit | grep -q .
 
 # Copy source code — isi `.dockerignore` menentukan apa yang ikut
 COPY . .

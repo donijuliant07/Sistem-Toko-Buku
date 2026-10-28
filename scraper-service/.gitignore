@@ -7,3 +7,6 @@ __pycache__/
 _store_probe.py
 _html_probe.py
 _*.out
+_*.py
+*.log
+.ms-playwright/

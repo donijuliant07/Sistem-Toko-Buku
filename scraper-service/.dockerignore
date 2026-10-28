@@ -20,3 +20,6 @@ _*.py
 .git/
 .gitignore
 README.md
+
+# Artefak browser bila pernah dipasang lokal dengan path image
+.ms-playwright/
