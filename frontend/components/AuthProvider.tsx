@@ -23,6 +23,10 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<{ user: User | null; session: Session | null }>;
   signOut: () => Promise<void>;
+  /** Kirim tautan reset ke email. `redirectTo` diisi halaman pemanggil (`window` tidak dipakai di sini). */
+  requestPasswordReset: (email: string, redirectTo?: string) => Promise<void>;
+  /** Simpan kata sandi baru untuk sesi aktif — dipakai halaman `/reset-password`. */
+  updatePassword: (password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -121,8 +125,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function requestPasswordReset(email: string, redirectTo?: string) {
+    if (supabaseConfigError) throw new Error(supabaseConfigError);
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo ? { redirectTo } : undefined,
+    );
+    if (error) throw error;
+  }
+
+  async function updatePassword(password: string) {
+    if (supabaseConfigError) throw new Error(supabaseConfigError);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  }
+
   return (
-    <AuthContext.Provider value={{ session, role, roleLoading, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        role,
+        roleLoading,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        requestPasswordReset,
+        updatePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
