@@ -138,7 +138,7 @@ export default function CartDrawer() {
 
         {/* Footer Checkout Summary */}
         {items.length > 0 && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50 space-y-3">
+          <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-gray-100 bg-gray-50 space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500">Subtotal Belanja</span>
               <span className="font-extrabold text-base text-gray-900">{formatRupiah(totalPrice)}</span>
@@ -153,6 +153,8 @@ export default function CartDrawer() {
               </p>
             )}
 
+            {/* Tombol bayar menempel di dasar viewport ponsel, jadi footer diberi
+                jarak aman dari bilah gestur iOS. */}
             <button
               type="button"
               onClick={handleCheckout}
