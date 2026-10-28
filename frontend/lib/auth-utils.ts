@@ -19,6 +19,19 @@ export function formatAuthError(error: unknown): string {
   if (lower.includes("email not confirmed") || lower.includes("email_not_confirmed")) {
     return "Email Anda belum dikonfirmasi. Silakan periksa kotak masuk email Anda.";
   }
+  if (
+    lower.includes("otp_expired") ||
+    lower.includes("token has expired") ||
+    lower.includes("invalid or has expired")
+  ) {
+    return "Tautan reset sudah kedaluwarsa atau sudah dipakai. Minta tautan baru.";
+  }
+  if (lower.includes("different from the old password") || lower.includes("same password")) {
+    return "Kata sandi baru harus berbeda dari kata sandi lama.";
+  }
+  if (lower.includes("weak password") || lower.includes("password is too weak")) {
+    return "Kata sandi terlalu lemah. Gunakan kombinasi yang lebih kuat.";
+  }
   if (lower.includes("rate limit") || lower.includes("too many requests") || lower.includes("over_email_send_rate_limit")) {
     return "Terlalu banyak percobaan. Silakan tunggu beberapa saat lagi.";
   }
