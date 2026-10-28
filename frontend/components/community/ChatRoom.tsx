@@ -514,7 +514,7 @@ export function ChatRoom({
                             onClick={() => void handleDeleteMessage(message)}
                             disabled={deletingId === message.id}
                             aria-label="Hapus pesan"
-                            className="mb-1 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover/message:opacity-100"
+                            className="mb-1 rounded p-1 text-zinc-400 opacity-100 transition-opacity hover:text-red-600 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/message:opacity-100"
                           >
                             <Trash2 className="w-3.5 h-3.5" aria-hidden />
                           </button>
@@ -568,7 +568,7 @@ export function ChatRoom({
                             onClick={() => void handleDeleteMessage(message)}
                             disabled={deletingId === message.id}
                             aria-label="Hapus pesan"
-                            className="mb-1 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover/message:opacity-100"
+                            className="mb-1 rounded p-1 text-zinc-400 opacity-100 transition-opacity hover:text-red-600 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/message:opacity-100"
                           >
                             <Trash2 className="w-3.5 h-3.5" aria-hidden />
                           </button>
@@ -651,7 +651,7 @@ export function ChatRoom({
 
           {/* Keluar & Hapus Grup Footer */}
           {group.is_member ? (
-            <div className="flex items-center justify-end gap-3 bg-[#f0f2f5] dark:bg-zinc-900 border-t border-zinc-200/50 dark:border-zinc-800/50 px-3 py-1.5">
+            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 bg-[#f0f2f5] dark:bg-zinc-900 border-t border-zinc-200/50 dark:border-zinc-800/50 px-3 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
               {group.my_role !== "owner" ? (
                 <button
                   type="button"
