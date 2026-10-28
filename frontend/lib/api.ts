@@ -83,6 +83,28 @@ type ApiEnvelope<T> = { sukses: boolean; pesan: string; data: T };
  */
 const DEFAULT_TIMEOUT_MS = 45_000;
 
+/**
+ * Gangguan jaringan/CORS sebelum balasan diterima — `fetch` melempar `TypeError`.
+ *
+ * Dibedakan dari timeout (`TimeoutError`) dan abort pemanggil (`AbortError`)
+ * karena hanya jenis ini yang layak dicoba ulang otomatis: instance yang baru
+ * bangun (Render free plan) sempat menolak koneksi sebelum aplikasi siap.
+ */
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NetworkError";
+  }
+}
+
+/**
+ * Jeda sebelum percobaan ulang; indeks = percobaan yang baru gagal.
+ *
+ * Instance gratis yang tidur butuh ~30–50 dtk untuk bangun, dan selama itu
+ * koneksi ditolak seketika — jeda pendek hanya mengulang penolakan yang sama.
+ * Total tunggu di sini ≈ 32 dtk, masih di bawah batas waktu permintaan.
+ */
+const RETRY_DELAYS_MS: readonly number[] = [2_000, 5_000, 10_000, 15_000];
 /** `Error` dengan nama `AbortError` — dibedakan pemanggil untuk pesan "dibatalkan". */
 function timeoutSignal(ms: number): AbortSignal {
   // Beberapa runtime Windows (< Chrome 103, WebView lama) tidak punya
@@ -127,40 +149,54 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
   if (signal) signals.push(signal);
 
   let response: Response;
-  try {
-    response = await fetch(`${apiUrl}${path}`, {
-      ...requestInit,
-      headers: {
-        Accept: "application/json",
-        // FormData memasang boundary sendiri; menimpanya dengan JSON merusak unggahan.
-        ...(requestInit.body && !(requestInit.body instanceof FormData)
-          ? { "Content-Type": "application/json" }
-          : {}),
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...headers,
-      },
-      signal: mergeSignals(signals),
-    });
-  } catch (cause) {
-    // Abort dari pemanggil diteruskan apa adanya; timeout diubah menjadi pesan
-    // yang bisa dibaca pengguna, karena `TimeoutError` mentah tidak informatif.
-    if (cause instanceof DOMException && cause.name === "TimeoutError") {
-      throw new Error("Server tidak merespons dalam batas waktu. Coba lagi.");
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      response = await fetch(`${apiUrl}${path}`, {
+        ...requestInit,
+        headers: {
+          Accept: "application/json",
+          // FormData memasang boundary sendiri; menimpanya dengan JSON merusak unggahan.
+          ...(requestInit.body && !(requestInit.body instanceof FormData)
+            ? { "Content-Type": "application/json" }
+            : {}),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...headers,
+        },
+        signal: mergeSignals(signals),
+      });
+      break;
+    } catch (cause) {
+      // Abort dari pemanggil diteruskan apa adanya; timeout diubah menjadi pesan
+      // yang bisa dibaca pengguna, karena `TimeoutError` mentah tidak informatif.
+      if (cause instanceof DOMException && cause.name === "TimeoutError") {
+        throw new Error("Server tidak merespons dalam batas waktu. Coba lagi.");
+      }
+      // Abort dari pemanggil (navigasi/unmount) diteruskan apa adanya.
+      if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+      // Instance yang baru bangun menolak koneksi selama beberapa detik pertama;
+      // percobaan ulang menghindari pesan "tidak terhubung" yang menyesatkan.
+      // Hanya GET/HEAD: POST yang putus setelah terkirim bisa terduplikasi.
+      const method = (requestInit.method ?? "GET").toUpperCase();
+      const retryable = method === "GET" || method === "HEAD";
+      const delay = retryable ? RETRY_DELAYS_MS[attempt] : undefined;
+      if (delay !== undefined && !signal?.aborted) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        if (signal?.aborted) throw cause;
+        continue;
+      }
+      // `TypeError: Failed to fetch` / "NetworkError when attempting to fetch
+      // resource" tidak menjelaskan apa pun. Browser menangkap kegagalan jaringan
+      // dan CORS sebagai error yang sama, jadi pesannya menyebut kedua sebab dan
+      // origin halaman supaya mudah dicocokkan dengan FRONTEND_ORIGINS backend.
+      const origin = typeof window === "undefined" ? "(server)" : window.location.origin;
+      throw new NetworkError(
+        `Tidak dapat terhubung ke server API (${apiUrl}). ` +
+          `Pastikan backend berjalan di http://${apiHostLabel(apiUrl)} dan menerima origin ${origin} ` +
+          `(atur lewat FRONTEND_ORIGINS di backend/.env). Untuk memastikan mana yang gagal, buka ` +
+          `http://${apiHostLabel(apiUrl)}/health di tab baru: bila terbuka, masalahnya CORS; ` +
+          `bila tidak, backend tidak terjangkau dari browser ini.`,
+      );
     }
-    // Abort dari pemanggil (navigasi/unmount) diteruskan apa adanya.
-    if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
-    // `TypeError: Failed to fetch` / "NetworkError when attempting to fetch
-    // resource" tidak menjelaskan apa pun. Browser menangkap kegagalan jaringan
-    // dan CORS sebagai error yang sama, jadi pesannya menyebut kedua sebab dan
-    // origin halaman supaya mudah dicocokkan dengan FRONTEND_ORIGINS backend.
-    const origin = typeof window === "undefined" ? "(server)" : window.location.origin;
-    throw new Error(
-      `Tidak dapat terhubung ke server API (${apiUrl}). ` +
-        `Pastikan backend berjalan di http://${apiHostLabel(apiUrl)} dan menerima origin ${origin} ` +
-        `(atur lewat FRONTEND_ORIGINS di backend/.env). Untuk memastikan mana yang gagal, buka ` +
-        `http://${apiHostLabel(apiUrl)}/health di tab baru: bila terbuka, masalahnya CORS; ` +
-        `bila tidak, backend tidak terjangkau dari browser ini.`,
-    );
   }
 
   if (!response.ok) {
