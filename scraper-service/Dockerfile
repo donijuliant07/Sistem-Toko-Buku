@@ -7,6 +7,10 @@ FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
 # Pasang binary uv resmi dari Astral
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# `PORT` sengaja TIDAK di-set di sini: platform (Railway/Render) menyuntikkan
+# PORT sendiri, dan env var platform mengalahkan `.env`. Bila Dockerfile ikut
+# menulis PORT, nilai itu menimpa PORT=8001 di `.env` lokal saat image dijalankan.
+# Default bila tidak ada yang menyuntikkan: 8001 (src/config.py).
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
@@ -14,7 +18,6 @@ ENV PYTHONUNBUFFERED=1 \
     # Browser disimpan di lokasi default image agar tidak hilang bila user berubah
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     # Mode API dipakai backend; cron worker cukup mengganti start command
-    PORT=8000 \
     BROWSER_CHANNEL=chromium \
     HEADLESS=true
 
@@ -32,8 +35,8 @@ RUN uv run playwright install chromium
 # Copy source code — isi `.dockerignore` menentukan apa yang ikut
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8001
 
-# Default mode: server API (`POST /scrape`). Railway menyuntikkan PORT sendiri,
-# yang dibaca src/config.py lewat pydantic-settings.
+# Default mode: server API (`POST /scrape`). Railway/Render menyuntikkan PORT
+# sendiri, yang dibaca src/config.py lewat pydantic-settings.
 CMD ["uv", "run", "python", "-m", "src.api"]
