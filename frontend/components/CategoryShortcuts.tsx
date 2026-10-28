@@ -60,6 +60,7 @@ export default function CategoryShortcuts({
                   <FreepikCategoryIcon
                     id={cat.id}
                     size={46}
+                    sizes="(min-width: 640px) 48px, 44px"
                     className="w-11 h-11 sm:w-12 sm:h-12 drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
                   />
                   {isActive && (
@@ -110,7 +111,7 @@ export default function CategoryShortcuts({
               }`}
               title={`Kategori ${cat.name}`}
             >
-              <FreepikCategoryIcon id={cat.id} size={46} className="w-9 h-9" />
+              <FreepikCategoryIcon id={cat.id} size={46} sizes="36px" className="w-9 h-9" />
               <span
                 className={`mt-1 w-full truncate text-center text-[11px] font-bold ${
                   isActive ? "text-[#0052cc]" : "text-gray-800"

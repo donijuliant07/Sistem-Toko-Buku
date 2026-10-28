@@ -21,11 +21,15 @@ interface FreepikCategoryIconProps {
   id: CategoryIconId;
   className?: string;
   size?: number;
+  /** Lebar render ikon untuk `srcset`. Harus sama dengan ukuran di className,
+   *  karena className-lah yang menentukan ukuran kotak ikon. */
+  sizes?: string;
 }
 
 export default function FreepikCategoryIcon({
   id,
   className = "w-12 h-12",
+  sizes = "48px",
 }: FreepikCategoryIconProps) {
   // Daftar mapping ID kategori ke nama file gambar masing-masing
   const iconMap: Record<string, string> = {
@@ -70,6 +74,7 @@ export default function FreepikCategoryIcon({
           src={imageSrc}
           alt={`Kategori ${id}`}
           fill
+          sizes={sizes}
           className="object-cover"
         />
       </div>
