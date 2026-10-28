@@ -189,10 +189,10 @@ export default function AdminPromosPage() {
 
               <CardContent className="space-y-3 text-xs">
                 {/* Kode Voucher AlignUI Sapphire Blue Accent */}
-                <div className="flex items-center justify-between rounded-xl bg-blue-50/70 p-2.5 border border-blue-200/60">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 rounded-xl bg-blue-50/70 p-2.5 border border-blue-200/60">
+                  <div className="flex min-w-0 items-center gap-2">
                     <Tag className="h-4 w-4 text-blue-600" />
-                    <span className="font-mono font-bold tracking-wider text-blue-700 text-sm">
+                    <span className="truncate font-mono font-bold tracking-wider text-blue-700 text-sm">
                       {prm.code}
                     </span>
                   </div>
@@ -283,7 +283,7 @@ export default function AdminPromosPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <label className="font-semibold text-zinc-800">Nilai Diskon</label>
                 <Input
@@ -311,7 +311,7 @@ export default function AdminPromosPage() {
                   className="rounded-xl border-zinc-200/80 bg-zinc-50/70 text-zinc-900"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="col-span-2 space-y-1.5 sm:col-span-3">
                 <label className="font-semibold text-zinc-800">Berlaku Sampai *</label>
                 <Input
                   type="date"

@@ -209,7 +209,7 @@ export function ProductFormSheet({
           </div>
 
           {/* Grid 3 Kolom: ISBN/SKU, Kategori, Tipe */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-800">ISBN / SKU *</label>
               <Input
@@ -254,7 +254,7 @@ export function ProductFormSheet({
           </div>
 
           {/* Grid 3 Kolom: Bahasa, Halaman, Berat */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <label className="font-semibold text-zinc-800">Bahasa</label>
               <Select
@@ -291,7 +291,7 @@ export function ProductFormSheet({
 
           {/* Grid Harga & Diskon */}
           <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3.5 space-y-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <label className="font-semibold text-zinc-800">Harga Normal (Rp)</label>
                 <Input

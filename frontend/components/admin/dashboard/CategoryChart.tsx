@@ -39,7 +39,7 @@ export function CategoryChart() {
       <CardContent className="p-5">
         <div className="h-[260px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 40, bottom: 0 }}>
+            <BarChart data={data} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E4E4E7" opacity={0.7} />
               <XAxis type="number" tick={{ fontSize: 11, fill: "#71717A" }} axisLine={false} tickLine={false} />
               <YAxis
@@ -48,7 +48,7 @@ export function CategoryChart() {
                 tick={{ fontSize: 11, fill: "#71717A" }}
                 axisLine={false}
                 tickLine={false}
-                width={100}
+                width={88}
               />
               <Tooltip
                 content={({ active, payload }) => {

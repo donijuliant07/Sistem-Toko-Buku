@@ -156,7 +156,7 @@ export function AppSidebar({
         </div>
 
         {/* Nav Items */}
-        <div className="space-y-6 px-3 py-4 overflow-y-auto max-h-[calc(100vh-140px)] scrollbar-none">
+        <div className="space-y-6 px-3 py-4 overflow-y-auto max-h-[calc(100dvh-140px)] scrollbar-none">
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               {!collapsed && (
@@ -287,7 +287,7 @@ export function AppSidebar({
       {/* Desktop Inset Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-zinc-200/80 bg-white transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-screen",
+          "hidden md:flex flex-col border-r border-zinc-200/80 bg-white transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-dvh",
           collapsed ? "w-16" : "w-64"
         )}
       >
@@ -305,7 +305,7 @@ export function AppSidebar({
       {/* Mobile Drawer */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-zinc-200/80 shadow-xl transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white border-r border-zinc-200/80 shadow-xl transition-transform duration-300 ease-in-out md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

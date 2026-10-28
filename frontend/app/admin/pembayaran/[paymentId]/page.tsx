@@ -35,8 +35,8 @@ const PROOF_STATUS_LABELS: Record<string, string> = {
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-1.5">
-      <span className="text-[11px] text-zinc-500">{label}</span>
-      <span className="text-xs font-medium text-zinc-900 text-right">{value ?? "—"}</span>
+      <span className="shrink-0 text-[11px] text-zinc-500">{label}</span>
+      <span className="min-w-0 break-words text-xs font-medium text-zinc-900 text-right">{value ?? "—"}</span>
     </div>
   )
 }

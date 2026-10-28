@@ -128,7 +128,7 @@ export default function AdminPaymentsPage() {
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10">Pesanan</TableHead>
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10">Pembeli</TableHead>
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10">Nominal</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10">Bukti</TableHead>
+                  <TableHead className="hidden sm:table-cell text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10">Bukti</TableHead>
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10">Status</TableHead>
                   <TableHead className="w-20 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 h-10 text-center">Aksi</TableHead>
                 </TableRow>
@@ -160,7 +160,7 @@ export default function AdminPaymentsPage() {
                       </TableCell>
                       <TableCell className="py-3 text-xs text-zinc-700">{item.customer_name ?? "—"}</TableCell>
                       <TableCell className="py-3 text-xs font-semibold text-zinc-900">{formatRupiah(item.amount)}</TableCell>
-                      <TableCell className="py-3 text-[11px] text-zinc-500">
+                      <TableCell className="hidden sm:table-cell py-3 text-[11px] text-zinc-500">
                         {item.proof_uploaded_at ? formatTanggalJam(item.proof_uploaded_at) : "Belum ada"}
                       </TableCell>
                       <TableCell className="py-3">
