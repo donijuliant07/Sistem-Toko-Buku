@@ -166,7 +166,7 @@ function OrderDetailContent() {
             <h2 className="text-sm font-extrabold text-gray-900">Alamat Pengiriman</h2>
             <p className="mt-2 text-xs font-bold text-gray-800">{order.customer_name}</p>
             <p className="text-xs text-gray-500">{order.customer_phone}</p>
-            <p className="text-xs text-gray-500">{order.customer_email}</p>
+            <p className="text-xs text-gray-500 break-words">{order.customer_email}</p>
             <p className="mt-2 text-xs text-gray-600 whitespace-pre-line">{order.shipping_address}</p>
           </section>
 
@@ -190,7 +190,7 @@ function OrderDetailContent() {
               {order.notes && (
                 <div className="flex justify-between gap-3">
                   <dt className="text-gray-500">Catatan</dt>
-                  <dd className="font-medium text-gray-700 text-right">{order.notes}</dd>
+                  <dd className="font-medium text-gray-700 text-right break-words">{order.notes}</dd>
                 </div>
               )}
             </dl>
