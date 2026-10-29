@@ -235,7 +235,7 @@ export default function SpoilerSelectorModal({
     }
     if (selected.method === "free") return null;
     if (selected.method === "purchase_eligibility") {
-      return `Gratis — Anda sudah membeli ${selected.min_units} eksemplar atau lebih.`;
+      return `Gratis — Anda sudah membeli ${selected.min_units} buku atau lebih.`;
     }
     if (selected.unlocked) return "Gratis — tingkat ini sudah pernah Anda buka untuk buku ini.";
     if (points !== null && points < selected.cost) {

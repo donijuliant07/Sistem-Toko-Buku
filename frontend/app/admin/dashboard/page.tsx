@@ -304,7 +304,7 @@ export default function DashboardPage() {
                   <span>Stok Kritis</span>
                 </CardTitle>
                 <CardDescription className="text-xs text-zinc-500 mt-0.5">
-                  Buku sisa ≤5 eksemplar
+                  Buku sisa stok ≤5
                 </CardDescription>
               </div>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">

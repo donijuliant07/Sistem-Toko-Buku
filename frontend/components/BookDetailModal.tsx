@@ -223,7 +223,7 @@ export default function BookDetailModal({
                     )}
                   </div>
                   <span className="mt-3 text-[11px] font-medium text-gray-500">
-                    Penerbit Resmi Readr
+                    Katalog toko Readr
                   </span>
                 </div>
 
@@ -255,7 +255,7 @@ export default function BookDetailModal({
                         ? "Memuat stok…"
                         : isOutOfStock
                           ? "Stok Habis"
-                          : `Tersedia ${serverStock} Eksemplar`}
+                          : `Stok ${serverStock}`}
                     </span>
 
                     <button

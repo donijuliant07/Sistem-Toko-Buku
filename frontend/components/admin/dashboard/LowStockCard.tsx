@@ -60,7 +60,7 @@ export function LowStockCard() {
             <span>Peringatan Stok Menipis</span>
           </CardTitle>
           <CardDescription className="text-xs text-zinc-500 mt-0.5">
-            Produk dengan stok di bawah ambang batas (≤5 eksemplar)
+            Produk dengan stok di bawah ambang batas (≤5)
           </CardDescription>
         </div>
         <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200/60 px-2.5 py-0.5 rounded-full text-xs font-semibold">
