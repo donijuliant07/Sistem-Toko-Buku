@@ -226,7 +226,7 @@ export default function BookDetailPage() {
                     isOutOfStock ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
                   }`}
                 >
-                  {isOutOfStock ? "Stok Habis" : `Tersedia ${book.stock} Eksemplar`}
+                  {isOutOfStock ? "Stok Habis" : `Stok ${book.stock}`}
                 </span>
 
                 <button

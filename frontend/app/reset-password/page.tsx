@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { LoginCharacters } from "@/components/auth/LoginCharacters";
@@ -15,21 +15,35 @@ const fieldInput =
 
 /**
  * Tahap kedua alur lupa kata sandi. Tautan email mendarat di
- * `/auth/callback?next=/reset-password`, yang menukar `code` menjadi sesi
- * (event PASSWORD_RECOVERY) lalu mengarahkan ke sini. Tanpa sesi, tautan
- * dianggap kedaluwarsa.
+ * `/auth/callback?next=/reset-password` (mode PKCE: tukar `code`; mode implicit:
+ * sesi recovery sudah terbentuk dari `#access_token=...&type=recovery`), atau
+ * langsung di sini bila AuthProvider mendeteksi tautan recovery di halaman
+ * lain. Tanpa sesi, tautan dianggap kedaluwarsa.
  */
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f4f4f5] dark:bg-zinc-950" />}>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { session, loading: authLoading, updatePassword, signOut } = useAuth();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  // Pesan dari `/auth/callback` untuk tautan yang sudah kedaluwarsa/dipakai.
+  const errorFromUrl = searchParams.get("error") ?? "";
+  const [errorMessage, setErrorMessage] = useState(
+    errorFromUrl ? decodeURIComponent(errorFromUrl) : "",
+  );
   // Tautan dianggap kedaluwarsa bila sesi recovery tidak terbentuk. Diturunkan
   // dari AuthProvider (bukan state di effect) supaya tidak memicu render berantai.
-  const [expiredLink, setExpiredLink] = useState(false);
+  const [expiredLink, setExpiredLink] = useState(Boolean(errorFromUrl));
   const noSession = expiredLink || (!authLoading && !session);
   const [pending, setPending] = useState(false);
   const [characterStatus, setCharacterStatus] = useState<{ type: "nope" | "yay" } | null>(null);

@@ -93,7 +93,7 @@ export default function CartDrawer() {
                   {item.available ? (
                     item.stock <= 5 && (
                       <span className="text-[10px] text-amber-600 font-semibold block">
-                        Sisa {item.stock} eksemplar
+                        Sisa stok {item.stock}
                       </span>
                     )
                   ) : (

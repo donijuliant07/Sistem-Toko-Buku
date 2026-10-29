@@ -33,7 +33,7 @@ export function CategoryChart() {
       <CardHeader className="p-5 pb-4 border-b border-zinc-100">
         <CardTitle className="text-base font-bold text-zinc-900 tracking-tight">Kategori Terlaris</CardTitle>
         <CardDescription className="text-xs text-zinc-500 mt-0.5">
-          Jumlah eksemplar/item terjual berdasarkan kategori produk
+          Jumlah item terjual berdasarkan kategori produk
         </CardDescription>
       </CardHeader>
       <CardContent className="p-5">

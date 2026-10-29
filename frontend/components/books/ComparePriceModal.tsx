@@ -25,6 +25,13 @@ import {
 import { formatRupiah } from "@/components/ProductCard";
 import { getMarketplacePrices } from "@/lib/api";
 import { ThinkingState, type ThinkingStep } from "@/components/ui/thinking-state";
+import {
+  MARKETS_QUICK_PICK,
+  MarketplaceMark,
+  marketplaceColor,
+  marketplaceLabel,
+  marketplaceSources,
+} from "@/components/books/marketplace-sources";
 import type {
   MarketplaceComparison,
   MarketplaceHistoryPoint,
@@ -41,61 +48,6 @@ interface ComparePriceModalProps {
   /** Token sesi Supabase. `null` = belum login (pemanggil sudah menanganinya). */
   accessToken: string | null;
 }
-
-/** Styling tema badge per marketplace */
-const MARKETPLACE_STYLES: Record<
-  string,
-  { bg: string; text: string; border: string; label: string }
-> = {
-  tokopedia: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    border: "border-emerald-200",
-    label: "Tokopedia",
-  },
-  shopee: {
-    bg: "bg-orange-50",
-    text: "text-orange-700",
-    border: "border-orange-200",
-    label: "Shopee",
-  },
-  blibli: {
-    bg: "bg-sky-50",
-    text: "text-sky-700",
-    border: "border-sky-200",
-    label: "Blibli",
-  },
-  gramedia: {
-    bg: "bg-red-50",
-    text: "text-red-700",
-    border: "border-red-200",
-    label: "Gramedia",
-  },
-  periplus: {
-    bg: "bg-teal-50",
-    text: "text-teal-800",
-    border: "border-teal-200",
-    label: "Periplus",
-  },
-  lazada: {
-    bg: "bg-indigo-50",
-    text: "text-indigo-700",
-    border: "border-indigo-200",
-    label: "Lazada",
-  },
-  google_books: {
-    bg: "bg-purple-50",
-    text: "text-purple-700",
-    border: "border-purple-200",
-    label: "Google Books",
-  },
-  open_library: {
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    border: "border-amber-200",
-    label: "Open Library",
-  },
-};
 
 /** Satu angka harga dari backend (Decimal) — dinormalkan sebelum dihitung. */
 function toNumber(value: string | number | null | undefined): number | null {
@@ -192,19 +144,14 @@ function QuoteRow({
 }) {
   const gap = priceGap(storePrice, quote.price);
   const cheaper = gap !== null && gap > 0;
-  const badgeStyle = MARKETPLACE_STYLES[quote.marketplace] || {
-    bg: "bg-gray-100",
-    text: "text-gray-700",
-    border: "border-gray-200",
-    label: quote.label,
-  };
+  const label = marketplaceLabel(quote.marketplace, quote.label);
 
   const isReview = variant === "review" || quote.validation_status === "review";
   const isRejected = variant === "rejected" || quote.validation_status === "rejected";
 
   return (
     <li
-      className={`group relative flex flex-col justify-between gap-3 rounded-2xl border p-4 transition-all duration-200 ${
+      className={`group relative flex flex-col justify-between gap-3 overflow-hidden rounded-2xl border p-4 pl-5 transition-all duration-200 ${
         isRejected
           ? "border-gray-200 bg-gray-50/70 opacity-80"
           : isReview
@@ -214,16 +161,23 @@ function QuoteRow({
           : "border-gray-200/80 bg-white hover:border-blue-200 hover:shadow-xs"
       }`}
     >
+      {/* Pita warna merek di tepi kiri: pengenal toko yang terbaca sebelum teks */}
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-1 ${isRejected ? "opacity-35" : ""}`}
+        style={{ backgroundColor: marketplaceColor(quote.marketplace) }}
+      />
       <div className="flex items-start justify-between gap-3">
         {/* Marketplace & Info */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className={`rounded-lg px-2.5 py-0.5 text-xs font-black tracking-wide border ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}
-            >
-              {quote.label}
-            </span>
-
+          <div className="flex flex-wrap items-center gap-1.5">
+            <MarketplaceMark
+              slug={quote.marketplace}
+              label={label}
+              height={isRejected ? 15 : 16}
+              tone={isRejected ? "muted" : "full"}
+              className="max-w-full"
+            />
             {isCheapest && !isRejected && !isReview && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-xs">
                 <Sparkles className="h-2.5 w-2.5" />
@@ -347,7 +301,7 @@ function QuoteRow({
       {quote.product_url && (
         <div className="mt-1 pt-2.5 border-t border-gray-100 flex items-center justify-between">
           <span className="text-[10px] text-gray-400">
-            {isRejected ? "Listing marketplace (tidak direkomendasikan)" : `Kunjungi listing langsung di ${quote.label}`}
+            {isRejected ? "Listing marketplace (tidak direkomendasikan)" : `Kunjungi listing langsung di ${label}`}
           </span>
           <a
             href={quote.product_url}
@@ -355,7 +309,7 @@ function QuoteRow({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 hover:bg-blue-50 px-3 py-1.5 text-xs font-bold text-[#0052cc] border border-gray-200 hover:border-blue-300 transition-colors"
           >
-            <span>Buka {quote.label}</span>
+            <span>Buka {label}</span>
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
         </div>
@@ -483,61 +437,9 @@ export default function ComparePriceModal({
       {
         kind: "search",
         label: "Menelusuri marketplace Indonesia",
-        activeLabel: "Mencari harga di Tokopedia, Lazada, Gramedia...",
-        sources: [
-          {
-            label: "Tokopedia",
-            href: "https://www.tokopedia.com",
-            tooltip: "tokopedia.com",
-            icon: (
-              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-xs bg-[#42b549] text-[9px] font-black text-white">
-                T
-              </span>
-            ),
-          },
-          {
-            label: "Shopee",
-            href: "https://shopee.co.id",
-            tooltip: "shopee.co.id",
-            icon: (
-              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-xs bg-[#ee4d2d] text-[9px] font-black text-white">
-                S
-              </span>
-            ),
-          },
-          {
-            label: "Blibli",
-            href: "https://www.blibli.com",
-            tooltip: "blibli.com",
-            icon: (
-              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-xs bg-[#0095da] text-[9px] font-black text-white">
-                B
-              </span>
-            ),
-          },
-        ],
-        moreSources: [
-          {
-            label: "Gramedia",
-            href: "https://www.gramedia.com",
-            tooltip: "gramedia.com",
-          },
-          {
-            label: "Lazada",
-            href: "https://www.lazada.co.id",
-            tooltip: "lazada.co.id",
-          },
-          {
-            label: "Periplus",
-            href: "https://www.periplus.com",
-            tooltip: "periplus.com",
-          },
-          {
-            label: "Google Books",
-            href: "https://books.google.co.id",
-            tooltip: "books.google.co.id",
-          },
-        ],
+        activeLabel: `Mencari harga di ${MARKETS_QUICK_PICK.slice(0, 3).map((slug) => marketplaceLabel(slug)).join(", ")}...`,
+        sources: marketplaceSources(MARKETS_QUICK_PICK.slice(0, 4)),
+        moreSources: marketplaceSources(MARKETS_QUICK_PICK.slice(4)),
       },
       {
         kind: "step",

@@ -586,7 +586,9 @@ a.ui-think__source:focus-visible,
   display: grid;
   place-items: center;
   flex: none;
-  width: 16px;
+  /* Lebar mengikuti ikon: logo wordmark (Tokopedia, Gramedia) jauh lebih lebar
+     dari ikon persegi; tinggi tetap 16px supaya semua chip satu garis dasar. */
+  min-width: 16px;
   height: 16px;
   border-radius: 4px;
   overflow: hidden;

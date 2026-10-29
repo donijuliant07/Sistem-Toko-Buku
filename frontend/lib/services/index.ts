@@ -458,7 +458,7 @@ export const analyticsService = {
           rawNumeric: summary.low_stock_count,
           trendPercent: 0,
           isPositive: summary.low_stock_count === 0,
-          description: "Judul dengan stok ≤ 5 eksemplar",
+          description: "Judul dengan stok ≤ 5",
         },
       ]
     } catch {
