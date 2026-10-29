@@ -138,7 +138,7 @@ export default function PrivacyPage() {
       intro="Data apa yang kami simpan, mengapa, dan siapa yang bisa melihatnya. Ditulis dengan bahasa yang sama seperti saat kami menjelaskannya langsung."
       facts={[
         { label: "Berlaku sejak", value: "1 Oktober 2026" },
-        { label: "Diperbarui", value: "29 Oktober 2026" },
+        { label: "Diperbarui", value: "29 Okt 2026" },
         { label: "Permintaan data", value: siteConfig.adminEmail },
       ]}
       sections={sections}

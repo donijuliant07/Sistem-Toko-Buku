@@ -142,7 +142,7 @@ export default function TermsPage() {
       intro="Aturan yang berlaku saat kamu memakai Readr. Ditulis agar bisa dibaca sekali duduk, bukan untuk disembunyikan."
       facts={[
         { label: "Berlaku sejak", value: "1 Oktober 2026" },
-        { label: "Diperbarui", value: "29 Oktober 2026" },
+        { label: "Diperbarui", value: "29 Okt 2026" },
         { label: "Masa bayar pesanan", value: "24 jam" },
         { label: "Kontak", value: siteConfig.adminEmail },
       ]}
