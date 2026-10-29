@@ -4,8 +4,9 @@ export const siteConfig = {
   description: "Platform Toko Buku Online Modern Terlengkap",
   url: "https://readr.local",
   author: "Readr Team",
-  whatsappNumber: "6281234567890",
-  adminEmail: "admin@readr.com",
+  // Format internasional tanpa "+" agar bisa langsung dipakai tautan wa.me.
+  whatsappNumber: "6282193127895",
+  adminEmail: "rendyren585@gmail.com",
   adminUser: {
     name: "Rendy Pratama",
     email: "rendy@readr.com",

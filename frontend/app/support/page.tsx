@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  BookOpen,
+  ChevronRight,
+  HelpCircle,
+  Mail,
+  MessageCircle,
+  Plus,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Bantuan",
@@ -72,119 +82,217 @@ const faqs = [
 
 export default function SupportPage() {
   const waNumber = siteConfig.whatsappNumber.replace(/\D/g, "");
+  // Nomor disimpan format internasional (`62…`) agar tautan wa.me valid, tetapi
+  // pembaca Indonesia lebih akrab melihatnya sebagai `08…`.
+  const waDisplay = waNumber.startsWith("62") ? `0${waNumber.slice(2)}` : waNumber;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-surface-muted">
-        <div className="mx-auto w-full max-w-5xl px-6 py-10 sm:px-8 lg:py-14">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-          >
-            <span aria-hidden="true">←</span> Readr
-          </Link>
-          <h1 className="mt-6 max-w-[22ch] font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
-            Bantuan
-          </h1>
-          <div className="mt-5 h-px w-16 bg-accent" aria-hidden="true" />
-          <p className="mt-5 max-w-[62ch] text-[15px] leading-7 text-muted-foreground">
-            Mulai dari masalah yang paling dekat: pesanan, pembayaran, atau akun. Sebagian
-            besar pertanyaan selesai tanpa perlu menghubungi siapa pun.
-          </p>
-        </div>
-      </header>
-
-      <div className="mx-auto grid w-full max-w-5xl gap-12 px-6 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-16 lg:py-14">
-        <div className="min-w-0">
-          <h2 className="font-display text-2xl tracking-tight">Panduan singkat</h2>
-          <div className="mt-6 space-y-10">
-            {guides.map((guide) => (
-              <section key={guide.title}>
-                <h3 className="text-base font-semibold">{guide.title}</h3>
-                <ol className="mt-3 space-y-2 border-l border-border pl-5 text-[15px] leading-7 text-muted-foreground">
-                  {guide.steps.map((step, index) => (
-                    <li key={index} className="relative">
-                      <span className="absolute -left-5 top-0 w-4 text-right font-mono text-xs tabular-nums text-accent">
-                        {index + 1}
-                      </span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ))}
-          </div>
-
-          <h2 className="mt-14 font-display text-2xl tracking-tight">Pertanyaan umum</h2>
-          <div className="mt-6 divide-y divide-border border-y border-border">
-            {faqs.map((faq) => (
-              <details key={faq.q} className="group py-4">
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-[15px] font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                  {faq.q}
-                  <span
-                    aria-hidden="true"
-                    className="mt-1 shrink-0 font-mono text-accent transition-transform group-open:rotate-45"
-                  >
-                    +
-                  </span>
-                </summary>
-                <p className="mt-2 max-w-[62ch] text-[15px] leading-7 text-muted-foreground">
-                  {faq.a}
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-
-        <aside className="lg:sticky lg:top-8 lg:self-start">
-          <div className="border-t-2 border-accent bg-surface-muted p-6">
-            <h2 className="text-base font-semibold">Butuh bantuan manusia?</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Siapkan nomor pesananmu agar kami bisa langsung memeriksa.
+    <div className="admin-theme min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased selection:bg-blue-600 selection:text-white">
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 pb-24 sm:p-6 lg:p-8">
+        {/* 1. Header Banner */}
+        <header className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xs md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="mb-1.5 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-blue-600 uppercase">
+                Pusat Bantuan
+              </span>
+              <span className="text-xs text-zinc-400">•</span>
+              <span className="text-xs font-medium text-zinc-500">Readr Storefront</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">Bantuan</h1>
+            <p className="mt-1 max-w-xl text-xs leading-relaxed font-normal text-zinc-600 sm:text-sm">
+              Mulai dari masalah yang paling dekat: pesanan, pembayaran, atau akun. Sebagian besar
+              pertanyaan selesai tanpa perlu menghubungi siapa pun.
             </p>
-            <ul className="mt-5 space-y-3 text-sm">
-              <li>
-                <span className="block text-xs text-muted-foreground">Email</span>
-                <a
-                  href={`mailto:${siteConfig.adminEmail}`}
-                  className="font-medium underline decoration-accent decoration-2 underline-offset-4"
-                >
-                  {siteConfig.adminEmail}
-                </a>
-              </li>
-              <li>
-                <span className="block text-xs text-muted-foreground">WhatsApp</span>
-                <a
-                  href={`https://wa.me/${waNumber}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium underline decoration-accent decoration-2 underline-offset-4"
-                >
-                  +{waNumber}
-                </a>
-              </li>
-            </ul>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 sm:shrink-0">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-xs transition-all hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 text-zinc-600" />
+              <span>Kembali ke Toko</span>
+            </Link>
             <Link
               href="/orders"
-              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-medium text-white shadow-xs transition-all hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
-              Lacak pesanan
+              <span>Lacak Pesanan</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
+        </header>
 
-          <p className="mt-6 text-xs leading-6 text-muted-foreground">
-            Soal data pribadi? Lihat{" "}
-            <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
-              kebijakan privasi
-            </Link>{" "}
-            dan{" "}
-            <Link href="/terms" className="underline underline-offset-4 hover:text-foreground">
-              ketentuan layanan
+        {/* 2. Panduan + Panel Kontak */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="min-w-0 space-y-6">
+            <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xs">
+              <div className="flex items-center justify-between border-b border-zinc-100 p-5 pb-4">
+                <div>
+                  <h2 className="flex items-center gap-1.5 text-base font-bold tracking-tight text-zinc-900">
+                    <BookOpen className="h-4 w-4 text-blue-600" />
+                    <span>Panduan Singkat</span>
+                  </h2>
+                  <p className="mt-0.5 text-xs font-medium text-zinc-600">
+                    {guides.length} langkah penyelesaian masalah tersering
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full border border-blue-200/60 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                  {guides.length} Topik
+                </span>
+              </div>
+
+              <div className="divide-y divide-zinc-100">
+                {guides.map((guide, guideIndex) => (
+                  <section
+                    key={guide.title}
+                    className="p-5 transition-colors hover:bg-zinc-50/70 sm:p-6"
+                  >
+                    <h3 className="flex items-center gap-2.5 text-sm font-bold tracking-tight text-zinc-900">
+                      <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-50 px-1.5 font-mono text-[11px] font-semibold text-blue-600 tabular-nums">
+                        {String(guideIndex + 1).padStart(2, "0")}
+                      </span>
+                      {guide.title}
+                    </h3>
+                    <ol className="mt-3 space-y-2 text-sm leading-relaxed text-zinc-600">
+                      {guide.steps.map((step, index) => (
+                        <li key={index} className="flex gap-2.5">
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-50 font-mono text-[10px] font-semibold text-zinc-500 tabular-nums">
+                            {index + 1}
+                          </span>
+                          <span className="min-w-0 [&_a]:font-medium [&_a]:text-zinc-900 [&_a]:underline [&_a]:decoration-blue-500 [&_a]:decoration-2 [&_a]:underline-offset-4">
+                            {step}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xs">
+              <div className="flex items-center justify-between border-b border-zinc-100 p-5 pb-4">
+                <div>
+                  <h2 className="flex items-center gap-1.5 text-base font-bold tracking-tight text-zinc-900">
+                    <HelpCircle className="h-4 w-4 text-blue-600" />
+                    <span>Pertanyaan Umum</span>
+                  </h2>
+                  <p className="mt-0.5 text-xs font-medium text-zinc-600">
+                    Klik untuk membuka jawabannya
+                  </p>
+                </div>
+              </div>
+
+              <div className="divide-y divide-zinc-100">
+                {faqs.map((faq) => (
+                  <details key={faq.q} className="group">
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-4 p-5 text-sm font-semibold text-zinc-900 transition-colors marker:content-none hover:bg-zinc-50/70 [&::-webkit-details-marker]:hidden">
+                      {faq.q}
+                      <span
+                        aria-hidden="true"
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-50 text-zinc-500 transition-transform group-open:rotate-45"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </span>
+                    </summary>
+                    <p className="px-5 pb-5 text-sm leading-relaxed text-zinc-600">{faq.a}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-xs">
+              <h2 className="text-xs font-semibold tracking-tight text-zinc-600">
+                Butuh Bantuan Manusia?
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                Siapkan nomor pesananmu agar kami bisa langsung memeriksa.
+              </p>
+              <ul className="mt-4 space-y-2">
+                <li>
+                  <a
+                    href={`mailto:${siteConfig.adminEmail}`}
+                    className="flex items-center gap-2.5 rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
+                      <Mail className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[11px] text-zinc-500">Email</span>
+                      <span className="block truncate text-xs font-semibold text-zinc-900">
+                        {siteConfig.adminEmail}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={`https://wa.me/${waNumber}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2.5 rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <MessageCircle className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[11px] text-zinc-500">WhatsApp</span>
+                      <span className="block truncate text-xs font-semibold text-zinc-900 tabular-nums">
+                        {waDisplay}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              </ul>
+              <Link
+                href="/orders"
+                className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-medium text-white shadow-xs transition-all hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              >
+                <span>Lacak Pesanan</span>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-xs">
+              <h3 className="text-xs font-semibold tracking-tight text-zinc-600">Dokumen Lain</h3>
+              <div className="mt-3 space-y-1">
+                <Link
+                  href="/terms"
+                  className="flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900"
+                >
+                  <span>Ketentuan</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-zinc-300" />
+                </Link>
+                <Link
+                  href="/privacy"
+                  className="flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900"
+                >
+                  <span>Privasi</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-zinc-300" />
+                </Link>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 text-xs text-zinc-500 shadow-xs">
+          <p>© {new Date().getFullYear()} Readr</p>
+          <div className="flex gap-5">
+            <Link href="/terms" className="font-medium transition-colors hover:text-zinc-900">
+              Ketentuan
             </Link>
-            .
-          </p>
-        </aside>
+            <Link href="/privacy" className="font-medium transition-colors hover:text-zinc-900">
+              Privasi
+            </Link>
+            <Link href="/support" className="font-medium transition-colors hover:text-zinc-900">
+              Bantuan
+            </Link>
+          </div>
+        </footer>
       </div>
-    </main>
+    </div>
   );
 }
