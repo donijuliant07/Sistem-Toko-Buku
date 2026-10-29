@@ -8,7 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { supabase, supabaseConfigError } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+import { initialUrlHash, supabase, supabaseConfigError } from "@/lib/supabase";
+import { isPasswordRecoveryUrl } from "@/lib/auth-utils";
 import { getCurrentUser } from "@/lib/api";
 
 /** Peran yang dikenal backend (`profiles.role`); di luar ini diperlakukan `user`. */
@@ -32,6 +34,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
@@ -58,16 +61,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
         setSession(nextSession);
         setLoading(false);
+        // Supabase memancarkan event ini setelah tautan `type=recovery` ditukar
+        // menjadi sesi — sumber kanonik, tidak bergantung timing hash/polling.
+        if (event === "PASSWORD_RECOVERY") {
+          router.replace("/reset-password");
+        }
       },
     );
     return () => {
       mounted = false;
       subscription.subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
+
+  // Tautan reset kata sandi membawa sesi recovery. Klien Supabase menukarnya
+  // di halaman mana pun tautan mendarat (fragment `type=recovery`), tetapi
+  // hanya `/reset-password` yang punya formulir sandi baru — tanpa pengalihan
+  // ini pengguna kembali ke beranda/halaman masuk dan tautannya terbuang.
+  useEffect(() => {
+    if (!isPasswordRecoveryUrl(window.location.search, initialUrlHash)) return;
+    const timer = setTimeout(() => router.replace("/reset-password"), 0);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   // Role selalu berasal dari backend (`GET /me` -> `profiles.role`), bukan dari
   // metadata sesi Supabase yang bisa diubah sendiri oleh pemilik akun. Ini

@@ -27,7 +27,13 @@ function AuthCallbackContent() {
             : errorDesc || errorParam || "Autentikasi pihak ketiga dibatalkan atau gagal.";
         if (active) {
           setErrorMessage(readableError);
-          router.replace(`/login?error=${encodeURIComponent(readableError)}`);
+          // Tautan reset yang kedaluwarsa kembali ke formulir minta-tautan-baru,
+          // bukan halaman masuk yang tidak bisa memperbaikinya.
+          const fallback =
+            searchParams.get("next") === "/reset-password"
+              ? `/reset-password?error=${encodeURIComponent(readableError)}`
+              : `/login?error=${encodeURIComponent(readableError)}`;
+          router.replace(fallback);
         }
         return;
       }

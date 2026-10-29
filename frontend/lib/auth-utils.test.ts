@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { formatAuthError } from "@/lib/auth-utils"
+import { formatAuthError, isPasswordRecoveryUrl } from "@/lib/auth-utils"
 
 describe("formatAuthError — alur lupa kata sandi", () => {
   it("menerjemahkan tautan reset yang kedaluwarsa", () => {
@@ -32,5 +32,25 @@ describe("formatAuthError — alur lupa kata sandi", () => {
 
   it("meneruskan pesan yang tidak dikenal apa adanya", () => {
     expect(formatAuthError(new Error("Kaboom"))).toBe("Kaboom")
+  })
+})
+
+describe("isPasswordRecoveryUrl", () => {
+  it("mengenali sesi recovery di fragment (implicit flow)", () => {
+    expect(
+      isPasswordRecoveryUrl("", "#access_token=abc&refresh_token=def&type=recovery"),
+    ).toBe(true)
+  })
+
+  it("mengenali tautan reset kedaluwarsa", () => {
+    expect(isPasswordRecoveryUrl("?next=/reset-password&error_code=otp_expired", "")).toBe(true)
+  })
+
+  it("mengabaikan tautan konfirmasi pendaftaran dan halaman biasa", () => {
+    expect(isPasswordRecoveryUrl("?next=/checkout&code=abc", "")).toBe(false)
+    expect(
+      isPasswordRecoveryUrl("", "#access_token=abc&refresh_token=def&type=signup"),
+    ).toBe(false)
+    expect(isPasswordRecoveryUrl("?q=buku", "")).toBe(false)
   })
 })

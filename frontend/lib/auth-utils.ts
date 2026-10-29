@@ -47,3 +47,21 @@ export function formatAuthError(error: unknown): string {
 
   return message;
 }
+
+/**
+ * Apakah URL saat ini hasil klik tautan reset kata sandi. Klien Supabase
+ * (implicit flow, default) menaruh sesi recovery di fragment:
+ * `#access_token=...&refresh_token=...&type=recovery`. Fragment tidak pernah
+ * sampai ke server dan `redirectTo` bisa jatuh ke Site URL bila belum
+ * didaftarkan, sehingga halaman mana pun harus bisa mengenali tautan ini.
+ * Tautan kedaluwarsa membawa `error_code=otp_expired`.
+ */
+export function isPasswordRecoveryUrl(search: string, hash: string): boolean {
+  const hashParams = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+  const query = new URLSearchParams(search);
+  if (hashParams.get("type") === "recovery" && hashParams.has("access_token")) return true;
+  // Hanya mau menangkap tautan reset: `next=/reset-password` dipasang aplikasi
+  // ini sendiri di `redirectTo`, sedangkan tautan konfirmasi pendaftaran tidak.
+  const errorCode = query.get("error_code") ?? hashParams.get("error_code");
+  return query.get("next") === "/reset-password" && errorCode === "otp_expired";
+}
